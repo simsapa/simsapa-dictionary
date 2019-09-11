@@ -1,0 +1,17 @@
+[package]
+name = "simsapa_dictionary"
+version = "0.1.0"
+authors = ["Gambhiro <gambhiro.bhikkhu.85@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+
+log = "0.4"
+env_logger = "0.6"
+kankyo = "0.3"
+
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+serde_yaml = "0.8"
+
