@@ -1,0 +1,76 @@
+name: "Simsapa Dictionary Tool"
+version: "0.1.0"
+author: "https://simsapa.github.io/"
+about: "Generating Pali language dictionaries in MOBI and EPUB format."
+
+args:
+  - show_logs:
+      help: "Print log messages in the terminal."
+      long: show_logs
+      required: false
+      takes_value: false
+
+subcommands:
+
+  - markdown_to_mobi:
+      about: "Process a Markdown file and generate a MOBI dictionary with Kindlegen."
+
+      args:
+        - markdown_path:
+            help: "The Markdown file to read dictionary entries from."
+            long: markdown_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - mobi_path:
+            help: "The MOBI file to write."
+            long: mobi_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - kindlegen_path:
+            help: "The KindleGen tool must be available either (a) in the current folder with this tool, (b) in the system PATH, (c) declared with this option."
+            long: kindlegen_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - dont_run_kindlegen:
+            help: "Turns off running KindleGen, and no MOBI file will be generated. Useful for debugging."
+            long: dont_run_kindlegen
+            required: false
+            takes_value: false
+
+        - dont_remove_generated_files:
+            help: "Turns off the removal of the generated OPF, HTML, etc. files used to create the MOBI. Useful for debugging."
+            long: dont_remove_generated_files
+            required: false
+            takes_value: false
+
+  - suttacentral_json_to_markdown:
+      about: "Process a dictionary JSON file from SuttaCentral and write a Markdown file with TOML headers."
+
+      args:
+        - json_path:
+            help: "The JSON file to read."
+            long: json_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - markdown_path:
+            help: "The Markdown file to write."
+            long: markdown_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - dict_label:
+            help: "The short id label (such as NCPED or PED) to use for this dictionary source."
+            long: dict_label
+            value_name: LABEL
+            required: true
+            takes_value: true
+

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package unique-identifier="BookId">
+  <metadata>
+
+    <dc-metadata xmlns:dc="http://purl.org/metadata/dublin_core" xmlns:oebpackage="http://openebook.org/namespaces/oeb-package/1.0/">
+      <dc:title>{{dict_header.title}}</dc:title>
+      <dc:language>en</dc:language>
+      <dc:creator>NCPED</dc:creator>
+      <dc:description>{{dict_header.title}}</dc:description>
+      <dc:date>2019-09-16</dc:date>
+      <dc:source>https://simsapa.github.io</dc:source>
+      <dc:identifier id="BookId">SimsapaPaliDictionary</dc:identifier>
+    </dc-metadata>
+
+    <meta name="cover" content="item_cover"/>
+
+    <x-metadata>
+      <output encoding="utf-8"></output>
+      <EmbeddedCover>cover.png</EmbeddedCover>
+      <DictionaryInLanguage>en</DictionaryInLanguage>
+      <DictionaryOutLanguage>en</DictionaryOutLanguage>
+    </x-metadata>
+
+  </metadata>
+
+  <manifest>
+
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="style" href="style.css" media-type="text/css"/>
+
+    <item id="item_cover" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/>
+    <item id="item_titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml"/>
+    <item id="item_about" href="about.xhtml" media-type="application/xhtml+xml"/>
+    <item id="item_entries" href="entries.xhtml" media-type="application/xhtml+xml"/>
+    <item id="item_copyright" href="copyright.xhtml" media-type="application/xhtml+xml"/>
+
+  </manifest>
+
+  <spine toc="nav">
+    <itemref idref="item_cover"/>
+    <itemref idref="item_titlepage"/>
+    <itemref idref="item_about"/>
+    <itemref idref="item_entries"/>
+    <itemref idref="item_copyright"/>
+
+    <itemref idref="nav" linear="no"/>
+  </spine>
+
+  <guide>
+    <reference type="text"           title="Begin Reading"     href="titlepage.xhtml"/>
+    <reference type="toc"            title="Table of Contents" href="nav.xhtml#toc"/>
+    <reference type="copyright-page" title="Copyright"         href="copyright.xhtml"/>
+  </guide>
+
+</package>
