@@ -1,0 +1,16 @@
+{
+    "package": {
+        "name": "simsapa-dictionary",
+        "repo": "simsapa-dictionary",
+        "subject": "gambhiro"
+    },
+    "version": {
+        "name": "latest"
+    },
+    "files": [
+        {"includePattern": "simsapa_dictionary_linux",
+         "uploadPattern": "simsapa_dictionary_linux", "matrixParams": {"override": 1}},
+        {"includePattern": "simsapa_dictionary_osx",
+         "uploadPattern": "simsapa_dictionary_osx", "matrixParams": {"override": 1}}
+    ]
+}

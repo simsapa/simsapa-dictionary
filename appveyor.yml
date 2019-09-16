@@ -1,0 +1,42 @@
+version: "0.1.0.{branch}.{build}"
+
+image: Visual Studio 2019
+
+shallow_clone: true
+
+platform:
+  - x64
+
+branches:
+  only:
+    - master
+
+environment:
+  TARGET: x86_64-pc-windows-msvc
+  CRATE_NAME: simsapa_dictionary
+  RUST_VERSION: stable
+
+install:
+  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
+  - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
+  - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - rustc -Vv
+  - cargo -V
+
+cache:
+  - C:\Users\appveyor\.cargo\registry
+  - target
+
+build_script:
+  - cargo build --release
+
+test_script:
+  - echo "Skipping test step."
+
+after_test:
+  - echo "Skipping after test step."
+
+artifacts:
+  - path: 'target\release\simsapa_dictionary.exe'
+    name: exe
+

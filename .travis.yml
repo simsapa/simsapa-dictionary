@@ -1,0 +1,27 @@
+os:
+  - linux
+  - osx
+
+branches:
+  only:
+    - master
+
+git:
+  depth: 1
+
+language: rust
+
+rust:
+  - stable
+
+cache:
+  cargo: true
+
+script:
+  - echo "=== script ==="
+  - cargo build --release
+
+before_deploy:
+  - bash ./ci/before_deploy.sh
+
+
