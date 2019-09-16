@@ -24,4 +24,12 @@ script:
 before_deploy:
   - bash ./ci/before_deploy.sh
 
-
+deploy:
+  provider: bintray
+  file: $TRAVIS_BUILD_DIR/ci/bintray.descriptor.json
+  skip_cleanup: true
+  user: gambhiro
+  on:
+    branch: master
+  key:
+    secure: NZUdNBEYMegIOnWccvRNnt++c3YVyEsuRJK9RSO97QS901yp/CH1v7hsQ38BJUK0UGT4oqjNRJFMu0myaL8R1nabtYaOTGEkg4Uuw+BkSQZhpqZI/Z5EiCTII9Vfp7VJZcHXUen2avpU8ksyolRqfquyOqSOJ5bMJFy9jgwQv7YOR/ojYVtGCt35YGQbyq8WdvfvrUiTJBwEEGUfjLQhk7C21f5KVnlMyC+fx6TY4Pakpj9AC0d0YrvUKvaUC9Yp1HhKwogbgMzMSWKW7szlC4LzMDvF1yQT0XUsNpNpBNQZ1ap7ZpOj4LIfHx7y7SKDOEF2E7VaHMuBGmoWNBOF+6SbHrxpEuTL4J+tr6bA4zXHA2UBFiFLpXYJPGlNPAozCNPyAh0NHwYw/8MuUg/ZkuTlc16CdvoW78XPfTbwqTnbZLWgnjeQkcaB8UD8r7IWbHNPjvYi80D/S8dYi6cfbIJXEmPCa4JT0aGinao5q9k2eo26a0STI1z4pcHAb/bnOvmWcruE4mvVi0LsHaGRfiReXlfzl/yhjF+JI7Ax1SDW3R8BFh0rKItDgCt0UtZR0r+tazhfo7xbgEfGdhxMaCKeP4JB/jT+HEcqCtP94Aik1khyjmNKup/PdEnB/tBzkYQD4GLV0pTAKYUSJf1wucE4zVSR4oP6S3NeKaXniUw=
