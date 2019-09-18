@@ -1,4 +1,3 @@
-use std::default::Default;
 use std::process::exit;
 use std::fs::File;
 use std::io::prelude::*;
@@ -6,116 +5,88 @@ use std::io::prelude::*;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+use chrono::prelude::*;
 use handlebars::{self, Handlebars};
 
-use crate::markdown::{md2html, markdown_helper};
+use crate::dict_word::{DictWord, DictWordHeader};
+use crate::helpers::{md2html, markdown_helper};
 
-/// Data store for one dictionary source. Words must be unique, as they are used as the HashMap
-/// key.
-pub struct Dictionary {
-    pub data: DictData,
+pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
+pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
+
+#[derive(Serialize, Deserialize)]
+pub struct Ebook {
+    pub meta: EbookMetadata,
+    pub dict_words: BTreeMap<String, DictWord>,
     pub asset_file_strings: BTreeMap<String, String>,
     pub asset_file_bytes: BTreeMap<String, Vec<u8>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DictData {
-    pub dict_header: DictHeader,
-    pub entries: BTreeMap<String, DictWord>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DictHeader {
+#[derive(Serialize, Deserialize)]
+pub struct EbookMetadata {
     pub title: String,
-    pub dict_label: String,
-    pub from_lang: String,
-    pub to_lang: String,
+    pub description: String,
+    pub creator: String,
+    pub source: String,
+    pub cover_path: String,
+    pub book_id: String,
+    pub date: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DictWord {
-    pub word_header: DictWordHeader,
-    pub definition_md: String,
-    pub definition_html: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DictWordHeader {
-    pub word: String,
-    pub summary: String,
-    pub grammar: String,
-}
-
-impl Dictionary {
+impl Ebook {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn add(&mut self, new_word: DictWord) {
-        if self.data.entries.contains_key(&new_word.word_header.word) {
-            warn!("SKIPPING. Double: '{}' in '{}'. Entries should be unique for word within one dictionary.",
-                &new_word.word_header.word,
-                &self.data.dict_header.dict_label);
+    pub fn add_word(&mut self, new_word: DictWord) {
+        let w_key = format!("{} {}", new_word.word_header.word, new_word.word_header.dict_label);
 
-        // TODO insert with modified key
-        /*
-          let ww = NewDictWord {
-          word:             &new_word.word,
-          definition_plain: &format!("{} (FIXME: double entry)", new_word.definition_plain),
-          definition_html:  &format!("{} (FIXME: double entry)", new_word.definition_html),
-          summary:    &new_word.summary,
-          grammar:    &new_word.grammar,
-          dict_label: &new_word.dict_label,
-          from_lang:  &new_word.from_lang,
-          to_lang:    &new_word.to_lang,
+        if self.dict_words.contains_key(&w_key) {
+            warn!("Double word: '{}'. Entries should be unique for word within one dictionary.", &w_key);
+
+          let ww = DictWord {
+              word_header: DictWordHeader {
+                  dict_label: new_word.word_header.dict_label,
+                  word: format!("{} FIXME: double", new_word.word_header.word),
+                  summary: new_word.word_header.summary,
+                  grammar: new_word.word_header.grammar,
+              },
+              definition_md: new_word.definition_md
           };
-          info!("Inserting word, double entry: {}", ww.word);
-          let _ = create_new_dict_word(&conn, &ww);
-        *created_dict_words_count += 1;
-        */
-        } else {
-            info!("Inserting word: {}", new_word.word_header.word);
+          let ww_key = format!("{} double", &w_key);
+          self.dict_words.insert(ww_key, ww);
 
-            if self
-                .data
-                .entries
-                .insert(new_word.word_header.word.clone(), new_word)
-                .is_some()
-            {
-                error!("Unhandled double word, new value replacing the old.");
+        } else {
+            let w = self.dict_words.insert(w_key.clone(), new_word);
+            if w.is_some() {
+                error!("Unhandled double word '{}', new value replacing the old.", w_key);
             }
         }
     }
 
-    pub fn get(&self, word: &str) -> Option<&DictWord> {
-        self.data.entries.get(word)
+    pub fn get_word(&self, word: &str) -> Option<&DictWord> {
+        self.dict_words.get(word)
     }
 
     pub fn len(&self) -> usize {
-        self.data.entries.len()
+        self.dict_words.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.data.entries.is_empty()
+        self.dict_words.is_empty()
     }
 
     pub fn write_markdown(&self, path: &PathBuf) {
         let mut file = File::create(path).unwrap();
 
-        // Write TOME header with separator.
+        // Write TOML metadata with separator.
 
-        let header = toml::to_string(&self.data.dict_header).expect("Can't serialize.");
+        let meta = toml::to_string(&self.meta).expect("Can't serialize.");
         let content = format!(
-            r#"--- DICTIONARY HEADER ---
-
-``` toml
-{}
-```
-
---- DICTIONARY WORD ENTRIES ---
-
-"#,
-            &header.trim(),
+            "{}\n\n``` toml\n{}\n```\n\n{}\n\n",
+            &DICTIONARY_METADATA_SEP,
+            &meta.trim(),
+            &DICTIONARY_WORD_ENTRIES_SEP,
         );
 
         file.write_all(content.as_bytes()).unwrap();
@@ -123,8 +94,7 @@ impl Dictionary {
         // Write entries.
 
         let content = self
-            .data
-            .entries
+            .dict_words
             .values()
             .map(|i| i.as_markdown_and_toml_string())
             .collect::<Vec<String>>()
@@ -151,7 +121,7 @@ impl Dictionary {
             let s = self.asset_file_strings.get(&filename.to_string()).unwrap();
 
             h.register_template_string(filename, s).unwrap();
-            let file_content = h.render(filename, &self.data).unwrap();
+            let file_content = h.render(filename, &self).unwrap();
 
             let mut file = File::create(dir_path.join(filename)).unwrap();
             file.write_all(file_content.as_bytes()).unwrap();
@@ -159,21 +129,27 @@ impl Dictionary {
 
         // Render Handlebar templates wrapped in content-page.xhtml template.
 
+        let s = self.asset_file_strings.get("content-page.xhtml").unwrap();
+        h.register_template_string("content-page.xhtml", s).unwrap();
+
         // entries.xhtml
         // nav.xhtml
         // titlepage.xhtml
-
-        let s = self.asset_file_strings.get("content-page.xhtml").unwrap();
-        h.register_template_string("content-page.xhtml", s).unwrap();
 
         for filename in ["entries.xhtml", "nav.xhtml", "titlepage.xhtml"].iter() {
             let s = self.asset_file_strings.get(&filename.to_string()).unwrap();
 
             h.register_template_string(filename, s).unwrap();
-            let content_html = h.render(filename, &self.data).unwrap();
+            let content_html = match h.render(filename, &self) {
+                Ok(x) => x,
+                Err(e) => {
+                    error!("Can't render template {}, {:?}", filename, e);
+                    "FIXME: Template rendering error.".to_string()
+                }
+            };
 
             let mut d: BTreeMap<String, String> = BTreeMap::new();
-            d.insert("page_title".to_string(), self.data.dict_header.title.clone());
+            d.insert("page_title".to_string(), self.meta.title.clone());
             d.insert("content_html".to_string(), content_html);
             let file_content = h.render("content-page.xhtml", &d).unwrap();
 
@@ -191,7 +167,7 @@ impl Dictionary {
             let content_html = md2html(&content_md);
 
             let mut d: BTreeMap<String, String> = BTreeMap::new();
-            d.insert("page_title".to_string(), self.data.dict_header.title.clone());
+            d.insert("page_title".to_string(), self.meta.title.clone());
             d.insert("content_html".to_string(), content_html);
             let file_content = h.render("content-page.xhtml", &d).unwrap();
 
@@ -214,37 +190,7 @@ impl Dictionary {
     }
 }
 
-impl DictWord {
-    pub fn as_markdown_and_toml_string(&self) -> String {
-        let header = toml::to_string(&self.word_header).expect("Can't serialize word header to TOML.");
-        let res = format!(
-            r#"``` toml
-{}
-```
-
-{}"#,
-            &header.trim(),
-            &self.definition_md.trim()
-        );
-
-        res
-    }
-
-    pub fn from_markdown(s: &str) -> DictWord {
-        let a = s.replace("``` toml", "");
-        let parts: Vec<&str> = a.split("```").collect();
-
-        let word_header: DictWordHeader = toml::from_str(parts.get(0).unwrap()).unwrap();
-
-        DictWord {
-            word_header,
-            definition_md: parts.get(1).unwrap().to_string(),
-            definition_html: "".to_string(),
-        }
-    }
-}
-
-impl Default for Dictionary {
+impl Default for Ebook {
     fn default() -> Self {
 
         let mut asset_file_strings: BTreeMap<String, String> = BTreeMap::new();
@@ -286,31 +232,27 @@ impl Default for Dictionary {
             "style.css".to_string(),
             include_bytes!("../assets/OEPBS/style.css").to_vec());
 
-        Dictionary {
-            data: DictData::default(),
+        // TODO build manifest
+
+        Ebook {
+            meta: EbookMetadata::default(),
+            dict_words: BTreeMap::new(),
             asset_file_strings,
             asset_file_bytes,
         }
     }
 }
 
-impl Default for DictData {
+impl Default for EbookMetadata {
     fn default() -> Self {
-        DictData {
-            dict_header: DictHeader::default(),
-            entries: BTreeMap::new(),
-        }
-    }
-}
-
-impl Default for DictHeader {
-    fn default() -> Self {
-        DictHeader {
+        EbookMetadata {
             title: "Dictionary".to_string(),
-            dict_label: "ABCD".to_string(),
-            from_lang: "pli".to_string(),
-            to_lang: "en".to_string(),
+            description: "Pali - English".to_string(),
+            creator: "Simsapa Dhamma Reader".to_string(),
+            source: "https://simsapa.github.io".to_string(),
+            cover_path: "cover.jpg".to_string(),
+            book_id: "SimsapaPaliDictionary".to_string(),
+            date: Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         }
     }
 }
-

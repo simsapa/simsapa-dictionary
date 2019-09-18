@@ -3,20 +3,20 @@
   <metadata>
 
     <dc-metadata xmlns:dc="http://purl.org/metadata/dublin_core" xmlns:oebpackage="http://openebook.org/namespaces/oeb-package/1.0/">
-      <dc:title>{{dict_header.title}}</dc:title>
+      <dc:title>{{meta.title}}</dc:title>
       <dc:language>en</dc:language>
-      <dc:creator>NCPED</dc:creator>
-      <dc:description>{{dict_header.title}}</dc:description>
-      <dc:date>2019-09-16</dc:date>
-      <dc:source>https://simsapa.github.io</dc:source>
-      <dc:identifier id="BookId">SimsapaPaliDictionary</dc:identifier>
+      <dc:creator>{{meta.creator}}</dc:creator>
+      <dc:description>{{meta.description}}</dc:description>
+      <dc:date>{{meta.date}}</dc:date>
+      <dc:source>{{meta.source}}</dc:source>
+      <dc:identifier id="BookId">{{meta.book_id}}</dc:identifier>
     </dc-metadata>
 
     <meta name="cover" content="item_cover"/>
 
     <x-metadata>
       <output encoding="utf-8"></output>
-      <EmbeddedCover>cover.png</EmbeddedCover>
+      <EmbeddedCover>{{meta.cover_path}}</EmbeddedCover>
       <DictionaryInLanguage>en</DictionaryInLanguage>
       <DictionaryOutLanguage>en</DictionaryOutLanguage>
     </x-metadata>
@@ -37,6 +37,7 @@
   </manifest>
 
   <spine toc="nav">
+
     <itemref idref="item_cover"/>
     <itemref idref="item_titlepage"/>
     <itemref idref="item_about"/>

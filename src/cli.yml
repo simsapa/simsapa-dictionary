@@ -16,11 +16,18 @@ subcommands:
       about: "Process a Markdown file and generate a MOBI dictionary with Kindlegen."
 
       args:
+        - markdown_paths_list:
+            help: "A file with a list of Markdown file paths, one per line. Either this or 'markdown_path' must be used."
+            long: markdown_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - markdown_path:
-            help: "The Markdown file to read dictionary entries from."
+            help: "A single Markdown file to read dictionary entries from. Either this or 'markdown_paths_list' must be used."
             long: markdown_path
             value_name: PATH
-            required: true
+            required: false
             takes_value: true
 
         - mobi_path:

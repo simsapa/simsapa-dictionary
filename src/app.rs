@@ -4,12 +4,13 @@ use std::fs;
 use std::process::{exit, Command};
 use std::path::PathBuf;
 
-use crate::dictionary::{DictWord, DictWordHeader, Dictionary, DictHeader};
+use crate::ebook::{Ebook, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
+use crate::dict_word::{DictWord, DictWordHeader};
 
 #[derive(Debug)]
 pub struct AppStartParams {
     pub json_path: Option<PathBuf>,
-    pub markdown_path: Option<PathBuf>,
+    pub markdown_paths: Option<Vec<PathBuf>>,
     pub mobi_path: Option<PathBuf>,
     pub kindlegen_path: Option<PathBuf>,
     pub dict_label: Option<String>,
@@ -30,7 +31,7 @@ impl Default for AppStartParams {
     fn default() -> Self {
         AppStartParams {
             json_path: None,
-            markdown_path: None,
+            markdown_paths: None,
             mobi_path: None,
             kindlegen_path: None,
             dict_label: None,
@@ -67,7 +68,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .unwrap()
             .parse::<String>()
         {
-            params.markdown_path = Some(PathBuf::from(&x));
+            params.markdown_paths = Some(vec![PathBuf::from(&x)]);
         }
 
         if let Ok(x) = sub_matches
@@ -82,17 +83,53 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_mobi") {
 
-        if let Ok(x) = sub_matches
-            .value_of("markdown_path")
-            .unwrap()
-            .parse::<String>()
-        {
-            let path = PathBuf::from(&x);
-            if path.exists() {
-                params.markdown_path = Some(path);
-            } else {
-                error!("🔥 Path does not exist: {:?}", &path);
-                exit(2);
+        if !sub_matches.is_present("markdown_path") && !sub_matches.is_present("markdown_paths_list") {
+            error!("🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.");
+            exit(2);
+        }
+
+        if sub_matches.is_present("markdown_path") {
+            if let Ok(x) = sub_matches
+                .value_of("markdown_path")
+                    .unwrap()
+                    .parse::<String>()
+            {
+                let path = PathBuf::from(&x);
+                if path.exists() {
+                    params.markdown_paths = Some(vec![path]);
+                } else {
+                    error!("🔥 Path does not exist: {:?}", &path);
+                    exit(2);
+                }
+            }
+        }
+
+        if sub_matches.is_present("markdown_paths_list") {
+            if let Ok(x) = sub_matches
+                .value_of("markdown_paths_list")
+                    .unwrap()
+                    .parse::<String>()
+            {
+                let list_path = PathBuf::from(&x);
+                let s = match fs::read_to_string(&list_path) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!("🔥 Can't read path. {:?}", e);
+                        exit(2);
+                    },
+                };
+                let s = s.trim();
+
+                let paths: Vec<PathBuf> = s.split('\n').map(|i| {
+                    let p = PathBuf::from(i);
+                    if !p.exists() {
+                        error!("🔥 Path does not exist: {:?}", &p);
+                        exit(2);
+                    }
+                    p
+                }).collect();
+
+                params.markdown_paths = Some(paths);
             }
         }
 
@@ -184,7 +221,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 
 pub fn process_suttacentral_json(
     json_path: &PathBuf,
-    dictionary: &mut Dictionary,
+    dict_label: &str,
+    ebook: &mut Ebook,
 ) {
     info! {"\n=== Begin processing {:?} ===\n", json_path};
 
@@ -200,40 +238,48 @@ pub fn process_suttacentral_json(
     for e in entries.iter() {
         let new_word = DictWord {
             word_header: DictWordHeader {
+                dict_label: dict_label.to_string(),
                 word: e.word.clone(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
             },
             definition_md: html_to_markdown(&e.text),
-            definition_html: e.text.clone(),
         };
 
-        dictionary.add(new_word)
+        ebook.add_word(new_word)
+    }
+}
+
+pub fn process_markdown_list(
+    markdown_paths: Vec<PathBuf>,
+    ebook: &mut Ebook
+) {
+    for p in markdown_paths.iter() {
+        process_markdown(p, ebook);
     }
 }
 
 pub fn process_markdown(
     markdown_path: &PathBuf,
-    dictionary: &mut Dictionary
+    ebook: &mut Ebook
 ) {
     info! {"\n=== Begin processing {:?} ===\n", markdown_path};
 
     let s = fs::read_to_string(markdown_path).unwrap();
 
     // Split the Dictionary header and the DictWord entries.
-    let parts: Vec<&str> = s.split("--- DICTIONARY WORD ENTRIES ---").collect();
+    let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
 
     if parts.len() != 2 {
         panic!("Something is wrong with the Markdown input. Can't separate the Dictionary header and DictWord entries.");
     }
 
     let a = parts.get(0).unwrap().to_string()
-        .replace("--- DICTIONARY HEADER ---", "")
+        .replace(DICTIONARY_METADATA_SEP, "")
         .replace("``` toml", "")
         .replace("```", "");
 
-    let header: DictHeader = toml::from_str(&a).unwrap();
-    dictionary.data.dict_header = header;
+    ebook.meta = toml::from_str(&a).unwrap();
 
     let a = parts.get(1).unwrap().to_string();
     let entries: Vec<DictWord> = a
@@ -249,7 +295,7 @@ pub fn process_markdown(
         .collect();
 
     for i in entries.iter() {
-        dictionary.add(i.clone());
+        ebook.add_word(i.clone());
     }
 }
 

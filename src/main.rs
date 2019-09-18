@@ -14,19 +14,23 @@ extern crate env_logger;
 extern crate kankyo;
 #[macro_use]
 extern crate clap;
+extern crate chrono;
 
 extern crate handlebars;
 extern crate comrak;
 
-use clap::App;
 use std::fs;
+use std::path::PathBuf;
+
+use clap::App;
 
 pub mod app;
-pub mod dictionary;
-pub mod markdown;
+pub mod ebook;
+pub mod dict_word;
+pub mod helpers;
 
 use app::RunCommand;
-use dictionary::Dictionary;
+use ebook::Ebook;
 
 fn main() {
     std::env::set_var("RUST_LOG", "error");
@@ -56,7 +60,7 @@ fn main() {
         }
 
         RunCommand::SuttaCentralJsonToMarkdown => {
-            let mut dictionary = Dictionary::new();
+            let mut ebook = Ebook::new();
 
             let json_path = if let Some(p) = &app_params.json_path {
                 p
@@ -64,8 +68,8 @@ fn main() {
                 panic!("json_path is missing.");
             };
 
-            let markdown_path = if let Some(p) = &app_params.markdown_path {
-                p
+            let markdown_path: PathBuf = if let Some(p) = &app_params.markdown_paths {
+                p.get(0).unwrap().to_path_buf()
             } else {
                 panic!("markdown_path is missing.");
             };
@@ -76,16 +80,15 @@ fn main() {
                 panic!("dict_label is missing.");
             };
 
-            dictionary.data.dict_header.dict_label = dict_label.to_string();
-            app::process_suttacentral_json(&json_path, &mut dictionary);
+            app::process_suttacentral_json(&json_path, dict_label, &mut ebook);
 
-            info!("Added words: {}", dictionary.len());
+            info!("Added words: {}", ebook.len());
 
-            dictionary.write_markdown(&markdown_path);
+            ebook.write_markdown(&markdown_path);
         }
 
         RunCommand::MarkdownToMobi => {
-            let mut dictionary = Dictionary::new();
+            let mut ebook = Ebook::new();
 
             let mobi_path = if let Some(s) = &app_params.mobi_path {
                 s
@@ -93,15 +96,15 @@ fn main() {
                 panic!("mobi_path is missing.");
             };
 
-            let markdown_path = if let Some(s) = &app_params.markdown_path {
-                s
+            let markdown_paths: Vec<PathBuf> = if let Some(p) = &app_params.markdown_paths {
+                p.to_vec()
             } else {
-                panic!("markdown_path is missing.");
+                panic!("markdown_paths are missing.");
             };
 
-            app::process_markdown(&markdown_path, &mut dictionary);
+            app::process_markdown_list(markdown_paths, &mut ebook);
 
-            info!("Added words: {}", dictionary.len());
+            info!("Added words: {}", ebook.len());
 
             let oepbs_dir = mobi_path.parent().unwrap().join("OEPBS");
 
@@ -109,7 +112,7 @@ fn main() {
                 fs::create_dir(&oepbs_dir).unwrap();
             }
 
-            dictionary.write_oepbs_files(&oepbs_dir);
+            ebook.write_oepbs_files(&oepbs_dir);
 
             if !app_params.dont_run_kindlegen {
                 let kindlegen_path = if let Some(s) = &app_params.kindlegen_path {
