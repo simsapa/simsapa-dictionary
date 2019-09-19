@@ -5,7 +5,6 @@ use std::io::prelude::*;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use chrono::prelude::*;
 use handlebars::{self, Handlebars};
 
 use crate::dict_word::{DictWord, DictWordHeader};
@@ -30,7 +29,7 @@ pub struct EbookMetadata {
     pub source: String,
     pub cover_path: String,
     pub book_id: String,
-    pub date: String,
+    pub created_date: String,
 }
 
 impl Ebook {
@@ -191,7 +190,16 @@ impl Ebook {
         // copyright.md
 
         for filename in ["about.md", "copyright.md"].iter() {
-            let content_md = self.asset_file_strings.get(&filename.to_string()).unwrap();
+            let s = self.asset_file_strings.get(&filename.to_string()).unwrap();
+            h.register_template_string(filename, s).unwrap();
+            let content_md = match h.render(filename, &self) {
+                Ok(x) => x,
+                Err(e) => {
+                    error!("Can't render template {}, {:?}", filename, e);
+                    "FIXME: Template rendering error.".to_string()
+                }
+            };
+
             let content_html = md2html(&content_md);
 
             let mut d: BTreeMap<String, String> = BTreeMap::new();
@@ -260,8 +268,6 @@ impl Default for Ebook {
             "style.css".to_string(),
             include_bytes!("../assets/OEPBS/style.css").to_vec());
 
-        // TODO build manifest
-
         Ebook {
             meta: EbookMetadata::default(),
             dict_words: BTreeMap::new(),
@@ -280,7 +286,7 @@ impl Default for EbookMetadata {
             source: "https://simsapa.github.io".to_string(),
             cover_path: "cover.jpg".to_string(),
             book_id: "SimsapaPaliDictionary".to_string(),
-            date: Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            created_date: "".to_string(),
         }
     }
 }

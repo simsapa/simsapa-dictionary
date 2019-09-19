@@ -4,6 +4,8 @@ use std::fs;
 use std::process::{exit, Command};
 use std::path::PathBuf;
 
+use chrono::prelude::*;
+
 use crate::ebook::{Ebook, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
 use crate::dict_word::{DictWord, DictWordHeader};
 
@@ -224,7 +226,7 @@ pub fn process_suttacentral_json(
     dict_label: &str,
     ebook: &mut Ebook,
 ) {
-    info! {"\n=== Begin processing {:?} ===\n", json_path};
+    info! {"=== Begin processing {:?} ===", json_path};
 
     #[derive(Deserialize)]
     struct Entry {
@@ -264,7 +266,7 @@ pub fn process_markdown(
     markdown_path: &PathBuf,
     ebook: &mut Ebook
 ) {
-    info! {"\n=== Begin processing {:?} ===\n", markdown_path};
+    info! {"=== Begin processing {:?} ===", markdown_path};
 
     let s = fs::read_to_string(markdown_path).unwrap();
 
@@ -281,6 +283,7 @@ pub fn process_markdown(
         .replace("```", "");
 
     ebook.meta = toml::from_str(&a).unwrap();
+    ebook.meta.created_date = Utc::now().to_rfc2822();
 
     let a = parts.get(1).unwrap().to_string();
     let entries: Vec<DictWord> = a
