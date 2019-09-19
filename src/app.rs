@@ -14,6 +14,7 @@ pub struct AppStartParams {
     pub json_path: Option<PathBuf>,
     pub markdown_paths: Option<Vec<PathBuf>>,
     pub mobi_path: Option<PathBuf>,
+    pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
     pub dict_label: Option<String>,
     pub dont_run_kindlegen: bool,
@@ -37,6 +38,7 @@ impl Default for AppStartParams {
             mobi_path: None,
             kindlegen_path: None,
             dict_label: None,
+            mobi_compression: 2,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
             run_command: RunCommand::NoOp,
@@ -141,6 +143,16 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .parse::<String>()
         {
             params.mobi_path = Some(PathBuf::from(&x));
+        }
+
+        if sub_matches.is_present("mobi_compression") {
+            if let Ok(x) = sub_matches
+                .value_of("mobi_compression")
+                    .unwrap()
+                    .parse::<usize>()
+            {
+                params.mobi_compression = x;
+            }
         }
 
         if sub_matches.is_present("dont_run_kindlegen") {
@@ -303,11 +315,9 @@ pub fn process_markdown(
     }
 }
 
-pub fn run_kindlegen(kindlegen_path: &PathBuf, mobi_path: &PathBuf, oepbs_dir: &PathBuf) {
+pub fn run_kindlegen(kindlegen_path: &PathBuf, mobi_path: &PathBuf, mobi_compression: usize, oepbs_dir: &PathBuf) {
     let opf_path = oepbs_dir.join(PathBuf::from("package.opf"));
     let mobi_name = mobi_path.file_name().unwrap().to_str().unwrap();
-    // -c2 is quite slow
-    let compr_opt = "-c0";
 
     let k = if cfg!(target_os = "windows") {
         clean_windows_str_path(kindlegen_path.to_str().unwrap())
@@ -315,11 +325,16 @@ pub fn run_kindlegen(kindlegen_path: &PathBuf, mobi_path: &PathBuf, oepbs_dir: &
         kindlegen_path.to_str().unwrap()
     };
 
-    let bin_cmd = format!("{} {} {} -dont_append_source -o {}",
+    let bin_cmd = format!("{} {} -c{} -dont_append_source -o {}",
         k,
         opf_path.to_str().unwrap(),
-        compr_opt,
+        mobi_compression,
         mobi_name);
+
+    info!("🔎 Running KindleGen ...");
+    if mobi_compression == 2 {
+        info!("Note that compression level 2 can take some time to complete.");
+    }
 
     let output = if cfg!(target_os = "windows") {
         match Command::new("cmd").arg("/C").arg(bin_cmd).output() {

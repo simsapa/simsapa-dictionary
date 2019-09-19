@@ -121,7 +121,11 @@ fn main() {
                     panic!("kindlegen_path is missing.");
                 };
 
-                app::run_kindlegen(&kindlegen_path, &mobi_path, &oepbs_dir);
+                app::run_kindlegen(
+                    &kindlegen_path,
+                    &mobi_path,
+                    app_params.mobi_compression,
+                    &oepbs_dir);
             }
 
             if !app_params.dont_remove_generated_files {

@@ -37,6 +37,15 @@ subcommands:
             required: true
             takes_value: true
 
+        - mobi_compression:
+            help: "Compression level, 0-2, as used by KindleGen. 0: no compression, 1: standard DOC compression, 2: Kindle huffdic compression."
+            long: mobi_compression
+            value_name: INT
+            required: false
+            takes_value: true
+            default_value: "2"
+            possible_values: [ "0", "1", "2" ]
+
         - kindlegen_path:
             help: "The KindleGen tool must be available either (a) in the current folder with this tool, (b) in the system PATH, (c) declared with this option."
             long: kindlegen_path
