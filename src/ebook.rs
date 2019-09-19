@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use handlebars::{self, Handlebars};
 
 use crate::dict_word::{DictWord, DictWordHeader};
+use crate::letter_groups::LetterGroups;
 use crate::helpers::{md2html, markdown_helper};
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
@@ -17,6 +18,7 @@ pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
 pub struct Ebook {
     pub meta: EbookMetadata,
     pub dict_words: BTreeMap<String, DictWord>,
+    pub entries_manifest: Vec<EntriesManifest>,
     pub asset_file_strings: BTreeMap<String, String>,
     pub asset_file_bytes: BTreeMap<String, Vec<u8>>,
 }
@@ -30,6 +32,12 @@ pub struct EbookMetadata {
     pub cover_path: String,
     pub book_id: String,
     pub created_date: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct EntriesManifest {
+    id: String,
+    href: String,
 }
 
 impl Ebook {
@@ -103,7 +111,7 @@ impl Ebook {
         file.write_all(content.as_bytes()).unwrap();
     }
 
-    pub fn write_oepbs_files(&self, dir_path: &Path) {
+    pub fn write_oepbs_files(&mut self, dir_path: &Path) {
         if !dir_path.is_dir() {
             error!("dir_path must be a directory.");
             exit(2);
@@ -112,7 +120,55 @@ impl Ebook {
         let mut h = Handlebars::new();
         h.register_helper("markdown", Box::new(markdown_helper));
 
-        // Render direct Handlebar templates.
+        // Render Handlebar templates wrapped in content-page.xhtml template.
+
+        let s = self.asset_file_strings.get("content-page.xhtml").unwrap();
+        h.register_template_string("content-page.xhtml", s).unwrap();
+
+        // Write entries split in letter groups.
+        {
+            let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
+            let mut groups = LetterGroups::new_from_dict_words(&w);
+
+            info!("Writing {} letter groups ...", groups.len());
+
+            let template_name = "entries.xhtml";
+            let s = self.asset_file_strings.get(&template_name.to_string()).unwrap();
+            h.register_template_string(template_name, s).unwrap();
+
+            for (order_idx, group) in groups.groups.values_mut().enumerate() {
+
+                if order_idx == 0 {
+                    group.title = self.meta.title.clone();
+                }
+
+                let content_html = match h.render(template_name, &group) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        error!("Can't render template {}, {:?}", template_name, e);
+                        "FIXME: Template rendering error.".to_string()
+                    }
+                };
+
+                let mut d: BTreeMap<String, String> = BTreeMap::new();
+                d.insert("page_title".to_string(), self.meta.title.clone());
+                d.insert("content_html".to_string(), content_html);
+                let file_content = h.render("content-page.xhtml", &d).unwrap();
+
+                // The file names will be identified by index number, not the group letter.
+                // entries-00.xhtml, entries-01.xhtml and so on.
+
+                let group_file_name = format!("entries-{:02}.xhtml", order_idx);
+                self.entries_manifest.push(
+                    EntriesManifest {
+                        id: format!("item_entries_{:02}", order_idx),
+                        href: group_file_name.clone(),
+                    });
+
+                let mut file = File::create(dir_path.join(group_file_name)).unwrap();
+                file.write_all(file_content.as_bytes()).unwrap();
+            }
+        }
 
         // package.opf
 
@@ -122,39 +178,6 @@ impl Ebook {
 
             h.register_template_string(filename, s).unwrap();
             let file_content = h.render(filename, &self).unwrap();
-
-            let mut file = File::create(dir_path.join(filename)).unwrap();
-            file.write_all(file_content.as_bytes()).unwrap();
-        }
-
-        // Render Handlebar templates wrapped in content-page.xhtml template.
-
-        let s = self.asset_file_strings.get("content-page.xhtml").unwrap();
-        h.register_template_string("content-page.xhtml", s).unwrap();
-
-        // entries.xhtml
-        // - Write entries split in letter groups.
-        {
-            let filename = "entries.xhtml";
-            let s = self.asset_file_strings.get(&filename.to_string()).unwrap();
-            h.register_template_string(filename, s).unwrap();
-
-            // Start with a header.
-            let mut content_html = format!("<h1>{}</h1>", self.meta.title);
-
-            let s = match h.render(filename, &self) {
-                Ok(x) => x,
-                Err(e) => {
-                    error!("Can't render template {}, {:?}", filename, e);
-                    "FIXME: Template rendering error.".to_string()
-                }
-            };
-            content_html.push_str(&s);
-
-            let mut d: BTreeMap<String, String> = BTreeMap::new();
-            d.insert("page_title".to_string(), self.meta.title.clone());
-            d.insert("content_html".to_string(), content_html);
-            let file_content = h.render("content-page.xhtml", &d).unwrap();
 
             let mut file = File::create(dir_path.join(filename)).unwrap();
             file.write_all(file_content.as_bytes()).unwrap();
@@ -271,6 +294,7 @@ impl Default for Ebook {
         Ebook {
             meta: EbookMetadata::default(),
             dict_words: BTreeMap::new(),
+            entries_manifest: Vec::new(),
             asset_file_strings,
             asset_file_bytes,
         }

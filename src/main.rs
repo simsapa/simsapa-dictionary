@@ -27,6 +27,8 @@ use clap::App;
 pub mod app;
 pub mod ebook;
 pub mod dict_word;
+pub mod letter_groups;
+pub mod pali;
 pub mod helpers;
 
 use app::RunCommand;
