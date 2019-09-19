@@ -15,10 +15,13 @@ a ā b bh c ch d dh ḍ ḍh e f g gh h i ī j jh k kh l ḷ m ṃ / ṁ n ṅ �
 
 */
 
-// not including ṁ
-const ROMANIZED_PALI_ALPHABET: &str = "a ā b bh c ch d dh ḍ ḍh e g gh h i ī j jh k kh l ḷ m ṃ n ṅ ṇ ñ o p ph r s t th ṭ ṭh u ū v y";
+// Not including ṁ.
+//
+// Including ISO Basic Latin, to allow for English entries from Nyanatiloka
 
-const RPA_DOUBLES_FIRST: &str = "bh ch dh ḍh gh jh kh ph th ṭh a ā b c d ḍ e g h i ī j k l ḷ m ṃ n ṅ ṇ ñ o p r s t ṭ u ū v y";
+const ROMANIZED_PALI_ALPHABET: &str = "a ā b bh c ch d dh ḍ ḍh e f g gh h i ī j jh k kh l ḷ m ṃ n ṅ ṇ ñ o p ph q r s t th ṭ ṭh u ū v w x y z";
+
+const RPA_DOUBLES_FIRST: &str = "bh ch dh ḍh gh jh kh ph th ṭh a ā b c d ḍ e f g h i ī j k l ḷ m ṃ n ṅ ṇ ñ o p q r s t ṭ u ū v w x y z";
 
 pub fn romanized_pali_letter_index(word: &str) -> usize {
     let alphabet: Vec<String> = ROMANIZED_PALI_ALPHABET.split(' ').map(String::from).collect();

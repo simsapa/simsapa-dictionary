@@ -2,3 +2,4 @@
 ../simsapa-dictionary-data/dppn.md
 ../simsapa-dictionary-data/ncped.md
 ../simsapa-dictionary-data/pts.md
+../simsapa-dictionary-data/nyana.md

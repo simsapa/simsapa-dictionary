@@ -90,3 +90,28 @@ subcommands:
             required: true
             takes_value: true
 
+  - nyanatiloka_to_markdown:
+      about: "Process Ven. Nyanatiloka's Buddhist Dictionary and write a Markdown file with TOML headers."
+
+      args:
+        - nyanatiloka_root:
+            help: "The root folder of Nyanatiloka's Buddhist Dictionary."
+            long: nyanatiloka_root
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - markdown_path:
+            help: "The Markdown file to write."
+            long: markdown_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - dict_label:
+            help: "The short id label (such as 'Nyana') to use for this dictionary source."
+            long: dict_label
+            value_name: LABEL
+            required: true
+            takes_value: true
+

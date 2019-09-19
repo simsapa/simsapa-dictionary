@@ -2,8 +2,10 @@ use std::default::Default;
 use std::error::Error;
 use std::fs;
 use std::process::{exit, Command};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use regex::Regex;
+use walkdir::{DirEntry, WalkDir};
 use chrono::prelude::*;
 
 use crate::ebook::{Ebook, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
@@ -12,6 +14,7 @@ use crate::dict_word::{DictWord, DictWordHeader};
 #[derive(Debug)]
 pub struct AppStartParams {
     pub json_path: Option<PathBuf>,
+    pub nyanatiloka_root: Option<PathBuf>,
     pub markdown_paths: Option<Vec<PathBuf>>,
     pub mobi_path: Option<PathBuf>,
     pub mobi_compression: usize,
@@ -27,6 +30,7 @@ pub struct AppStartParams {
 pub enum RunCommand {
     NoOp,
     SuttaCentralJsonToMarkdown,
+    NyanatilokaToMarkdown,
     MarkdownToMobi,
 }
 
@@ -34,6 +38,7 @@ impl Default for AppStartParams {
     fn default() -> Self {
         AppStartParams {
             json_path: None,
+            nyanatiloka_root: None,
             markdown_paths: None,
             mobi_path: None,
             kindlegen_path: None,
@@ -84,6 +89,40 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::SuttaCentralJsonToMarkdown;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
+
+        if let Ok(x) = sub_matches
+            .value_of("nyanatiloka_root")
+            .unwrap()
+            .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.is_dir() {
+                params.nyanatiloka_root = Some(path);
+            } else {
+                error!("🔥 Path does not exist: {:?}", &path);
+                exit(2);
+            }
+        }
+
+        if let Ok(x) = sub_matches
+            .value_of("markdown_path")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.markdown_paths = Some(vec![PathBuf::from(&x)]);
+        }
+
+        if let Ok(x) = sub_matches
+            .value_of("dict_label")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.dict_label = Some(x);
+        }
+
+        params.run_command = RunCommand::NyanatilokaToMarkdown;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_mobi") {
 
@@ -253,7 +292,7 @@ pub fn process_suttacentral_json(
         let new_word = DictWord {
             word_header: DictWordHeader {
                 dict_label: dict_label.to_string(),
-                word: e.word.clone(),
+                word: e.word.to_lowercase(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
                 inflections: Vec::new(),
@@ -264,6 +303,73 @@ pub fn process_suttacentral_json(
         ebook.add_word(new_word)
     }
 }
+
+pub fn process_nyanatiloka_entries(
+    nyanatiloka_root: &PathBuf,
+    dict_label: &str,
+    ebook: &mut Ebook,
+) {
+    info!{"=== Begin processing {:?} ===", nyanatiloka_root};
+
+    #[derive(Deserialize)]
+    struct Entry {
+        word: String,
+        text: String,
+    }
+
+    let mut entries: Vec<Entry> = vec![];
+
+    let folder = nyanatiloka_root.join(Path::new("html_entries"));
+
+    info!("Walking '{:?}'", folder);
+    let walker = WalkDir::new(&folder).into_iter();
+    for entry in walker.filter_entry(|e| !is_hidden(e)) {
+        let entry = entry.unwrap();
+        let entry_path = entry.path().to_str().unwrap();
+        let entry_file_name = entry.file_name().to_str().unwrap();
+
+        if entry.path().is_dir() {
+            info!("Skipping dir entry '{}'", entry.path().to_str().unwrap());
+            continue;
+        }
+        if !entry_file_name.ends_with(".html") {
+            continue;
+        }
+
+        //info!("Processing: {}", entry_path);
+
+        // FIXME Remove U+200B 'zero width space' from the source
+        let text = fs::read_to_string(entry_path).unwrap();
+
+        let mut word = String::new();
+
+        let re = Regex::new("^term-(.+)\\.html").unwrap();
+        for cap in re.captures_iter(entry_file_name) {
+            word = cap[1].to_string();
+        }
+
+        entries.push(Entry {
+            word,
+            text,
+        });
+    }
+
+    for e in entries.iter() {
+        let new_word = DictWord {
+            word_header: DictWordHeader {
+                dict_label: dict_label.to_string(),
+                word: e.word.to_lowercase(),
+                summary: "".to_string(),
+                grammar: "".to_string(),
+                inflections: Vec::new(),
+            },
+            definition_md: html_to_markdown(&e.text),
+        };
+
+        ebook.add_word(new_word)
+    }
+}
+
 
 pub fn process_markdown_list(
     markdown_paths: Vec<PathBuf>,
@@ -365,14 +471,12 @@ pub fn run_kindlegen(kindlegen_path: &PathBuf, mobi_path: &PathBuf, mobi_compres
     fs::rename(oepbs_dir.join(mobi_name), mobi_path).unwrap();
 }
 
-/*
 fn is_hidden(entry: &DirEntry) -> bool {
     entry.file_name()
         .to_str()
-        .map(|s| s.starts_with("."))
+        .map(|s| s.starts_with('.'))
         .unwrap_or(false)
 }
-*/
 
 fn html_to_markdown(html: &str) -> String {
     html2md::parse_html(html)

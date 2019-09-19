@@ -1,4 +1,5 @@
 extern crate regex;
+extern crate walkdir;
 
 extern crate serde;
 #[macro_use]
@@ -83,6 +84,34 @@ fn main() {
             };
 
             app::process_suttacentral_json(&json_path, dict_label, &mut ebook);
+
+            info!("Added words: {}", ebook.len());
+
+            ebook.write_markdown(&markdown_path);
+        }
+
+        RunCommand::NyanatilokaToMarkdown => {
+            let mut ebook = Ebook::new();
+
+            let nyanatiloka_root = if let Some(p) = &app_params.nyanatiloka_root {
+                p
+            } else {
+                panic!("nyanatiloka_root is missing.");
+            };
+
+            let markdown_path: PathBuf = if let Some(p) = &app_params.markdown_paths {
+                p.get(0).unwrap().to_path_buf()
+            } else {
+                panic!("markdown_path is missing.");
+            };
+
+            let dict_label = if let Some(s) = &app_params.dict_label {
+                s
+            } else {
+                panic!("dict_label is missing.");
+            };
+
+            app::process_nyanatiloka_entries(&nyanatiloka_root, dict_label, &mut ebook);
 
             info!("Added words: {}", ebook.len());
 
