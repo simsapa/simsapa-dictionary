@@ -12,6 +12,7 @@ pub struct DictWordHeader {
     pub word: String,
     pub summary: String,
     pub grammar: String,
+    pub inflections: Vec<String>,
 }
 
 impl DictWord {
@@ -53,6 +54,7 @@ impl Default for DictWordHeader {
             word: "word".to_string(),
             summary: "summary".to_string(),
             grammar: "m.".to_string(),
+            inflections: Vec::new(),
         }
     }
 }

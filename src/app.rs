@@ -242,6 +242,7 @@ pub fn process_suttacentral_json(
                 word: e.word.clone(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
+                inflections: Vec::new(),
             },
             definition_md: html_to_markdown(&e.text),
         };

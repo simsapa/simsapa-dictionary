@@ -50,6 +50,7 @@ impl Ebook {
                   word: format!("{} FIXME: double", new_word.word_header.word),
                   summary: new_word.word_header.summary,
                   grammar: new_word.word_header.grammar,
+                  inflections: new_word.word_header.inflections,
               },
               definition_md: new_word.definition_md
           };
@@ -133,13 +134,40 @@ impl Ebook {
         h.register_template_string("content-page.xhtml", s).unwrap();
 
         // entries.xhtml
+        // - Write entries split in letter groups.
+        {
+            let filename = "entries.xhtml";
+            let s = self.asset_file_strings.get(&filename.to_string()).unwrap();
+            h.register_template_string(filename, s).unwrap();
+
+            // Start with a header.
+            let mut content_html = format!("<h1>{}</h1>", self.meta.title);
+
+            let s = match h.render(filename, &self) {
+                Ok(x) => x,
+                Err(e) => {
+                    error!("Can't render template {}, {:?}", filename, e);
+                    "FIXME: Template rendering error.".to_string()
+                }
+            };
+            content_html.push_str(&s);
+
+            let mut d: BTreeMap<String, String> = BTreeMap::new();
+            d.insert("page_title".to_string(), self.meta.title.clone());
+            d.insert("content_html".to_string(), content_html);
+            let file_content = h.render("content-page.xhtml", &d).unwrap();
+
+            let mut file = File::create(dir_path.join(filename)).unwrap();
+            file.write_all(file_content.as_bytes()).unwrap();
+        }
+
         // nav.xhtml
         // titlepage.xhtml
 
-        for filename in ["entries.xhtml", "nav.xhtml", "titlepage.xhtml"].iter() {
+        for filename in ["nav.xhtml", "titlepage.xhtml"].iter() {
             let s = self.asset_file_strings.get(&filename.to_string()).unwrap();
-
             h.register_template_string(filename, s).unwrap();
+
             let content_html = match h.render(filename, &self) {
                 Ok(x) => x,
                 Err(e) => {

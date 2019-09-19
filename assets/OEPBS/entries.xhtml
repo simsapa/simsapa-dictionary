@@ -1,5 +1,3 @@
-<h1>Dictionary Word Entries</h1>
-
 {{#each dict_words}}
 <idx:entry>
   <idx:orth>
@@ -12,6 +10,13 @@
     {{/if ~}}
     {{#if word_header.summary ~}}
     <p>{{word_header.summary}}</p>
+    {{/if ~}}
+    {{#if word_header.inflections ~}}
+    <idx:infl>
+    {{#each word_header.inflections ~}}
+    <idx:iform value="{{this}}"/>
+    {{/each ~}}
+    </idx:infl>
     {{/if ~}}
   </idx:orth>
 </idx:entry>
