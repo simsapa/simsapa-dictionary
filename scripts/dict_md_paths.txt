@@ -1,0 +1,4 @@
+../simsapa-dictionary-data/dhammika.md
+../simsapa-dictionary-data/dppn.md
+../simsapa-dictionary-data/ncped.md
+../simsapa-dictionary-data/pts.md

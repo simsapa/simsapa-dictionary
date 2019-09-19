@@ -1,2 +1,0 @@
-../simsapa-dictionary-data/ncped.md
-../simsapa-dictionary-data/n-ncped.md
