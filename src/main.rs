@@ -21,7 +21,6 @@ extern crate handlebars;
 extern crate comrak;
 
 use std::fs;
-use std::path::PathBuf;
 
 use clap::App;
 
@@ -65,25 +64,10 @@ fn main() {
         RunCommand::SuttaCentralJsonToMarkdown => {
             let mut ebook = Ebook::new();
 
-            let json_path = if let Some(p) = &app_params.json_path {
-                p
-            } else {
-                panic!("json_path is missing.");
-            };
+            let p = &app_params.markdown_paths.expect("markdown_path is missing.");
+            let markdown_path = p.get(0).unwrap().to_path_buf();
 
-            let markdown_path: PathBuf = if let Some(p) = &app_params.markdown_paths {
-                p.get(0).unwrap().to_path_buf()
-            } else {
-                panic!("markdown_path is missing.");
-            };
-
-            let dict_label = if let Some(s) = &app_params.dict_label {
-                s
-            } else {
-                panic!("dict_label is missing.");
-            };
-
-            app::process_suttacentral_json(&json_path, dict_label, &mut ebook);
+            app::process_suttacentral_json(&app_params.json_path, &app_params.dict_label, &mut ebook);
 
             info!("Added words: {}", ebook.len());
 
@@ -93,25 +77,10 @@ fn main() {
         RunCommand::NyanatilokaToMarkdown => {
             let mut ebook = Ebook::new();
 
-            let nyanatiloka_root = if let Some(p) = &app_params.nyanatiloka_root {
-                p
-            } else {
-                panic!("nyanatiloka_root is missing.");
-            };
+            let p = &app_params.markdown_paths.expect("markdown_path is missing.");
+            let markdown_path = p.get(0).unwrap().to_path_buf();
 
-            let markdown_path: PathBuf = if let Some(p) = &app_params.markdown_paths {
-                p.get(0).unwrap().to_path_buf()
-            } else {
-                panic!("markdown_path is missing.");
-            };
-
-            let dict_label = if let Some(s) = &app_params.dict_label {
-                s
-            } else {
-                panic!("dict_label is missing.");
-            };
-
-            app::process_nyanatiloka_entries(&nyanatiloka_root, dict_label, &mut ebook);
+            app::process_nyanatiloka_entries(&app_params.nyanatiloka_root, &app_params.dict_label, &mut ebook);
 
             info!("Added words: {}", ebook.len());
 
@@ -121,17 +90,11 @@ fn main() {
         RunCommand::MarkdownToMobi => {
             let mut ebook = Ebook::new();
 
-            let mobi_path = if let Some(s) = &app_params.mobi_path {
-                s
-            } else {
-                panic!("mobi_path is missing.");
-            };
+            let p = &app_params.markdown_paths.expect("markdown_paths is missing.");
+            let markdown_paths = p.to_vec();
 
-            let markdown_paths: Vec<PathBuf> = if let Some(p) = &app_params.markdown_paths {
-                p.to_vec()
-            } else {
-                panic!("markdown_paths are missing.");
-            };
+            let mobi_path = &app_params.mobi_path.expect("mobi_path is missing.");
+            let kindlegen_path = &app_params.kindlegen_path.expect("kindlegen_path is missing.");
 
             app::process_markdown_list(markdown_paths, &mut ebook);
 
@@ -146,12 +109,6 @@ fn main() {
             ebook.write_oepbs_files(&oepbs_dir);
 
             if !app_params.dont_run_kindlegen {
-                let kindlegen_path = if let Some(s) = &app_params.kindlegen_path {
-                    s
-                } else {
-                    panic!("kindlegen_path is missing.");
-                };
-
                 app::run_kindlegen(
                     &kindlegen_path,
                     &mobi_path,

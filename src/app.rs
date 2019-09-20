@@ -273,10 +273,13 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 }
 
 pub fn process_suttacentral_json(
-    json_path: &PathBuf,
-    dict_label: &str,
+    json_path: &Option<PathBuf>,
+    dict_label: &Option<String>,
     ebook: &mut Ebook,
 ) {
+    let json_path = &json_path.as_ref().expect("json_path is missing.");
+    let dict_label = &dict_label.as_ref().expect("dict_label is missing.");
+
     info! {"=== Begin processing {:?} ===", json_path};
 
     #[derive(Deserialize)]
@@ -305,10 +308,13 @@ pub fn process_suttacentral_json(
 }
 
 pub fn process_nyanatiloka_entries(
-    nyanatiloka_root: &PathBuf,
-    dict_label: &str,
+    nyanatiloka_root: &Option<PathBuf>,
+    dict_label: &Option<String>,
     ebook: &mut Ebook,
 ) {
+    let nyanatiloka_root = &nyanatiloka_root.as_ref().expect("nyanatiloka_root is missing.");
+    let dict_label = &dict_label.as_ref().expect("dict_label is missing.");
+
     info!{"=== Begin processing {:?} ===", nyanatiloka_root};
 
     #[derive(Deserialize)]
