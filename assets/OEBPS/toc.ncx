@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="en">
+<head>
+<meta name="dtb:uid" content="{{meta.book_id}}"/>
+<meta name="dtb:depth" content="1"/>
+<meta name="dtb:totalPageCount" content="0"/>
+<meta name="dtb:maxPageNumber" content="0"/>
+</head>
+<docTitle><text>{{meta.title}}</text></docTitle>
+<navMap>
+
+<navPoint id="nav_1" playOrder="1">
+<navLabel><text>Titlepage</text></navLabel>
+<content src="titlepage.xhtml"/>
+</navPoint>
+
+<navPoint id="nav_2" playOrder="2">
+<navLabel><text>About This Dictionary</text></navLabel>
+<content src="about.xhtml"/>
+</navPoint>
+
+<navPoint id="nav_3" playOrder="3">
+<navLabel><text>Word Entries</text></navLabel>
+<content src="entries-00.xhtml"/>
+</navPoint>
+
+<navPoint id="nav_4" playOrder="4">
+<navLabel><text>Copyright</text></navLabel>
+<content src="copyright.xhtml"/>
+
+</navPoint>
+</navMap>
+</ncx>

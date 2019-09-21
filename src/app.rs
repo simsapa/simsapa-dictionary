@@ -5,18 +5,19 @@ use std::process::{exit, Command};
 use std::path::{Path, PathBuf};
 
 use regex::Regex;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 use chrono::prelude::*;
 
-use crate::ebook::{Ebook, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
+use crate::ebook::{Ebook, EbookMetadata, EbookFormat, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
 use crate::dict_word::{DictWord, DictWordHeader};
+use crate::helpers::is_hidden;
 
-#[derive(Debug)]
 pub struct AppStartParams {
+    pub ebook_format: EbookFormat,
     pub json_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
     pub markdown_paths: Option<Vec<PathBuf>>,
-    pub mobi_path: Option<PathBuf>,
+    pub output_path: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
     pub dict_label: Option<String>,
@@ -24,6 +25,7 @@ pub struct AppStartParams {
     pub dont_remove_generated_files: bool,
     pub run_command: RunCommand,
     pub show_logs: bool,
+    pub zip_with: ZipWith,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -31,16 +33,37 @@ pub enum RunCommand {
     NoOp,
     SuttaCentralJsonToMarkdown,
     NyanatilokaToMarkdown,
-    MarkdownToMobi,
+    MarkdownToEbook,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ZipWith {
+    ZipLib,
+    ZipCli,
 }
 
 impl Default for AppStartParams {
     fn default() -> Self {
+
+        // Zip cli tool is not usually available on Windows, so we zip with lib there.
+        //
+        // lise-henry/epub-builder notes that zipping epub with the lib sometimes gave her errors
+        // with the Kobo reader, and relies on the cli zip when available.
+        //
+        // Hence on Linux and Mac we zip with the cli zip.
+
+        let zip_with = if cfg!(target_os = "windows") {
+            ZipWith::ZipLib
+        } else {
+            ZipWith::ZipCli
+        };
+
         AppStartParams {
+            ebook_format: EbookFormat::Epub,
             json_path: None,
             nyanatiloka_root: None,
             markdown_paths: None,
-            mobi_path: None,
+            output_path: None,
             kindlegen_path: None,
             dict_label: None,
             mobi_compression: 2,
@@ -48,6 +71,7 @@ impl Default for AppStartParams {
             dont_remove_generated_files: false,
             run_command: RunCommand::NoOp,
             show_logs: false,
+            zip_with,
         }
     }
 }
@@ -124,7 +148,25 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 
         params.run_command = RunCommand::NyanatilokaToMarkdown;
 
-    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_mobi") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
+
+        if sub_matches.is_present("ebook_format") {
+            if let Ok(x) = sub_matches
+                .value_of("ebook_format")
+                    .unwrap()
+                    .parse::<String>()
+            {
+                let s = x.trim().to_lowercase();
+                if s == "epub" {
+                    params.ebook_format = EbookFormat::Epub;
+                } else if s == "mobi" {
+                    params.ebook_format = EbookFormat::Mobi;
+                } else {
+                    panic!("Can't recognize the format: {}", s);
+                }
+            }
+
+        }
 
         if !sub_matches.is_present("markdown_path") && !sub_matches.is_present("markdown_paths_list") {
             error!("🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.");
@@ -176,12 +218,25 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             }
         }
 
-        if let Ok(x) = sub_matches
-            .value_of("mobi_path")
-            .unwrap()
-            .parse::<String>()
-        {
-            params.mobi_path = Some(PathBuf::from(&x));
+        match sub_matches.value_of("output_path") {
+            Some(x) => params.output_path = Some(PathBuf::from(&x)),
+
+            None => {
+                let a = params.markdown_paths.as_ref().expect("empty paths");
+                let p = a.get(0).unwrap();
+                let filename = p.file_name().unwrap();
+                let dir = p.parent().unwrap();
+                match params.ebook_format {
+                    EbookFormat::Epub => {
+                        let p = dir.join(PathBuf::from(filename).with_extension("epub"));
+                        params.output_path = Some(p);
+                    },
+                    EbookFormat::Mobi => {
+                        let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
+                        params.output_path = Some(p);
+                    },
+                }
+            }
         }
 
         if sub_matches.is_present("mobi_compression") {
@@ -262,7 +317,15 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             params.dont_remove_generated_files = true;
         }
 
-        params.run_command = RunCommand::MarkdownToMobi;
+        if sub_matches.is_present("zip_with_lib") {
+            params.zip_with = ZipWith::ZipLib;
+        }
+
+        if sub_matches.is_present("zip_with_cli") {
+            params.zip_with = ZipWith::ZipCli;
+        }
+
+        params.run_command = RunCommand::MarkdownToEbook;
     }
 
     if matches.is_present("show_logs") {
@@ -406,8 +469,22 @@ pub fn process_markdown(
         .replace("``` toml", "")
         .replace("```", "");
 
-    ebook.meta = toml::from_str(&a).unwrap();
-    ebook.meta.created_date = Utc::now().to_rfc2822();
+    let mut meta: EbookMetadata = toml::from_str(&a).unwrap();
+    meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
+    meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+
+    match ebook.ebook_format {
+        EbookFormat::Epub => {
+            meta.is_epub = true;
+            meta.is_mobi = false;
+        },
+        EbookFormat::Mobi => {
+            meta.is_epub = false;
+            meta.is_mobi = true;
+        }
+    }
+
+    ebook.meta = meta;
 
     let a = parts.get(1).unwrap().to_string();
     let entries: Vec<DictWord> = a
@@ -425,63 +502,6 @@ pub fn process_markdown(
     for i in entries.iter() {
         ebook.add_word(i.clone());
     }
-}
-
-pub fn run_kindlegen(kindlegen_path: &PathBuf, mobi_path: &PathBuf, mobi_compression: usize, oepbs_dir: &PathBuf) {
-    let opf_path = oepbs_dir.join(PathBuf::from("package.opf"));
-    let mobi_name = mobi_path.file_name().unwrap().to_str().unwrap();
-
-    let k = if cfg!(target_os = "windows") {
-        clean_windows_str_path(kindlegen_path.to_str().unwrap())
-    } else {
-        kindlegen_path.to_str().unwrap()
-    };
-
-    let bin_cmd = format!("{} {} -c{} -dont_append_source -o {}",
-        k,
-        opf_path.to_str().unwrap(),
-        mobi_compression,
-        mobi_name);
-
-    info!("🔎 Running KindleGen ...");
-    if mobi_compression == 2 {
-        info!("Note that compression level 2 can take some time to complete.");
-    }
-
-    let output = if cfg!(target_os = "windows") {
-        match Command::new("cmd").arg("/C").arg(bin_cmd).output() {
-            Ok(o) => o,
-            Err(e) => {
-                error!("🔥 Failed to run KindleGen: {:?}", e);
-                exit(2);
-            }
-        }
-    } else {
-        match Command::new("sh").arg("-c").arg(bin_cmd).output() {
-            Ok(o) => o,
-            Err(e) => {
-                error!("🔥 Failed to run KindleGen: {:?}", e);
-                exit(2);
-            }
-        }
-    };
-
-    if output.status.success() {
-        info!("🔎 KindleGen finished successfully.");
-    } else {
-        error!("🔥 KindleGen exited with an error.");
-        exit(2);
-    }
-
-    // Move the generate MOBI to its path. KindleGen puts the MOBI in the same folder with package.opf.
-    fs::rename(oepbs_dir.join(mobi_name), mobi_path).unwrap();
-}
-
-fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-        .to_str()
-        .map(|s| s.starts_with('.'))
-        .unwrap_or(false)
 }
 
 fn html_to_markdown(html: &str) -> String {
@@ -504,6 +524,3 @@ fn html_to_plain(html: &str) -> String {
 }
 */
 
-pub fn clean_windows_str_path(p: &str) -> &str {
-    p.trim_start_matches("\\\\?\\")
-}

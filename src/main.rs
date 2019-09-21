@@ -7,6 +7,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
 
+extern crate zip;
 extern crate html2md;
 
 #[macro_use]
@@ -20,8 +21,6 @@ extern crate chrono;
 extern crate handlebars;
 extern crate comrak;
 
-use std::fs;
-
 use clap::App;
 
 pub mod app;
@@ -32,7 +31,7 @@ pub mod pali;
 pub mod helpers;
 
 use app::RunCommand;
-use ebook::Ebook;
+use ebook::{Ebook, EbookFormat};
 
 fn main() {
     std::env::set_var("RUST_LOG", "error");
@@ -62,62 +61,65 @@ fn main() {
         }
 
         RunCommand::SuttaCentralJsonToMarkdown => {
-            let mut ebook = Ebook::new();
-
             let p = &app_params.markdown_paths.expect("markdown_path is missing.");
-            let markdown_path = p.get(0).unwrap().to_path_buf();
+            let output_markdown_path = p.get(0).unwrap().to_path_buf();
+
+            let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
 
             app::process_suttacentral_json(&app_params.json_path, &app_params.dict_label, &mut ebook);
 
             info!("Added words: {}", ebook.len());
 
-            ebook.write_markdown(&markdown_path);
+            ebook.write_markdown();
         }
 
         RunCommand::NyanatilokaToMarkdown => {
-            let mut ebook = Ebook::new();
-
             let p = &app_params.markdown_paths.expect("markdown_path is missing.");
-            let markdown_path = p.get(0).unwrap().to_path_buf();
+            let output_markdown_path = p.get(0).unwrap().to_path_buf();
+
+            let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
 
             app::process_nyanatiloka_entries(&app_params.nyanatiloka_root, &app_params.dict_label, &mut ebook);
 
             info!("Added words: {}", ebook.len());
 
-            ebook.write_markdown(&markdown_path);
+            ebook.write_markdown();
         }
 
-        RunCommand::MarkdownToMobi => {
-            let mut ebook = Ebook::new();
+        RunCommand::MarkdownToEbook => {
+            let output_path = &app_params.output_path.expect("output_path is missing.");
+            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
 
             let p = &app_params.markdown_paths.expect("markdown_paths is missing.");
             let markdown_paths = p.to_vec();
 
-            let mobi_path = &app_params.mobi_path.expect("mobi_path is missing.");
             let kindlegen_path = &app_params.kindlegen_path.expect("kindlegen_path is missing.");
 
             app::process_markdown_list(markdown_paths, &mut ebook);
 
             info!("Added words: {}", ebook.len());
 
-            let oepbs_dir = mobi_path.parent().unwrap().join("OEPBS");
+            ebook.create_ebook_build_folders();
 
-            if !oepbs_dir.exists() {
-                fs::create_dir(&oepbs_dir).unwrap();
-            }
+            match ebook.ebook_format {
+                EbookFormat::Epub => {
+                    ebook.write_mimetype();
+                    ebook.write_meta_inf_files();
+                    ebook.write_oebps_files();
+                    ebook.zip_files_as_epub(app_params.zip_with);
+                }
 
-            ebook.write_oepbs_files(&oepbs_dir);
+                EbookFormat::Mobi => {
+                    ebook.write_oebps_files();
 
-            if !app_params.dont_run_kindlegen {
-                app::run_kindlegen(
-                    &kindlegen_path,
-                    &mobi_path,
-                    app_params.mobi_compression,
-                    &oepbs_dir);
+                    if !app_params.dont_run_kindlegen {
+                        ebook.run_kindlegen(&kindlegen_path, app_params.mobi_compression);
+                    }
+                }
             }
 
             if !app_params.dont_remove_generated_files {
-                fs::remove_dir_all(&oepbs_dir).unwrap();
+                ebook.remove_generated_files();
             }
         }
     }
