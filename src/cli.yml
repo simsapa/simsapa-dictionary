@@ -12,23 +12,48 @@ args:
 
 subcommands:
 
-  - markdown_to_mobi:
-      about: "Process a Markdown file and generate a MOBI dictionary with Kindlegen."
+  - markdown_to_ebook:
+      about: "Process a Markdown file and generate an EPUB or MOBI dictionary."
 
       args:
-        - markdown_path:
-            help: "The Markdown file to read dictionary entries from."
-            long: markdown_path
-            value_name: PATH
+        - ebook_format:
+            help: "Either EPUB or MOBI."
+            long: ebook_format
+            value_name: FORMAT
             required: true
+            takes_value: true
+            default_value: "EPUB"
+            possible_values: [ "EPUB", "Epub", "epub", "MOBI", "Mobi", "mobi" ]
+
+        - markdown_paths_list:
+            help: "A file with a list of Markdown file paths, one per line. Either this or 'markdown_path' must be used."
+            long: markdown_paths_list
+            value_name: PATH
+            required: false
             takes_value: true
 
-        - mobi_path:
-            help: "The MOBI file to write."
-            long: mobi_path
+        - markdown_path:
+            help: "A single Markdown file to read dictionary entries from. Either this or 'markdown_paths_list' must be used."
+            long: markdown_path
             value_name: PATH
-            required: true
+            required: false
             takes_value: true
+
+        - output_path:
+            help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first Markdown source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - mobi_compression:
+            help: "Compression level, 0-2, as used by KindleGen. 0: no compression, 1: standard DOC compression, 2: Kindle huffdic compression."
+            long: mobi_compression
+            value_name: INT
+            required: false
+            takes_value: true
+            default_value: "2"
+            possible_values: [ "0", "1", "2" ]
 
         - kindlegen_path:
             help: "The KindleGen tool must be available either (a) in the current folder with this tool, (b) in the system PATH, (c) declared with this option."
@@ -46,6 +71,18 @@ subcommands:
         - dont_remove_generated_files:
             help: "Turns off the removal of the generated OPF, HTML, etc. files used to create the MOBI. Useful for debugging."
             long: dont_remove_generated_files
+            required: false
+            takes_value: false
+
+        - zip_with_lib:
+            help: "Use the embedded zip library to create the Epub."
+            long: zip_with_lib
+            required: false
+            takes_value: false
+
+        - zip_with_cli:
+            help: "Use the cli zip tool to create the Epub."
+            long: zip_with_cli
             required: false
             takes_value: false
 
@@ -69,6 +106,31 @@ subcommands:
 
         - dict_label:
             help: "The short id label (such as NCPED or PED) to use for this dictionary source."
+            long: dict_label
+            value_name: LABEL
+            required: true
+            takes_value: true
+
+  - nyanatiloka_to_markdown:
+      about: "Process Ven. Nyanatiloka's Buddhist Dictionary and write a Markdown file with TOML headers."
+
+      args:
+        - nyanatiloka_root:
+            help: "The root folder of Nyanatiloka's Buddhist Dictionary."
+            long: nyanatiloka_root
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - markdown_path:
+            help: "The Markdown file to write."
+            long: markdown_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - dict_label:
+            help: "The short id label (such as 'Nyana') to use for this dictionary source."
             long: dict_label
             value_name: LABEL
             required: true

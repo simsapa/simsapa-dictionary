@@ -1,0 +1,31 @@
+{{#if title}}
+<h1>{{title}}</h1>
+{{/if}}
+
+<h2>{{group_letter}}</h2>
+
+{{#each dict_words}}
+<idx:entry>
+  <idx:orth>
+    <h4>{{word_header.word}}</h4>
+    {{#if word_header.grammar ~}}
+    <p>({{word_header.grammar}})</p>
+    {{/if ~}}
+    {{#if word_header.dict_label ~}}
+    <p>[{{word_header.dict_label}}]</p>
+    {{/if ~}}
+    {{#if word_header.summary ~}}
+    <p>{{word_header.summary}}</p>
+    {{/if ~}}
+    {{#if word_header.inflections ~}}
+    <idx:infl>
+    {{#each word_header.inflections ~}}
+    <idx:iform value="{{this}}"/>
+    {{/each ~}}
+    </idx:infl>
+    {{/if ~}}
+  </idx:orth>
+</idx:entry>
+
+{{markdown definition_md}}
+{{/each}}

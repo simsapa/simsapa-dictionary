@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" xml:lang="en" unique-identifier="BookId">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+
+    <dc:identifier id="BookId">{{meta.book_id}}</dc:identifier>
+    <dc:title>{{meta.title}}</dc:title>
+    <dc:description>{{meta.description}}</dc:description>
+    <dc:language>en</dc:language>
+    <dc:date>{{meta.created_date_opf}}</dc:date>
+    <meta property="dcterms:modified">{{meta.created_date_opf}}</meta>
+    <dc:creator>{{meta.creator}}</dc:creator>
+    <dc:source>{{meta.source}}</dc:source>
+
+    <meta name="cover" content="item_cover"></meta>
+
+    {{#if meta.is_mobi ~}}
+    <x-metadata>
+      <output encoding="utf-8"></output>
+      <EmbeddedCover>{{meta.cover_path}}</EmbeddedCover>
+      <DictionaryInLanguage>en</DictionaryInLanguage>
+      <DictionaryOutLanguage>en</DictionaryOutLanguage>
+    </x-metadata>
+    {{/if ~}}
+
+  </metadata>
+
+  <manifest>
+    <item id="htmltoc" href="htmltoc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+
+    {{#if meta.is_epub ~}}
+    <item id="cover_page" href="cover.xhtml" media-type="application/xhtml+xml" properties="svg"/>
+    {{/if ~}}
+
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="style" href="style.css" media-type="text/css"/>
+
+    <item id="item_cover" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/>
+
+    <item id="item_titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml"/>
+    <item id="item_about" href="about.xhtml" media-type="application/xhtml+xml"/>
+
+    {{#each entries_manifest ~}}
+    <item id="{{id}}" href="{{href}}" media-type="application/xhtml+xml"/>
+    {{/each ~}}
+
+    <item id="item_copyright" href="copyright.xhtml" media-type="application/xhtml+xml"/>
+
+  </manifest>
+
+  <spine toc="ncx">
+    {{#if meta.is_epub ~}}
+    <itemref idref="cover_page"/>
+    {{else}}
+    <itemref idref="item_cover"/>
+    {{/if ~}}
+
+    <itemref idref="item_titlepage"/>
+    <itemref idref="item_about"/>
+
+    {{#each entries_manifest ~}}
+    <itemref idref="{{id}}"/>
+    {{/each ~}}
+
+    <itemref idref="item_copyright"/>
+
+    <itemref idref="htmltoc" linear="no"/>
+  </spine>
+
+  <guide>
+    <reference type="text"           title="About This Dictionary" href="about.xhtml"/>
+    <reference type="text"           title="Word Entries"          href="entries-00.xhtml"/>
+    <reference type="toc"            title="Table of Contents"     href="htmltoc.xhtml"/>
+    <reference type="copyright-page" title="Copyright"             href="copyright.xhtml"/>
+  </guide>
+
+</package>

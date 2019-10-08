@@ -1,3 +1,0 @@
-# About this dictionary
-
-TODO
