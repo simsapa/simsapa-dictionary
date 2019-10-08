@@ -1,6 +1,6 @@
 use std::process::{exit, Command};
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{self, Write};
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -615,17 +615,18 @@ impl Ebook {
         let opf_path = oebps_dir.join(PathBuf::from("package.opf"));
         let output_file_name = self.output_path.file_name().unwrap();
 
-        let k = if cfg!(target_os = "windows") {
-            clean_windows_str_path(kindlegen_path.to_str().unwrap())
-        } else {
-            kindlegen_path.to_str().unwrap()
-        };
+        let mut k = kindlegen_path.to_str().unwrap().trim();
+        if cfg!(target_os = "windows") {
+            k = clean_windows_str_path(k);
+        }
 
         let bin_cmd = format!("{} {} -c{} -dont_append_source -o {}",
             k,
             opf_path.to_str().unwrap(),
             mobi_compression,
             output_file_name.to_str().unwrap());
+
+        info!("bin_cmd: {:?}", bin_cmd);
 
         info!("🔎 Running KindleGen ...");
         if mobi_compression == 2 {
@@ -654,6 +655,8 @@ impl Ebook {
             info!("🔎 KindleGen finished successfully.");
         } else {
             error!("🔥 KindleGen exited with an error.");
+            io::stdout().write_all(&output.stdout).unwrap();
+            io::stderr().write_all(&output.stderr).unwrap();
             exit(2);
         }
 

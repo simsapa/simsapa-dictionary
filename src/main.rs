@@ -45,9 +45,13 @@ fn main() {
 
     // --- CLI options ---
 
-    let cli_yaml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(cli_yaml).get_matches();
-    let app_params = app::process_cli_args(matches).unwrap();
+    let app_params = if let Some(params) = app::process_first_arg() {
+        params
+    } else {
+        let cli_yaml = load_yaml!("cli.yml");
+        let matches = App::from_yaml(cli_yaml).get_matches();
+        app::process_cli_args(matches).unwrap()
+    };
 
     if app_params.show_logs {
         std::env::set_var("RUST_LOG", "simsapa_dictionary=info");

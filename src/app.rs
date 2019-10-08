@@ -76,6 +76,91 @@ impl Default for AppStartParams {
     }
 }
 
+/// Parse the 1st argument if given, and set the default action if applicable. Default action is
+/// to take a Markdown file and generate a MOBI dict.
+pub fn process_first_arg() -> Option<AppStartParams> {
+    info!("process_first_arg()");
+    let mut args = std::env::args();
+
+    // There must be exactly two args: 0. as the bin path, 1. as the first arg.
+    if args.len() != 2 {
+        return None;
+    }
+
+    let _bin_path = args.next();
+    let markdown_path = if let Some(a) = args.next() {
+        PathBuf::from(a)
+    } else {
+        return None;
+    };
+
+    if !markdown_path.exists() {
+        return None;
+    }
+
+    if "md" != markdown_path.extension().unwrap() {
+        return None;
+    }
+
+    let mut params = AppStartParams::default();
+    params.markdown_paths = Some(vec![markdown_path.clone()]);
+    params.ebook_format = EbookFormat::Mobi;
+
+    let filename = markdown_path.file_name().unwrap();
+    let dir = markdown_path.parent().unwrap();
+    let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
+    params.output_path = Some(p);
+
+    params.kindlegen_path = look_for_kindlegen();
+
+    params.run_command = RunCommand::MarkdownToEbook;
+
+    Some(params)
+}
+
+/// Look for the kindlegen executable. Either in the current working directory, or the system PATH.
+fn look_for_kindlegen() -> Option<PathBuf> {
+    // Try if it is in the local folder.
+    let path = if cfg!(target_os = "windows") {
+        PathBuf::from(".").join(PathBuf::from("kindlegen.exe"))
+    } else {
+        PathBuf::from(".").join(PathBuf::from("kindlegen"))
+    };
+
+    if path.exists() {
+        Some(path)
+    } else {
+        // Try if it is available from the system PATH.
+
+        let output = if cfg!(target_os = "windows") {
+            match Command::new("cmd").arg("/C").arg("where kindlegen.exe").output() {
+                Ok(o) => o,
+                Err(e) => {
+                    error!("🔥 Failed to find KindleGen: {:?}", e);
+                    exit(2);
+                }
+            }
+        } else {
+            match Command::new("sh").arg("-c").arg("which kindlegen").output() {
+                Ok(o) => o,
+                Err(e) => {
+                    error!("🔥 Failed to find KindleGen: {:?}", e);
+                    exit(2);
+                }
+            }
+        };
+
+        if output.status.success() {
+            let s = String::from_utf8(output.stdout).unwrap();
+            info!("🔎 Found KindleGen in: {}", s);
+            Some(PathBuf::from(s))
+        } else {
+            error!("🔥 Failed to find KindleGen.");
+            exit(2);
+        }
+    }
+}
+
 #[allow(clippy::cognitive_complexity)]
 pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box<dyn Error>> {
     let mut params = AppStartParams::default();
@@ -269,47 +354,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     }
                 }
             } else {
-                // Look for the kindlegen executable. Either in the current working directory, or the system PATH.
-
-                // Try if it is in the local folder.
-                let path = if cfg!(target_os = "windows") {
-                    PathBuf::from(".").join(PathBuf::from("kindlegen.exe"))
-                } else {
-                    PathBuf::from(".").join(PathBuf::from("kindlegen"))
-                };
-
-                if path.exists() {
-                    params.kindlegen_path = Some(path);
-                } else {
-                    // Try if it is available from the system PATH.
-
-                    let output = if cfg!(target_os = "windows") {
-                        match Command::new("cmd").arg("/C").arg("where kindlegen.exe").output() {
-                            Ok(o) => o,
-                            Err(e) => {
-                                error!("🔥 Failed to find KindleGen: {:?}", e);
-                                exit(2);
-                            }
-                        }
-                    } else {
-                        match Command::new("sh").arg("-c").arg("which kindlegen").output() {
-                            Ok(o) => o,
-                            Err(e) => {
-                                error!("🔥 Failed to find KindleGen: {:?}", e);
-                                exit(2);
-                            }
-                        }
-                    };
-
-                    if output.status.success() {
-                        let s = String::from_utf8(output.stdout).unwrap();
-                        info!("🔎 Found KindleGen in: {}", s);
-                        params.kindlegen_path = Some(PathBuf::from(s));
-                    } else {
-                        error!("🔥 Failed to find KindleGen.");
-                        exit(2);
-                    }
-                }
+                params.kindlegen_path = look_for_kindlegen();
             }
         }
 
