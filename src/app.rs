@@ -452,7 +452,6 @@ pub fn process_nyanatiloka_entries(
 
         //info!("Processing: {}", entry_path);
 
-        // FIXME Remove U+200B 'zero width space' from the source
         let text = fs::read_to_string(entry_path).unwrap();
 
         let mut word = String::new();

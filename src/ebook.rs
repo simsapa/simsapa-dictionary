@@ -159,18 +159,18 @@ impl Ebook {
         if self.dict_words.contains_key(&w_key) {
             warn!("Double word: '{}'. Entries should be unique for word within one dictionary.", &w_key);
 
-          let ww = DictWord {
-              word_header: DictWordHeader {
-                  dict_label: new_word.word_header.dict_label,
-                  word: format!("{} FIXME: double", new_word.word_header.word),
-                  summary: new_word.word_header.summary,
-                  grammar: new_word.word_header.grammar,
-                  inflections: new_word.word_header.inflections,
-              },
-              definition_md: new_word.definition_md
-          };
-          let ww_key = format!("{} double", &w_key);
-          self.dict_words.insert(ww_key, ww);
+            let ww = DictWord {
+                word_header: DictWordHeader {
+                    dict_label: new_word.word_header.dict_label,
+                    word: format!("{} FIXME: double", new_word.word_header.word),
+                    summary: new_word.word_header.summary,
+                    grammar: new_word.word_header.grammar,
+                    inflections: new_word.word_header.inflections,
+                },
+                definition_md: new_word.definition_md
+            };
+            let ww_key = format!("{} double", &w_key);
+            self.dict_words.insert(ww_key, ww);
 
         } else {
             let w = self.dict_words.insert(w_key.clone(), new_word);
