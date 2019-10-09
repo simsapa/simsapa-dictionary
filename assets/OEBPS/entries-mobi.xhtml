@@ -4,28 +4,10 @@
 
 <h2>{{group_letter}}</h2>
 
+{{! Spaces and newlines in <idx:entry> are significant for dictionary entry search}}
+
 {{#each dict_words}}
-<idx:entry>
-  <idx:orth>
-    <h4>{{word_header.word}}</h4>
-    {{#if word_header.grammar ~}}
-    <p>({{word_header.grammar}})</p>
-    {{/if ~}}
-    {{#if word_header.dict_label ~}}
-    <p>[{{word_header.dict_label}}]</p>
-    {{/if ~}}
-    {{#if word_header.summary ~}}
-    <p>{{word_header.summary}}</p>
-    {{/if ~}}
-    {{#if word_header.inflections ~}}
-    <idx:infl>
-    {{#each word_header.inflections ~}}
-    <idx:iform value="{{this}}"/>
-    {{/each ~}}
-    </idx:infl>
-    {{/if ~}}
-  </idx:orth>
-</idx:entry>
+<idx:entry><idx:orth><h4>{{word_header.word}}</h4><p>{{#if word_header.grammar}} <i>{{word_header.grammar}}</i>{{/if}}{{#if word_header.dict_label}} <i>{{word_header.dict_label}}</i>{{/if}}{{#if word_header.summary}} <i>{{word_header.summary}}</i>{{/if}}{{#if word_header.inflections}}</p><idx:infl>{{#each word_header.inflections}} <idx:iform value="{{this}}"/>{{/each}}</idx:infl>{{/if}}</idx:orth></idx:entry>
 
 {{markdown definition_md}}
 {{/each}}

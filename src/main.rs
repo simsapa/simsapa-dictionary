@@ -34,7 +34,7 @@ use app::RunCommand;
 use ebook::{Ebook, EbookFormat};
 
 fn main() {
-    std::env::set_var("RUST_LOG", "error");
+    std::env::set_var("RUST_LOG", "info");
     match kankyo::init() {
         Ok(_) => {}
         Err(e) => info!("Couldn't find a .env file: {:?}", e),
@@ -72,6 +72,10 @@ fn main() {
 
             app::process_suttacentral_json(&app_params.json_path, &app_params.dict_label, &mut ebook);
 
+            for (_key, word) in ebook.dict_words.iter_mut() {
+                word.clean_summary();
+            }
+
             info!("Added words: {}", ebook.len());
 
             ebook.write_markdown();
@@ -84,6 +88,10 @@ fn main() {
             let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
 
             app::process_nyanatiloka_entries(&app_params.nyanatiloka_root, &app_params.dict_label, &mut ebook);
+
+            for (_key, word) in ebook.dict_words.iter_mut() {
+                word.clean_summary();
+            }
 
             info!("Added words: {}", ebook.len());
 
@@ -102,6 +110,16 @@ fn main() {
             app::process_markdown_list(markdown_paths, &mut ebook);
 
             info!("Added words: {}", ebook.len());
+
+            if let Some(title) = app_params.title {
+                ebook.meta.title = title;
+            }
+
+            if let Some(dict_label) = app_params.dict_label {
+                for (_key, word) in ebook.dict_words.iter_mut() {
+                    word.word_header.dict_label = dict_label.clone();
+                }
+            }
 
             ebook.create_ebook_build_folders();
 
