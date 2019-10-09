@@ -615,16 +615,21 @@ impl Ebook {
         let opf_path = oebps_dir.join(PathBuf::from("package.opf"));
         let output_file_name = self.output_path.file_name().unwrap();
 
-        let mut k = kindlegen_path.to_str().unwrap().trim();
-        if cfg!(target_os = "windows") {
-            k = clean_windows_str_path(k);
-        }
+        let k = kindlegen_path.to_str().unwrap().trim();
 
-        let bin_cmd = format!("{} \"{}\" -c{} -dont_append_source -o {}",
-            k,
-            opf_path.to_str().unwrap(),
-            mobi_compression,
-            output_file_name.to_str().unwrap());
+        let bin_cmd = if cfg!(target_os = "windows") {
+            format!("{} {} -c{} -dont_append_source -o {}",
+                escape_path(clean_windows_str_path(k)),
+                escape_path(clean_windows_str_path(opf_path.to_str().unwrap())),
+                mobi_compression,
+                escape_path(clean_windows_str_path(output_file_name.to_str().unwrap())))
+        } else {
+            format!("{} {} -c{} -dont_append_source -o {}",
+                escape_path(k),
+                escape_path(opf_path.to_str().unwrap()),
+                mobi_compression,
+                escape_path(output_file_name.to_str().unwrap()))
+        };
 
         info!("bin_cmd: {:?}", bin_cmd);
 
@@ -699,6 +704,10 @@ impl Default for EbookMetadata {
             is_mobi: false,
         }
     }
+}
+
+fn escape_path(p: &str) -> String {
+    p.replace(" ", r"\ ")
 }
 
 fn clean_windows_str_path(p: &str) -> &str {
