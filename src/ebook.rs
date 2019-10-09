@@ -620,7 +620,7 @@ impl Ebook {
             k = clean_windows_str_path(k);
         }
 
-        let bin_cmd = format!("{} {} -c{} -dont_append_source -o {}",
+        let bin_cmd = format!("{} \"{}\" -c{} -dont_append_source -o {}",
             k,
             opf_path.to_str().unwrap(),
             mobi_compression,
