@@ -20,6 +20,7 @@ pub struct AppStartParams {
     pub output_path: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
+    pub title: Option<String>,
     pub dict_label: Option<String>,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
@@ -65,6 +66,7 @@ impl Default for AppStartParams {
             markdown_paths: None,
             output_path: None,
             kindlegen_path: None,
+            title: None,
             dict_label: None,
             mobi_compression: 2,
             dont_run_kindlegen: false,
@@ -271,6 +273,26 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     error!("🔥 Path does not exist: {:?}", &path);
                     exit(2);
                 }
+            }
+        }
+
+        if sub_matches.is_present("title") {
+            if let Ok(x) = sub_matches
+                .value_of("title")
+                    .unwrap()
+                    .parse::<String>()
+            {
+                params.title = Some(x);
+            }
+        }
+
+        if sub_matches.is_present("dict_label") {
+            if let Ok(x) = sub_matches
+                .value_of("dict_label")
+                    .unwrap()
+                    .parse::<String>()
+            {
+                params.dict_label = Some(x);
             }
         }
 

@@ -39,6 +39,20 @@ subcommands:
             required: false
             takes_value: true
 
+        - title:
+            help: "Use this title for the ebook, instead of the one defined in the Markdown file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the Markdown file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
         - output_path:
             help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path

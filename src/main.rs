@@ -111,6 +111,16 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            if let Some(title) = app_params.title {
+                ebook.meta.title = title;
+            }
+
+            if let Some(dict_label) = app_params.dict_label {
+                for (_key, word) in ebook.dict_words.iter_mut() {
+                    word.word_header.dict_label = dict_label.clone();
+                }
+            }
+
             ebook.create_ebook_build_folders();
 
             match ebook.ebook_format {
