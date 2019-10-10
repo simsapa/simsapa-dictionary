@@ -611,29 +611,11 @@ impl Ebook {
     pub fn run_kindlegen(&self, kindlegen_path: &PathBuf, mobi_compression: usize) {
         info!("run_kindlegen()");
 
+        let kindlegen_path = kindlegen_path.to_str().unwrap().trim();
         let oebps_dir = self.oebps_dir.as_ref().unwrap();
         let opf_path = oebps_dir.join(PathBuf::from("package.opf"));
         let a = self.output_path.file_name().unwrap();
-        // Kindlegen fails if the filename has space in it.
-        let output_file_name = a.to_str().unwrap().replace(' ', "-");
-
-        let k = kindlegen_path.to_str().unwrap().trim();
-
-        let bin_cmd = if cfg!(target_os = "windows") {
-            format!("{} \"{}\" -c{} -dont_append_source -o {}",
-                clean_windows_str_path(k),
-                clean_windows_str_path(opf_path.to_str().unwrap()),
-                mobi_compression,
-                clean_windows_str_path(&output_file_name))
-        } else {
-            format!("{} \"{}\" -c{} -dont_append_source -o {}",
-                k,
-                opf_path.to_str().unwrap(),
-                mobi_compression,
-                output_file_name)
-        };
-
-        info!("bin_cmd: '{:?}'", bin_cmd);
+        let output_file_name = a.to_str().unwrap();
 
         info!("🔎 Running KindleGen ...");
         if mobi_compression == 2 {
@@ -641,21 +623,35 @@ impl Ebook {
         }
 
         let output = if cfg!(target_os = "windows") {
-            match Command::new("cmd").arg("/C").arg(bin_cmd).output() {
-                Ok(o) => o,
-                Err(e) => {
-                    error!("🔥 Failed to run KindleGen: {:?}", e);
-                    exit(2);
-                }
+            match Command::new("cmd").arg("/C")
+                .arg(clean_windows_str_path(kindlegen_path))
+                .arg(format!("\"{}\"", clean_windows_str_path(opf_path.to_str().unwrap())))
+                .arg(format!("-c{}", mobi_compression))
+                .arg("-dont_append_source")
+                .arg("-o")
+                .arg(format!("\"{}\"", clean_windows_str_path(&output_file_name)))
+                .output() {
+                    Ok(o) => o,
+                    Err(e) => {
+                        error!("🔥 Failed to run KindleGen: {:?}", e);
+                        exit(2);
+                    }
             }
         } else {
-            match Command::new("sh").arg("-c").arg(bin_cmd).output() {
-                Ok(o) => o,
-                Err(e) => {
-                    error!("🔥 Failed to run KindleGen: {:?}", e);
-                    exit(2);
+            match Command::new("sh").arg("-c")
+                .arg(kindlegen_path)
+                .arg(format!("\"{}\"", opf_path.to_str().unwrap()))
+                .arg(format!("-c{}", mobi_compression))
+                .arg("-dont_append_source")
+                .arg("-o")
+                .arg(format!("\"{}\"", output_file_name))
+                .output() {
+                    Ok(o) => o,
+                    Err(e) => {
+                        error!("🔥 Failed to run KindleGen: {:?}", e);
+                        exit(2);
+                    }
                 }
-            }
         };
 
         if output.status.success() {
