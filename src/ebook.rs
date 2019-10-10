@@ -137,6 +137,11 @@ impl Ebook {
             }
         }
 
+        let output_path = match output_path.parent() {
+            Some(p) => p.to_owned(),
+            None => PathBuf::from("."),
+        };
+
         Ebook {
             meta,
             ebook_format,
@@ -144,7 +149,7 @@ impl Ebook {
             entries_manifest: Vec::new(),
             asset_files_string: afs,
             asset_files_byte: afb,
-            output_path: output_path.to_path_buf(),
+            output_path,
             build_base_dir: None,
             mimetype_path: None,
             meta_inf_dir: None,
@@ -702,6 +707,3 @@ impl Default for EbookMetadata {
     }
 }
 
-fn clean_windows_str_path(p: &str) -> &str {
-    p.trim_start_matches("\\\\?\\")
-}
