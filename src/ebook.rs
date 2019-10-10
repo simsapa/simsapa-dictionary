@@ -613,22 +613,24 @@ impl Ebook {
 
         let oebps_dir = self.oebps_dir.as_ref().unwrap();
         let opf_path = oebps_dir.join(PathBuf::from("package.opf"));
-        let output_file_name = self.output_path.file_name().unwrap();
+        let a = self.output_path.file_name().unwrap();
+        // Kindlegen fails if the filename has space in it.
+        let output_file_name = a.to_str().unwrap().replace(' ', "-");
 
         let k = kindlegen_path.to_str().unwrap().trim();
 
         let bin_cmd = if cfg!(target_os = "windows") {
-            format!("{} \"{}\" -c{} -dont_append_source -o \"{}\"",
+            format!("{} \"{}\" -c{} -dont_append_source -o {}",
                 clean_windows_str_path(k),
                 clean_windows_str_path(opf_path.to_str().unwrap()),
                 mobi_compression,
-                clean_windows_str_path(output_file_name.to_str().unwrap()))
+                clean_windows_str_path(&output_file_name))
         } else {
-            format!("{} \"{}\" -c{} -dont_append_source -o \"{}\"",
+            format!("{} \"{}\" -c{} -dont_append_source -o {}",
                 k,
                 opf_path.to_str().unwrap(),
                 mobi_compression,
-                output_file_name.to_str().unwrap())
+                output_file_name)
         };
 
         info!("bin_cmd: '{:?}'", bin_cmd);
