@@ -10,7 +10,7 @@ use chrono::prelude::*;
 
 use crate::ebook::{Ebook, EbookMetadata, EbookFormat, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
 use crate::dict_word::{DictWord, DictWordHeader};
-use crate::helpers::is_hidden;
+use crate::helpers::{is_hidden, ensure_parent, ensure_parent_all};
 
 pub struct AppStartParams {
     pub ebook_format: EbookFormat,
@@ -90,17 +90,10 @@ pub fn process_first_arg() -> Option<AppStartParams> {
     }
 
     let _bin_path = args.next();
-    let markdown_path: PathBuf = match args.next() {
-        Some(a) => {
-            // If the markdown path was given as "ncped.md" (no parent), prefix with "." so that
-            // .parent() calls work.
-            let path = PathBuf::from(a);
-            match path.parent() {
-                Some(_) => path.to_owned(),
-                None => PathBuf::from(".").join(path),
-            }
-        },
-        None => return None,
+    let markdown_path = if let Some(a) = args.next() {
+        PathBuf::from(a)
+    } else {
+        return None;
     };
 
     if !markdown_path.exists() {
@@ -112,7 +105,7 @@ pub fn process_first_arg() -> Option<AppStartParams> {
     }
 
     let mut params = AppStartParams::default();
-    params.markdown_paths = Some(vec![markdown_path.clone()]);
+    params.markdown_paths = Some(vec![ensure_parent(&markdown_path)]);
     params.ebook_format = EbookFormat::Mobi;
 
     let filename = markdown_path.file_name().unwrap();
@@ -334,21 +327,21 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         match sub_matches.value_of("output_path") {
-            Some(x) => params.output_path = Some(PathBuf::from(&x)),
+            Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
 
             None => {
                 let a = params.markdown_paths.as_ref().expect("empty paths");
-                let p = a.get(0).unwrap();
+                let p = ensure_parent(a.get(0).unwrap());
                 let filename = p.file_name().unwrap();
                 let dir = p.parent().unwrap();
                 match params.ebook_format {
                     EbookFormat::Epub => {
                         let p = dir.join(PathBuf::from(filename).with_extension("epub"));
-                        params.output_path = Some(p);
+                        params.output_path = Some(ensure_parent(&p));
                     },
                     EbookFormat::Mobi => {
                         let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
-                        params.output_path = Some(p);
+                        params.output_path = Some(ensure_parent(&p));
                     },
                 }
             }
@@ -406,6 +399,12 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
     if matches.is_present("show_logs") {
         params.show_logs = true;
     }
+
+    params.markdown_paths = if let Some(paths) = params.markdown_paths {
+        Some(ensure_parent_all(&paths))
+    } else {
+        None
+    };
 
     Ok(params)
 }

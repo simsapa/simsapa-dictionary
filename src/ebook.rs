@@ -231,9 +231,32 @@ impl Ebook {
         // Store full paths (canonicalized) in the Ebook attribs. canonicalize() requires that the
         // path should exist, so take the parent of output_path first before canonicalize().
 
-        let build_base_dir = self.output_path.parent().unwrap().canonicalize().unwrap().join("ebook-build");
+        let parent = match self.output_path.parent() {
+            Some(p) => {
+                let s = p.to_str().unwrap();
+                if s.trim().is_empty() {
+                    PathBuf::from(".")
+                } else {
+                    p.to_path_buf()
+                }
+            },
+            None => PathBuf::from("."),
+        };
+        let build_base_dir = match parent.canonicalize() {
+            Ok(p) => p.join("ebook-build"),
+            Err(e) => {
+                error!("Can't canonicalize: {:?}\nError: {:?}", parent, e);
+                exit(2);
+            },
+        };
         if !build_base_dir.exists() {
-            fs::create_dir(&build_base_dir).unwrap();
+            match fs::create_dir(&build_base_dir) {
+                Ok(_) => {},
+                Err(e) => {
+                    error!("Can't create directory: {:?}\nError: {:?}", build_base_dir, e);
+                    exit(2);
+                },
+            };
         }
         self.build_base_dir = Some(build_base_dir.clone());
 

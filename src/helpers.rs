@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use regex::Regex;
 use walkdir::DirEntry;
 use handlebars::{Handlebars, RenderContext, Helper, Context, JsonRender, HelperResult, Output};
@@ -27,4 +29,17 @@ pub fn is_hidden(entry: &DirEntry) -> bool {
         .to_str()
         .map(|s| s.starts_with('.'))
         .unwrap_or(false)
+}
+
+pub fn ensure_parent(p: &PathBuf) -> PathBuf {
+    match p.parent() {
+        Some(_) => PathBuf::from(p),
+        None => PathBuf::from(".").join(p),
+    }
+}
+
+/// If the markdown path was given as "ncped.md" (no parent), prefix with "." so that .parent()
+/// calls work.
+pub fn ensure_parent_all(paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths.iter().map(|p| ensure_parent(p)).collect()
 }

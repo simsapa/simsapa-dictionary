@@ -1,2 +1,2 @@
-Simsapa Dictionary Tool
+# Simsapa Dictionary Tool
 
