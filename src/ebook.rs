@@ -137,11 +137,6 @@ impl Ebook {
             }
         }
 
-        let output_path = match output_path.parent() {
-            Some(p) => p.to_owned(),
-            None => PathBuf::from("."),
-        };
-
         Ebook {
             meta,
             ebook_format,
@@ -149,7 +144,7 @@ impl Ebook {
             entries_manifest: Vec::new(),
             asset_files_string: afs,
             asset_files_byte: afb,
-            output_path,
+            output_path: output_path.to_path_buf(),
             build_base_dir: None,
             mimetype_path: None,
             meta_inf_dir: None,
@@ -639,15 +634,17 @@ impl Ebook {
                         error!("🔥 Failed to run KindleGen: {:?}", e);
                         exit(2);
                     }
-            }
+                }
         } else {
+            // sh expects a command string after -c.
+            let cmd_string = format!("{} \"{}\" -c{} -dont_append_source -o \"{}\"",
+                kindlegen_path.to_str().unwrap(),
+                opf_path.to_str().unwrap(),
+                mobi_compression,
+                output_file_name.to_str().unwrap());
+
             match Command::new("sh").arg("-c")
-                .arg(kindlegen_path)
-                .arg(opf_path)
-                .arg(format!("-c{}", mobi_compression))
-                .arg("-dont_append_source")
-                .arg("-o")
-                .arg(output_file_name)
+                .arg(cmd_string)
                 .output() {
                     Ok(o) => o,
                     Err(e) => {
@@ -657,12 +654,13 @@ impl Ebook {
                 }
         };
 
+        io::stdout().write_all(&output.stdout).unwrap();
+        io::stderr().write_all(&output.stderr).unwrap();
+
         if output.status.success() {
             info!("🔎 KindleGen finished successfully.");
         } else {
             error!("🔥 KindleGen exited with an error.");
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
             exit(2);
         }
 

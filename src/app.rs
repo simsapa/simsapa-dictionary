@@ -68,7 +68,7 @@ impl Default for AppStartParams {
             kindlegen_path: None,
             title: None,
             dict_label: None,
-            mobi_compression: 2,
+            mobi_compression: 0,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
             run_command: RunCommand::NoOp,
@@ -90,10 +90,17 @@ pub fn process_first_arg() -> Option<AppStartParams> {
     }
 
     let _bin_path = args.next();
-    let markdown_path = if let Some(a) = args.next() {
-        PathBuf::from(a)
-    } else {
-        return None;
+    let markdown_path: PathBuf = match args.next() {
+        Some(a) => {
+            // If the markdown path was given as "ncped.md" (no parent), prefix with "." so that
+            // .parent() calls work.
+            let path = PathBuf::from(a);
+            match path.parent() {
+                Some(_) => path.to_owned(),
+                None => PathBuf::from(".").join(path),
+            }
+        },
+        None => return None,
     };
 
     if !markdown_path.exists() {
@@ -153,7 +160,8 @@ fn look_for_kindlegen() -> Option<PathBuf> {
         };
 
         if output.status.success() {
-            let s = String::from_utf8(output.stdout).unwrap();
+            // Output ends with a newline, must be trimmed.
+            let s = std::str::from_utf8(&output.stdout).unwrap().trim();
             info!("🔎 Found KindleGen in: {}", s);
             Some(PathBuf::from(s))
         } else {

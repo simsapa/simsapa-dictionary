@@ -34,7 +34,7 @@ use app::RunCommand;
 use ebook::{Ebook, EbookFormat};
 
 fn main() {
-    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_LOG", "error");
     match kankyo::init() {
         Ok(_) => {}
         Err(e) => info!("Couldn't find a .env file: {:?}", e),

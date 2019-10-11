@@ -14,7 +14,7 @@ for i in dhammika dppn ncped nyana pts; do
         --dict_label "" \
         --ebook_format mobi \
         --output_path "$OUT_DIR/$i.mobi" \
-        --mobi_compression 2 \
+        --mobi_compression 0 \
         --kindlegen_path "$KINDLEGEN_PATH"
 
     cargo run -- markdown_to_ebook \
@@ -32,7 +32,7 @@ cargo run -- markdown_to_ebook \
     --title "Combined Pali - English Dictionary" \
     --ebook_format mobi \
     --output_path "$OUT_DIR/combined-dictionary.mobi" \
-    --mobi_compression 2 \
+    --mobi_compression 0 \
     --kindlegen_path "$KINDLEGEN_PATH"
 
 cargo run -- markdown_to_ebook \
