@@ -1,4 +1,5 @@
-use std::process::{exit, Command};
+use std::error::Error;
+use std::process::Command;
 use std::fs::{self, File};
 use std::io::{self, Write};
 
@@ -11,7 +12,8 @@ use handlebars::{self, Handlebars};
 use crate::dict_word::{DictWord, DictWordHeader};
 use crate::letter_groups::LetterGroups;
 use crate::helpers::{md2html, markdown_helper, is_hidden};
-use crate::app::ZipWith;
+use crate::app::{AppStartParams, ZipWith};
+use crate::error::ToolError;
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -53,7 +55,7 @@ pub struct EbookMetadata {
     pub is_mobi: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum EbookFormat {
     Epub,
     Mobi
@@ -137,11 +139,6 @@ impl Ebook {
             }
         }
 
-        let output_path = match output_path.parent() {
-            Some(p) => p.to_owned(),
-            None => PathBuf::from("."),
-        };
-
         Ebook {
             meta,
             ebook_format,
@@ -149,7 +146,7 @@ impl Ebook {
             entries_manifest: Vec::new(),
             asset_files_string: afs,
             asset_files_byte: afb,
-            output_path,
+            output_path: output_path.to_path_buf(),
             build_base_dir: None,
             mimetype_path: None,
             meta_inf_dir: None,
@@ -197,14 +194,14 @@ impl Ebook {
         self.dict_words.is_empty()
     }
 
-    pub fn write_markdown(&self) {
+    pub fn write_markdown(&self) -> Result<(), Box<dyn Error>> {
         info!("write_markdown()");
 
-        let mut file = File::create(&self.output_path).unwrap();
+        let mut file = File::create(&self.output_path)?;
 
         // Write TOML metadata with separator.
 
-        let meta = toml::to_string(&self.meta).expect("Can't serialize.");
+        let meta = toml::to_string(&self.meta)?;
         let content = format!(
             "{}\n\n``` toml\n{}\n```\n\n{}\n\n",
             &DICTIONARY_METADATA_SEP,
@@ -212,7 +209,7 @@ impl Ebook {
             &DICTIONARY_WORD_ENTRIES_SEP,
         );
 
-        file.write_all(content.as_bytes()).unwrap();
+        file.write_all(content.as_bytes())?;
 
         // Write entries.
 
@@ -223,22 +220,47 @@ impl Ebook {
             .collect::<Vec<String>>()
             .join("\n\n");
 
-        file.write_all(content.as_bytes()).unwrap();
+        file.write_all(content.as_bytes())?;
+
+        Ok(())
     }
 
-    pub fn create_ebook_build_folders(&mut self) {
+    pub fn create_ebook_build_folders(&mut self) -> Result<(), Box<dyn Error>> {
         info!("create_ebook_build_folders()");
 
         if self.output_path.exists() {
-            fs::remove_file(&self.output_path).expect("Can't remove old output file.");
+            fs::remove_file(&self.output_path)?;
         }
 
         // Store full paths (canonicalized) in the Ebook attribs. canonicalize() requires that the
         // path should exist, so take the parent of output_path first before canonicalize().
 
-        let build_base_dir = self.output_path.parent().unwrap().canonicalize().unwrap().join("ebook-build");
+        let parent = match self.output_path.parent() {
+            Some(p) => {
+                let s = p.to_str().unwrap();
+                if s.trim().is_empty() {
+                    PathBuf::from(".")
+                } else {
+                    p.to_path_buf()
+                }
+            },
+            None => PathBuf::from("."),
+        };
+        let build_base_dir = match parent.canonicalize() {
+            Ok(p) => p.join("ebook-build"),
+            Err(e) => {
+                let msg = format!("Can't canonicalize: {:?}\nError: {:?}", parent, e);
+                return Err(Box::new(ToolError::Exit(msg)));
+            },
+        };
         if !build_base_dir.exists() {
-            fs::create_dir(&build_base_dir).unwrap();
+            match fs::create_dir(&build_base_dir) {
+                Ok(_) => {},
+                Err(e) => {
+                    let msg = format!("Can't create directory: {:?}\nError: {:?}", build_base_dir, e);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                },
+            };
         }
         self.build_base_dir = Some(build_base_dir.clone());
 
@@ -247,20 +269,22 @@ impl Ebook {
 
             let meta_inf_dir = build_base_dir.join("META-INF");
             if !meta_inf_dir.exists() {
-                fs::create_dir(&meta_inf_dir).unwrap();
+                fs::create_dir(&meta_inf_dir)?;
             }
             self.meta_inf_dir = Some(meta_inf_dir);
         }
 
         let oebps_dir = build_base_dir.join("OEBPS");
         if !oebps_dir.exists() {
-            fs::create_dir(&oebps_dir).unwrap();
+            fs::create_dir(&oebps_dir)?;
         }
         self.oebps_dir = Some(oebps_dir);
+
+        Ok(())
     }
 
     /// Write entries split in letter groups.
-    pub fn write_entries(&mut self) {
+    pub fn write_entries(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_entries()");
 
         let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
@@ -290,7 +314,7 @@ impl Ebook {
             let mut d: BTreeMap<String, String> = BTreeMap::new();
             d.insert("page_title".to_string(), self.meta.title.clone());
             d.insert("content_html".to_string(), content_html);
-            let file_content = self.templates.render("content-page.xhtml", &d).unwrap();
+            let file_content = self.templates.render("content-page.xhtml", &d)?;
 
             // The file names will be identified by index number, not the group letter.
             // entries-00.xhtml, entries-01.xhtml and so on.
@@ -302,26 +326,30 @@ impl Ebook {
                     href: group_file_name.clone(),
                 });
 
-            let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-            let mut file = File::create(dir.join(group_file_name)).unwrap();
-            file.write_all(file_content.as_bytes()).unwrap();
+            let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+            let mut file = File::create(dir.join(group_file_name))?;
+            file.write_all(file_content.as_bytes())?;
         }
+
+        Ok(())
     }
 
     /// Write package.opf.
-    pub fn write_package(&mut self) {
+    pub fn write_package(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_package()");
 
         let filename = "package.opf";
-        let file_content = self.templates.render(filename, &self).unwrap();
+        let file_content = self.templates.render(filename, &self)?;
 
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(filename)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(filename))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Write htmltoc.xhtml.
-    pub fn write_html_toc(&mut self) {
+    pub fn write_html_toc(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_html_toc()");
 
         let filename = "htmltoc.xhtml".to_string();
@@ -337,15 +365,17 @@ impl Ebook {
         let mut d: BTreeMap<String, String> = BTreeMap::new();
         d.insert("page_title".to_string(), self.meta.title.clone());
         d.insert("content_html".to_string(), content_html);
-        let file_content = self.templates.render("content-page.xhtml", &d).unwrap();
+        let file_content = self.templates.render("content-page.xhtml", &d)?;
 
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(filename)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(filename))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Write toc.ncx.
-    pub fn write_ncx_toc(&mut self) {
+    pub fn write_ncx_toc(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_ncx_toc()");
 
         let filename = "toc.ncx".to_string();
@@ -358,13 +388,15 @@ impl Ebook {
             }
         };
 
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(filename)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(filename))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Write cover.xhtml.
-    pub fn write_cover(&mut self) {
+    pub fn write_cover(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_cover()");
 
         let filename = "cover.xhtml".to_string();
@@ -377,13 +409,15 @@ impl Ebook {
             }
         };
 
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(filename)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(filename))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Write titlepage.xhtml.
-    pub fn write_titlepage(&mut self) {
+    pub fn write_titlepage(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_titlepage()");
 
         let filename = "titlepage.xhtml".to_string();
@@ -399,15 +433,17 @@ impl Ebook {
         let mut d: BTreeMap<String, String> = BTreeMap::new();
         d.insert("page_title".to_string(), self.meta.title.clone());
         d.insert("content_html".to_string(), content_html);
-        let file_content = self.templates.render("content-page.xhtml", &d).unwrap();
+        let file_content = self.templates.render("content-page.xhtml", &d)?;
 
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(filename)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(filename))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Write about.xhtml.
-    pub fn write_about(&mut self) {
+    pub fn write_about(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_about()");
 
         let filename = "about.md".to_string();
@@ -425,16 +461,18 @@ impl Ebook {
         let mut d: BTreeMap<String, String> = BTreeMap::new();
         d.insert("page_title".to_string(), self.meta.title.clone());
         d.insert("content_html".to_string(), content_html);
-        let file_content = self.templates.render("content-page.xhtml", &d).unwrap();
+        let file_content = self.templates.render("content-page.xhtml", &d)?;
 
         let dest_name = filename.replace(".md", ".xhtml");
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(dest_name)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(dest_name))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Write copyright.xhtml.
-    pub fn write_copyright(&mut self) {
+    pub fn write_copyright(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_copyright()");
 
         let filename = "copyright.md".to_string();
@@ -452,78 +490,89 @@ impl Ebook {
         let mut d: BTreeMap<String, String> = BTreeMap::new();
         d.insert("page_title".to_string(), self.meta.title.clone());
         d.insert("content_html".to_string(), content_html);
-        let file_content = self.templates.render("content-page.xhtml", &d).unwrap();
+        let file_content = self.templates.render("content-page.xhtml", &d)?;
 
         let dest_name = filename.replace(".md", ".xhtml");
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
-        let mut file = File::create(dir.join(dest_name)).unwrap();
-        file.write_all(file_content.as_bytes()).unwrap();
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let mut file = File::create(dir.join(dest_name))?;
+        file.write_all(file_content.as_bytes())?;
+
+        Ok(())
     }
 
     /// Copy static assets.
-    pub fn copy_static(&self) {
+    pub fn copy_static(&self) -> Result<(), Box<dyn Error>> {
         info!("copy_static()");
 
-        let dir = self.oebps_dir.as_ref().expect("missing oebps_dir");
+        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
         for filename in ["cover.jpg", "style.css"].iter() {
-            let file_content = self.asset_files_byte.get(&filename.to_string()).unwrap();
-            let mut file = File::create(dir.join(filename)).unwrap();
-            file.write_all(file_content).unwrap();
+            let file_content = self.asset_files_byte.get(&filename.to_string()).ok_or("missing get key")?;
+            let mut file = File::create(dir.join(filename))?;
+            file.write_all(file_content)?;
         }
+
+        Ok(())
     }
 
-    pub fn write_mimetype(&self) {
+    pub fn write_mimetype(&self) -> Result<(), Box<dyn Error>> {
         info!("write_mimetype()");
 
-        let p = self.mimetype_path.as_ref().expect("missing mimetype_path");
-        let mut file = File::create(&p).unwrap();
-        file.write_all(b"application/epub+zip").unwrap();
+        let p = self.mimetype_path.as_ref().ok_or("missing mimetype_path")?;
+        let mut file = File::create(&p)?;
+        file.write_all(b"application/epub+zip")?;
+
+        Ok(())
     }
 
-    pub fn write_meta_inf_files(&self) {
+    pub fn write_meta_inf_files(&self) -> Result<(), Box<dyn Error>> {
         info!("write_meta_inf_files()");
 
-        let dir = self.meta_inf_dir.as_ref().expect("missing meta_inf_dir");
+        let dir = self.meta_inf_dir.as_ref().ok_or("missing meta_inf_dir")?;
         for filename in ["container.xml", "com.apple.ibooks.display-options.xml"].iter() {
-            let file_content = self.asset_files_byte.get(&filename.to_string()).unwrap();
-            let mut file = File::create(dir.join(filename)).unwrap();
-            file.write_all(file_content).unwrap();
+            let file_content = self.asset_files_byte.get(&filename.to_string()).ok_or("missing get key")?;
+            let mut file = File::create(dir.join(filename))?;
+            file.write_all(file_content)?;
         }
+
+        Ok(())
     }
 
-    pub fn write_oebps_files(&mut self) {
+    pub fn write_oebps_files(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_oebps_files()");
 
         if let EbookFormat::Epub = self.ebook_format {
-            self.write_cover();
+            self.write_cover()?;
         }
 
-        self.write_entries();
-        self.write_package();
-        self.write_html_toc();
-        self.write_ncx_toc();
+        self.write_entries()?;
+        self.write_package()?;
+        self.write_html_toc()?;
+        self.write_ncx_toc()?;
 
-        self.write_titlepage();
-        self.write_about();
-        self.write_copyright();
+        self.write_titlepage()?;
+        self.write_about()?;
+        self.write_copyright()?;
 
-        self.copy_static();
+        self.copy_static()?;
+
+        Ok(())
     }
 
-    fn zip_with_shell(&self) {
+    fn zip_with_shell(&self) -> Result<(), Box<dyn Error>> {
         info!("zip_with_shell()");
 
-        let d = self.build_base_dir.as_ref().unwrap();
+        let d = self.build_base_dir.as_ref().ok_or("missing build_base_dir")?;
         let dir: &str = d.to_str().unwrap();
-        let epub_name: &str = self.output_path.file_name().unwrap().to_str().unwrap();
+        let n = self.output_path.file_name().ok_or("mising file_name")?;
+        let epub_name: &str = n.to_str().unwrap();
 
         let shell_cmd = format!(r#"cd "{}" && zip -X0 "../{}" mimetype && zip -rg "../{}" META-INF -x \*.DS_Store && zip -rg "../{}" OEBPS -x \*.DS_Store"#, dir, epub_name, epub_name, epub_name);
 
         let output = match Command::new("sh").arg("-c").arg(shell_cmd).output() {
             Ok(o) => o,
             Err(e) => {
-                error!("🔥 Failed to Zip: {:?}", e);
-                exit(2);
+                let msg = format!("🔥 Failed to Zip: {:?}", e);
+                return Err(Box::new(ToolError::Exit(msg)));
             }
         };
 
@@ -532,9 +581,11 @@ impl Ebook {
         } else {
             error!("🔥 Zip exited with an error.");
         }
+
+        Ok(())
     }
 
-    fn zip_with_lib(&self) {
+    fn zip_with_lib(&self) -> Result<(), Box<dyn Error>> {
         info!("zip_with_lib()");
 
         let mut buf: Vec<u8> = Vec::new();
@@ -547,8 +598,8 @@ impl Ebook {
             // mimetype file first, not compressed
             {
                 let o = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
-                zip.start_file("mimetype", o).unwrap();
-                zip.write_all(b"application/epub+zip").unwrap();
+                zip.start_file("mimetype", o)?;
+                zip.write_all(b"application/epub+zip")?;
             }
 
             // META-INF folder
@@ -559,11 +610,11 @@ impl Ebook {
             {
                 let o = zip::write::FileOptions::default();
 
-                zip.start_file("META-INF/com.apple.ibooks.display-options.xml", o).unwrap();
-                zip.write_all(self.asset_files_byte.get("com.apple.ibooks.display-options.xml").unwrap()).unwrap();
+                zip.start_file("META-INF/com.apple.ibooks.display-options.xml", o)?;
+                zip.write_all(self.asset_files_byte.get("com.apple.ibooks.display-options.xml").unwrap())?;
 
-                zip.start_file("META-INF/container.xml", o).unwrap();
-                zip.write_all(self.asset_files_byte.get("container.xml").unwrap()).unwrap();
+                zip.start_file("META-INF/container.xml", o)?;
+                zip.write_all(self.asset_files_byte.get("container.xml").unwrap())?;
             }
 
             // OEBPS folder
@@ -572,12 +623,12 @@ impl Ebook {
 
             {
                 let o = zip::write::FileOptions::default();
-                let dir = self.oebps_dir.as_ref().expect("missing oebps dir");
+                let dir = self.oebps_dir.as_ref().ok_or("missing oebps dir")?;
                 let walker = WalkDir::new(dir).into_iter();
 
                 // is_hidden will also catch .DS_Store
                 for entry in walker.filter_entry(|e| !is_hidden(e)) {
-                    let entry = entry.unwrap();
+                    let entry = entry?;
 
                     // First entry will be the OEBPS folder.
                     if entry.file_name().to_str().unwrap() == "OEBPS" {
@@ -588,23 +639,25 @@ impl Ebook {
                         continue;
                     }
 
-                    let contents: Vec<u8> = fs::read(&entry.path()).expect("Can't read the file.");
+                    let contents: Vec<u8> = fs::read(&entry.path())?;
 
                     let name = entry.file_name().to_str().unwrap();
                     // not using .join() to avoid getting a back-slash on Windows
-                    zip.start_file(format!("OEBPS/{}", name), o).unwrap();
-                    zip.write_all(&contents).unwrap();
+                    zip.start_file(format!("OEBPS/{}", name), o)?;
+                    zip.write_all(&contents)?;
                 }
             }
 
-            zip.finish().unwrap();
+            zip.finish()?;
         }
 
-        let mut file = File::create(&self.output_path).unwrap();
-        file.write_all(&buf).unwrap();
+        let mut file = File::create(&self.output_path)?;
+        file.write_all(&buf)?;
+
+        Ok(())
     }
 
-    pub fn zip_files_as_epub(&self, zip_with: ZipWith) {
+    pub fn zip_files_as_epub(&self, zip_with: ZipWith) -> Result<(), Box<dyn Error>> {
         info!("zip_files_as_epub()");
 
         match zip_with {
@@ -613,16 +666,16 @@ impl Ebook {
         }
     }
 
-    pub fn run_kindlegen(&self, kindlegen_path: &PathBuf, mobi_compression: usize) {
+    pub fn run_kindlegen(&self, kindlegen_path: &PathBuf, mobi_compression: usize) -> Result<(), Box<dyn Error>> {
         info!("run_kindlegen()");
 
-        let oebps_dir = self.oebps_dir.as_ref().unwrap();
+        let oebps_dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
         let opf_path = oebps_dir.join(PathBuf::from("package.opf"));
-        let output_file_name = self.output_path.file_name().unwrap();
+        let output_file_name = self.output_path.file_name().ok_or("can't get file_name")?;
 
         info!("🔎 Running KindleGen ...");
         if mobi_compression == 2 {
-            info!("Note that compression level 2 can take some time to complete.");
+            println!("NOTE: Using compression level 2 (Kindle huffdic). This can take some time to complete.");
         }
 
         let output = if cfg!(target_os = "windows") {
@@ -636,45 +689,76 @@ impl Ebook {
                 .output() {
                     Ok(o) => o,
                     Err(e) => {
-                        error!("🔥 Failed to run KindleGen: {:?}", e);
-                        exit(2);
+                        let msg = format!("🔥 Failed to run KindleGen: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
                     }
-            }
+                }
         } else {
+            // sh expects a command string after -c.
+            let cmd_string = format!("{} \"{}\" -c{} -dont_append_source -o \"{}\"",
+                kindlegen_path.to_str().unwrap(),
+                opf_path.to_str().unwrap(),
+                mobi_compression,
+                output_file_name.to_str().unwrap());
+
             match Command::new("sh").arg("-c")
-                .arg(kindlegen_path)
-                .arg(opf_path)
-                .arg(format!("-c{}", mobi_compression))
-                .arg("-dont_append_source")
-                .arg("-o")
-                .arg(output_file_name)
+                .arg(cmd_string)
                 .output() {
                     Ok(o) => o,
                     Err(e) => {
-                        error!("🔥 Failed to run KindleGen: {:?}", e);
-                        exit(2);
+                        let msg = format!("🔥 Failed to run KindleGen: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
                     }
                 }
         };
 
+        io::stdout().write_all(&output.stdout)?;
+        io::stderr().write_all(&output.stderr)?;
+
         if output.status.success() {
             info!("🔎 KindleGen finished successfully.");
         } else {
-            error!("🔥 KindleGen exited with an error.");
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
-            exit(2);
+            let msg = "🔥 KindleGen exited with an error.".to_string();
+            return Err(Box::new(ToolError::Exit(msg)));
         }
 
         // Move the generate MOBI to its path. KindleGen puts the MOBI in the same folder with package.opf.
-        fs::rename(oebps_dir.join(output_file_name), &self.output_path).unwrap();
+        fs::rename(oebps_dir.join(output_file_name), &self.output_path)?;
+
+        Ok(())
     }
 
-    pub fn remove_generated_files(&mut self) {
+    pub fn remove_generated_files(&mut self) -> Result<(), Box<dyn Error>> {
         if let Some(dir) = self.build_base_dir.as_ref() {
-            fs::remove_dir_all(dir).unwrap();
+            fs::remove_dir_all(dir)?;
         }
         self.set_paths_to_none();
+
+        Ok(())
+    }
+
+    pub fn create_ebook(&mut self, app_params: &AppStartParams) -> Result<(), Box<dyn Error>> {
+        self.create_ebook_build_folders()?;
+
+        match self.ebook_format {
+            EbookFormat::Epub => {
+                self.write_mimetype()?;
+                self.write_meta_inf_files()?;
+                self.write_oebps_files()?;
+                self.zip_files_as_epub(app_params.zip_with)?;
+            }
+
+            EbookFormat::Mobi => {
+                self.write_oebps_files()?;
+
+                if !app_params.dont_run_kindlegen {
+                    let kindlegen_path = &app_params.kindlegen_path.as_ref().ok_or("kindlegen_path is missing.")?;
+                    self.run_kindlegen(&kindlegen_path, app_params.mobi_compression)?;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn set_paths_to_none(&mut self) {

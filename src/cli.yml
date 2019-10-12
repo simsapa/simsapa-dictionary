@@ -66,7 +66,7 @@ subcommands:
             value_name: INT
             required: false
             takes_value: true
-            default_value: "2"
+            default_value: "0"
             possible_values: [ "0", "1", "2" ]
 
         - kindlegen_path:

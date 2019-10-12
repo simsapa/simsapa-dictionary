@@ -1,3 +1,9 @@
+use std::path::PathBuf;
+use std::error::Error;
+use std::process::exit;
+use std::thread::sleep;
+use std::time::Duration;
+
 use regex::Regex;
 use walkdir::DirEntry;
 use handlebars::{Handlebars, RenderContext, Helper, Context, JsonRender, HelperResult, Output};
@@ -27,4 +33,31 @@ pub fn is_hidden(entry: &DirEntry) -> bool {
         .to_str()
         .map(|s| s.starts_with('.'))
         .unwrap_or(false)
+}
+
+pub fn ensure_parent(p: &PathBuf) -> PathBuf {
+    match p.parent() {
+        Some(_) => PathBuf::from(p),
+        None => PathBuf::from(".").join(p),
+    }
+}
+
+/// If the markdown path was given as "ncped.md" (no parent), prefix with "." so that .parent()
+/// calls work.
+pub fn ensure_parent_all(paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths.iter().map(|p| ensure_parent(p)).collect()
+}
+
+pub fn ok_or_exit<T>(wait: bool, res: Result<T, Box<dyn Error>>) -> T {
+    match res {
+        Ok(x) => x,
+        Err(e) => {
+            error!("{:?}", e);
+            if wait {
+                println!("Exiting. Waiting 10s, or press Ctrl-C to close ...");
+                sleep(Duration::from_secs(10));
+            }
+            exit(2);
+        }
+    }
 }

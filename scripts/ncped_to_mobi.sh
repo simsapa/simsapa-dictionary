@@ -5,6 +5,6 @@ cargo run -- markdown_to_ebook \
   --dict_label "" \
   --ebook_format mobi \
   --output_path ../simsapa-dictionary_releases/ncped.mobi \
-  --mobi_compression 2 \
+  --mobi_compression 0 \
   --kindlegen_path $HOME/lib/kindlegen/kindlegen
 

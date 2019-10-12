@@ -1,5 +1,8 @@
 use std::default::Default;
+use std::error::Error;
 use regex::Regex;
+
+use crate::error::ToolError;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DictWord {
@@ -22,29 +25,36 @@ impl DictWord {
     }
 
     pub fn as_markdown_and_toml_string(&self) -> String {
-        let header = toml::to_string(&self.word_header).expect("Can't serialize word header to TOML.");
+        let header = toml::to_string(&self.word_header).unwrap();
         format!("``` toml\n{}\n```\n\n{}", &header.trim(), &self.definition_md.trim())
     }
 
-    pub fn from_markdown(s: &str) -> DictWord {
+    pub fn from_markdown(s: &str) -> Result<DictWord, Box<dyn Error>> {
         let a = s.replace("``` toml", "");
         let parts: Vec<&str> = a.split("```").collect();
 
-        let word_header: DictWordHeader = toml::from_str(parts.get(0).unwrap()).unwrap();
+        let toml = parts.get(0).unwrap();
+        let word_header: DictWordHeader = match toml::from_str(toml) {
+            Ok(x) => x,
+            Err(e) => {
+                let msg = format!("🔥 Can't serialize from TOML String: {:?}\nError: {:?}", &toml, e);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        };
 
-        DictWord {
+        Ok(DictWord {
             word_header,
             definition_md: parts.get(1).unwrap().to_string(),
-        }
+        })
     }
 
-    pub fn clean_summary(&mut self) {
+    pub fn clean_summary(&mut self) -> Result<(), Box<dyn Error>> {
         if !self.word_header.summary.is_empty() {
             self.word_header.summary = self.word_header.summary.trim().to_string();
         }
 
         if !self.word_header.summary.is_empty() {
-            return;
+            return Ok(());
         }
 
         let mut summary = self.definition_md.trim().to_string();
@@ -199,7 +209,7 @@ impl DictWord {
         if !summary.is_empty() {
             let sum_length = 50;
             if summary.char_indices().count() > sum_length {
-                let (char_idx, _char) = summary.char_indices().nth(sum_length).unwrap_or_else(|| panic!("Too short: {}", sum_length));
+                let (char_idx, _char) = summary.char_indices().nth(sum_length).ok_or("Bad char index")?;
                 summary = summary[..char_idx].trim().to_string();
             }
 
@@ -209,6 +219,8 @@ impl DictWord {
         }
 
         self.word_header.summary = summary;
+
+        Ok(())
     }
 }
 

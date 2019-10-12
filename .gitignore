@@ -3,6 +3,7 @@
 TAGS
 .DS_Store
 **/auto/
+test-temp/
 
 .env
 /target
