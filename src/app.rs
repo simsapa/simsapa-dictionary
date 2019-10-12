@@ -1,7 +1,7 @@
 use std::default::Default;
 use std::error::Error;
 use std::fs;
-use std::process::{exit, Command};
+use std::process::Command;
 use std::path::{Path, PathBuf};
 
 use regex::Regex;
@@ -11,6 +11,7 @@ use chrono::prelude::*;
 use crate::ebook::{Ebook, EbookMetadata, EbookFormat, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
 use crate::dict_word::{DictWord, DictWordHeader};
 use crate::helpers::{is_hidden, ensure_parent, ensure_parent_all};
+use crate::error::ToolError;
 
 pub struct AppStartParams {
     pub ebook_format: EbookFormat,
@@ -27,6 +28,7 @@ pub struct AppStartParams {
     pub run_command: RunCommand,
     pub show_logs: bool,
     pub zip_with: ZipWith,
+    pub used_first_arg: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -74,6 +76,7 @@ impl Default for AppStartParams {
             run_command: RunCommand::NoOp,
             show_logs: false,
             zip_with,
+            used_first_arg: false,
         }
     }
 }
@@ -105,6 +108,7 @@ pub fn process_first_arg() -> Option<AppStartParams> {
     }
 
     let mut params = AppStartParams::default();
+    params.used_first_arg = true;
     params.markdown_paths = Some(vec![ensure_parent(&markdown_path)]);
 
     params.kindlegen_path = look_for_kindlegen();
@@ -189,8 +193,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             if path.exists() {
                 params.json_path = Some(path);
             } else {
-                error!("🔥 Path does not exist: {:?}", &path);
-                exit(2);
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
             }
         }
 
@@ -223,8 +227,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             if path.is_dir() {
                 params.nyanatiloka_root = Some(path);
             } else {
-                error!("🔥 Path does not exist: {:?}", &path);
-                exit(2);
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
             }
         }
 
@@ -260,15 +264,15 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                 } else if s == "mobi" {
                     params.ebook_format = EbookFormat::Mobi;
                 } else {
-                    panic!("Can't recognize the format: {}", s);
+                    params.ebook_format = EbookFormat::Epub;
                 }
             }
 
         }
 
         if !sub_matches.is_present("markdown_path") && !sub_matches.is_present("markdown_paths_list") {
-            error!("🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.");
-            exit(2);
+            let msg = "🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.".to_string();
+            return Err(Box::new(ToolError::Exit(msg)));
         }
 
         if sub_matches.is_present("markdown_path") {
@@ -281,8 +285,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                 if path.exists() {
                     params.markdown_paths = Some(vec![path]);
                 } else {
-                    error!("🔥 Path does not exist: {:?}", &path);
-                    exit(2);
+                    let msg = format!("🔥 Path does not exist: {:?}", &path);
+                    return Err(Box::new(ToolError::Exit(msg)));
                 }
             }
         }
@@ -317,20 +321,19 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                 let s = match fs::read_to_string(&list_path) {
                     Ok(s) => s,
                     Err(e) => {
-                        error!("🔥 Can't read path. {:?}", e);
-                        exit(2);
+                        let msg = format!("🔥 Can't read path. {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
                     },
                 };
                 let s = s.trim();
 
-                let paths: Vec<PathBuf> = s.split('\n').map(|i| {
-                    let p = PathBuf::from(i);
-                    if !p.exists() {
-                        error!("🔥 Path does not exist: {:?}", &p);
-                        exit(2);
+                let paths: Vec<PathBuf> = s.split('\n').map(PathBuf::from).collect();
+                for path in paths.iter() {
+                    if !path.exists() {
+                        let msg = format!("🔥 Path does not exist: {:?}", &path);
+                        return Err(Box::new(ToolError::Exit(msg)));
                     }
-                    p
-                }).collect();
+                }
 
                 params.markdown_paths = Some(paths);
             }
@@ -340,7 +343,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
 
             None => {
-                let a = params.markdown_paths.as_ref().expect("empty paths");
+                let a = params.markdown_paths.as_ref().ok_or("empty paths")?;
                 let p = ensure_parent(a.get(0).unwrap());
                 let filename = p.file_name().unwrap();
                 let dir = p.parent().unwrap();
@@ -382,8 +385,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     if path.exists() {
                         params.kindlegen_path = Some(path);
                     } else {
-                        error!("🔥 Path does not exist: {:?}", &path);
-                        exit(2);
+                        let msg = format!("🔥 Path does not exist: {:?}", &path);
+                        return Err(Box::new(ToolError::Exit(msg)));
                     }
                 }
             } else {
@@ -526,16 +529,20 @@ pub fn process_nyanatiloka_entries(
 pub fn process_markdown_list(
     markdown_paths: Vec<PathBuf>,
     ebook: &mut Ebook
-) {
+) -> Result<(), Box<dyn Error>>
+{
     for p in markdown_paths.iter() {
-        process_markdown(p, ebook);
+        process_markdown(p, ebook)?;
     }
+
+    Ok(())
 }
 
 pub fn process_markdown(
     markdown_path: &PathBuf,
     ebook: &mut Ebook
-) {
+) -> Result<(), Box<dyn Error>>
+{
     info! {"=== Begin processing {:?} ===", markdown_path};
 
     let s = fs::read_to_string(markdown_path).unwrap();
@@ -544,7 +551,8 @@ pub fn process_markdown(
     let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
 
     if parts.len() != 2 {
-        panic!("Something is wrong with the Markdown input. Can't separate the Dictionary header and DictWord entries.");
+        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries.".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
     }
 
     let a = parts.get(0).unwrap().to_string()
@@ -552,7 +560,13 @@ pub fn process_markdown(
         .replace("``` toml", "")
         .replace("```", "");
 
-    let mut meta: EbookMetadata = toml::from_str(&a).unwrap();
+    let mut meta: EbookMetadata = match toml::from_str(&a) {
+        Ok(x) => x,
+        Err(e) => {
+            let msg = format!("🔥 Can't serialize from TOML String: {:?}\nError: {:?}", &a, e);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    };
     meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
     meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
@@ -570,7 +584,7 @@ pub fn process_markdown(
     ebook.meta = meta;
 
     let a = parts.get(1).unwrap().to_string();
-    let entries: Vec<DictWord> = a
+    let entries: Vec<Result<DictWord, Box<dyn Error>>> = a
         .split("``` toml")
         .filter_map(|s| {
             let a = s.trim();
@@ -583,8 +597,16 @@ pub fn process_markdown(
         .collect();
 
     for i in entries.iter() {
-        ebook.add_word(i.clone());
+        match i {
+            Ok(x) => ebook.add_word(x.clone()),
+            Err(e) => {
+                let msg = format!("{:?}", e);
+                return Err(Box::new(ToolError::Exit(msg)));
+            },
+        }
     }
+
+    Ok(())
 }
 
 fn html_to_markdown(html: &str) -> String {

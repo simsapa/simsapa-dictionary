@@ -28,10 +28,14 @@ pub mod ebook;
 pub mod dict_word;
 pub mod letter_groups;
 pub mod pali;
+pub mod error;
 pub mod helpers;
 
+use std::process::exit;
+
 use app::RunCommand;
-use ebook::{Ebook, EbookFormat};
+use ebook::Ebook;
+use helpers::ok_or_exit;
 
 fn main() {
     std::env::set_var("RUST_LOG", "error");
@@ -50,7 +54,13 @@ fn main() {
     } else {
         let cli_yaml = load_yaml!("cli.yml");
         let matches = App::from_yaml(cli_yaml).get_matches();
-        app::process_cli_args(matches).unwrap()
+        match app::process_cli_args(matches) {
+            Ok(x) => x,
+            Err(e) => {
+                error!("{:?}", e);
+                exit(2);
+            }
+        }
     };
 
     if app_params.show_logs {
@@ -73,12 +83,12 @@ fn main() {
             app::process_suttacentral_json(&app_params.json_path, &app_params.dict_label, &mut ebook);
 
             for (_key, word) in ebook.dict_words.iter_mut() {
-                word.clean_summary();
+                ok_or_exit(app_params.used_first_arg, word.clean_summary());
             }
 
             info!("Added words: {}", ebook.len());
 
-            ebook.write_markdown();
+            ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
         RunCommand::NyanatilokaToMarkdown => {
@@ -90,57 +100,41 @@ fn main() {
             app::process_nyanatiloka_entries(&app_params.nyanatiloka_root, &app_params.dict_label, &mut ebook);
 
             for (_key, word) in ebook.dict_words.iter_mut() {
-                word.clean_summary();
+                ok_or_exit(app_params.used_first_arg, word.clean_summary());
             }
 
             info!("Added words: {}", ebook.len());
 
-            ebook.write_markdown();
+            ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
         RunCommand::MarkdownToEbook => {
-            let output_path = &app_params.output_path.expect("output_path is missing.");
+            let o = app_params.output_path.clone();
+            let output_path = o.expect("output_path is missing.");
             let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
 
-            let p = &app_params.markdown_paths.expect("markdown_paths is missing.");
+            let paths = app_params.markdown_paths.clone();
+            let p = paths.expect("markdown_paths is missing.");
             let markdown_paths = p.to_vec();
 
-            app::process_markdown_list(markdown_paths, &mut ebook);
+            ok_or_exit(app_params.used_first_arg, app::process_markdown_list(markdown_paths, &mut ebook));
 
             info!("Added words: {}", ebook.len());
 
-            if let Some(title) = app_params.title {
-                ebook.meta.title = title;
+            if let Some(ref title) = app_params.title {
+                ebook.meta.title = title.clone();
             }
 
-            if let Some(dict_label) = app_params.dict_label {
+            if let Some(ref dict_label) = app_params.dict_label {
                 for (_key, word) in ebook.dict_words.iter_mut() {
                     word.word_header.dict_label = dict_label.clone();
                 }
             }
 
-            ebook.create_ebook_build_folders();
-
-            match ebook.ebook_format {
-                EbookFormat::Epub => {
-                    ebook.write_mimetype();
-                    ebook.write_meta_inf_files();
-                    ebook.write_oebps_files();
-                    ebook.zip_files_as_epub(app_params.zip_with);
-                }
-
-                EbookFormat::Mobi => {
-                    ebook.write_oebps_files();
-
-                    if !app_params.dont_run_kindlegen {
-                        let kindlegen_path = &app_params.kindlegen_path.expect("kindlegen_path is missing.");
-                        ebook.run_kindlegen(&kindlegen_path, app_params.mobi_compression);
-                    }
-                }
-            }
+            ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
 
             if !app_params.dont_remove_generated_files {
-                ebook.remove_generated_files();
+                ok_or_exit(app_params.used_first_arg, ebook.remove_generated_files());
             }
         }
     }

@@ -1,4 +1,8 @@
 use std::path::PathBuf;
+use std::error::Error;
+use std::process::exit;
+use std::thread::sleep;
+use std::time::Duration;
 
 use regex::Regex;
 use walkdir::DirEntry;
@@ -42,4 +46,18 @@ pub fn ensure_parent(p: &PathBuf) -> PathBuf {
 /// calls work.
 pub fn ensure_parent_all(paths: &[PathBuf]) -> Vec<PathBuf> {
     paths.iter().map(|p| ensure_parent(p)).collect()
+}
+
+pub fn ok_or_exit<T>(wait: bool, res: Result<T, Box<dyn Error>>) -> T {
+    match res {
+        Ok(x) => x,
+        Err(e) => {
+            error!("{:?}", e);
+            if wait {
+                println!("Exiting. Waiting 10s, or press Ctrl-C to close ...");
+                sleep(Duration::from_secs(10));
+            }
+            exit(2);
+        }
+    }
 }
