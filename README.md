@@ -13,7 +13,7 @@
 
 This tool generates EPUB and MOBI dictionary files.
 
-See the [Releses](https://github.com/simsapa/simsapa-dictionary/releases) page for downloads.
+See the [Releases](https://github.com/simsapa/simsapa-dictionary/releases) page for downloads.
 
 It includes a set of Pali - English dictionaries, and this tool for Linux, Mac and Windows.
 
