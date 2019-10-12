@@ -32,17 +32,19 @@ impl LetterGroups {
                 }
             };
 
-            groups.entry(key).or_insert(LetterGroup {
-                title: "".to_string(),
-                group_letter: first_letter,
-                letter_index: key,
-                dict_words: vec![i.clone()],
-            }).dict_words.push(i.clone());
+            groups
+                .entry(key)
+                .or_insert(LetterGroup {
+                    title: "".to_string(),
+                    group_letter: first_letter,
+                    letter_index: key,
+                    dict_words: vec![i.clone()],
+                })
+                .dict_words
+                .push(i.clone());
         }
 
-        LetterGroups {
-            groups
-        }
+        LetterGroups { groups }
     }
 
     pub fn len(&self) -> usize {
@@ -54,4 +56,3 @@ impl LetterGroups {
         k.is_empty()
     }
 }
-

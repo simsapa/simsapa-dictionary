@@ -1,17 +1,19 @@
 use std::default::Default;
 use std::error::Error;
 use std::fs;
-use std::process::Command;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
+use chrono::prelude::*;
 use regex::Regex;
 use walkdir::WalkDir;
-use chrono::prelude::*;
 
-use crate::ebook::{Ebook, EbookMetadata, EbookFormat, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP};
 use crate::dict_word::{DictWord, DictWordHeader};
-use crate::helpers::{is_hidden, ensure_parent, ensure_parent_all};
+use crate::ebook::{
+    Ebook, EbookFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
+};
 use crate::error::ToolError;
+use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
 
 pub struct AppStartParams {
     pub ebook_format: EbookFormat,
@@ -47,7 +49,6 @@ pub enum ZipWith {
 
 impl Default for AppStartParams {
     fn default() -> Self {
-
         // Zip cli tool is not usually available on Windows, so we zip with lib there.
         //
         // lise-henry/epub-builder notes that zipping epub with the lib sometimes gave her errors
@@ -149,7 +150,11 @@ fn look_for_kindlegen() -> Option<PathBuf> {
         // Try if it is available from the system PATH.
 
         let output = if cfg!(target_os = "windows") {
-            match Command::new("cmd").arg("/C").arg("where kindlegen.exe").output() {
+            match Command::new("cmd")
+                .arg("/C")
+                .arg("where kindlegen.exe")
+                .output()
+            {
                 Ok(o) => o,
                 Err(e) => {
                     warn!("🔥 Failed to find KindleGen: {:?}", e);
@@ -183,12 +188,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
     let mut params = AppStartParams::default();
 
     if let Some(sub_matches) = matches.subcommand_matches("suttacentral_json_to_markdown") {
-
-        if let Ok(x) = sub_matches
-            .value_of("json_path")
-            .unwrap()
-            .parse::<String>()
-        {
+        if let Ok(x) = sub_matches.value_of("json_path").unwrap().parse::<String>() {
             let path = PathBuf::from(&x);
             if path.exists() {
                 params.json_path = Some(path);
@@ -215,9 +215,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::SuttaCentralJsonToMarkdown;
-
     } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
-
         if let Ok(x) = sub_matches
             .value_of("nyanatiloka_root")
             .unwrap()
@@ -249,14 +247,12 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::NyanatilokaToMarkdown;
-
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
-
         if sub_matches.is_present("ebook_format") {
             if let Ok(x) = sub_matches
                 .value_of("ebook_format")
-                    .unwrap()
-                    .parse::<String>()
+                .unwrap()
+                .parse::<String>()
             {
                 let s = x.trim().to_lowercase();
                 if s == "epub" {
@@ -267,10 +263,11 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     params.ebook_format = EbookFormat::Epub;
                 }
             }
-
         }
 
-        if !sub_matches.is_present("markdown_path") && !sub_matches.is_present("markdown_paths_list") {
+        if !sub_matches.is_present("markdown_path")
+            && !sub_matches.is_present("markdown_paths_list")
+        {
             let msg = "🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.".to_string();
             return Err(Box::new(ToolError::Exit(msg)));
         }
@@ -278,8 +275,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         if sub_matches.is_present("markdown_path") {
             if let Ok(x) = sub_matches
                 .value_of("markdown_path")
-                    .unwrap()
-                    .parse::<String>()
+                .unwrap()
+                .parse::<String>()
             {
                 let path = PathBuf::from(&x);
                 if path.exists() {
@@ -292,11 +289,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if sub_matches.is_present("title") {
-            if let Ok(x) = sub_matches
-                .value_of("title")
-                    .unwrap()
-                    .parse::<String>()
-            {
+            if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
                 params.title = Some(x);
             }
         }
@@ -304,8 +297,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         if sub_matches.is_present("dict_label") {
             if let Ok(x) = sub_matches
                 .value_of("dict_label")
-                    .unwrap()
-                    .parse::<String>()
+                .unwrap()
+                .parse::<String>()
             {
                 params.dict_label = Some(x);
             }
@@ -314,8 +307,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         if sub_matches.is_present("markdown_paths_list") {
             if let Ok(x) = sub_matches
                 .value_of("markdown_paths_list")
-                    .unwrap()
-                    .parse::<String>()
+                .unwrap()
+                .parse::<String>()
             {
                 let list_path = PathBuf::from(&x);
                 let s = match fs::read_to_string(&list_path) {
@@ -323,7 +316,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     Err(e) => {
                         let msg = format!("🔥 Can't read path. {:?}", e);
                         return Err(Box::new(ToolError::Exit(msg)));
-                    },
+                    }
                 };
                 let s = s.trim();
 
@@ -351,11 +344,11 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     EbookFormat::Epub => {
                         let p = dir.join(PathBuf::from(filename).with_extension("epub"));
                         params.output_path = Some(ensure_parent(&p));
-                    },
+                    }
                     EbookFormat::Mobi => {
                         let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
                         params.output_path = Some(ensure_parent(&p));
-                    },
+                    }
                 }
             }
         }
@@ -363,8 +356,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         if sub_matches.is_present("mobi_compression") {
             if let Ok(x) = sub_matches
                 .value_of("mobi_compression")
-                    .unwrap()
-                    .parse::<usize>()
+                .unwrap()
+                .parse::<usize>()
             {
                 params.mobi_compression = x;
             }
@@ -378,8 +371,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             if sub_matches.is_present("kindlegen_path") {
                 if let Ok(x) = sub_matches
                     .value_of("kindlegen_path")
-                        .unwrap()
-                        .parse::<String>()
+                    .unwrap()
+                    .parse::<String>()
                 {
                     let path = PathBuf::from(&x);
                     if path.exists() {
@@ -462,10 +455,12 @@ pub fn process_nyanatiloka_entries(
     dict_label: &Option<String>,
     ebook: &mut Ebook,
 ) {
-    let nyanatiloka_root = &nyanatiloka_root.as_ref().expect("nyanatiloka_root is missing.");
+    let nyanatiloka_root = &nyanatiloka_root
+        .as_ref()
+        .expect("nyanatiloka_root is missing.");
     let dict_label = &dict_label.as_ref().expect("dict_label is missing.");
 
-    info!{"=== Begin processing {:?} ===", nyanatiloka_root};
+    info! {"=== Begin processing {:?} ===", nyanatiloka_root};
 
     #[derive(Deserialize)]
     struct Entry {
@@ -503,10 +498,7 @@ pub fn process_nyanatiloka_entries(
             word = cap[1].to_string();
         }
 
-        entries.push(Entry {
-            word,
-            text,
-        });
+        entries.push(Entry { word, text });
     }
 
     for e in entries.iter() {
@@ -525,12 +517,10 @@ pub fn process_nyanatiloka_entries(
     }
 }
 
-
 pub fn process_markdown_list(
     markdown_paths: Vec<PathBuf>,
-    ebook: &mut Ebook
-) -> Result<(), Box<dyn Error>>
-{
+    ebook: &mut Ebook,
+) -> Result<(), Box<dyn Error>> {
     for p in markdown_paths.iter() {
         process_markdown(p, ebook)?;
     }
@@ -538,11 +528,7 @@ pub fn process_markdown_list(
     Ok(())
 }
 
-pub fn process_markdown(
-    markdown_path: &PathBuf,
-    ebook: &mut Ebook
-) -> Result<(), Box<dyn Error>>
-{
+pub fn process_markdown(markdown_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
     info! {"=== Begin processing {:?} ===", markdown_path};
 
     let s = fs::read_to_string(markdown_path).unwrap();
@@ -551,11 +537,15 @@ pub fn process_markdown(
     let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
 
     if parts.len() != 2 {
-        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries.".to_string();
+        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries."
+            .to_string();
         return Err(Box::new(ToolError::Exit(msg)));
     }
 
-    let a = parts.get(0).unwrap().to_string()
+    let a = parts
+        .get(0)
+        .unwrap()
+        .to_string()
         .replace(DICTIONARY_METADATA_SEP, "")
         .replace("``` toml", "")
         .replace("```", "");
@@ -563,7 +553,10 @@ pub fn process_markdown(
     let mut meta: EbookMetadata = match toml::from_str(&a) {
         Ok(x) => x,
         Err(e) => {
-            let msg = format!("🔥 Can't serialize from TOML String: {:?}\nError: {:?}", &a, e);
+            let msg = format!(
+                "🔥 Can't serialize from TOML String: {:?}\nError: {:?}",
+                &a, e
+            );
             return Err(Box::new(ToolError::Exit(msg)));
         }
     };
@@ -574,7 +567,7 @@ pub fn process_markdown(
         EbookFormat::Epub => {
             meta.is_epub = true;
             meta.is_mobi = false;
-        },
+        }
         EbookFormat::Mobi => {
             meta.is_epub = false;
             meta.is_mobi = true;
@@ -602,7 +595,7 @@ pub fn process_markdown(
             Err(e) => {
                 let msg = format!("{:?}", e);
                 return Err(Box::new(ToolError::Exit(msg)));
-            },
+            }
         }
     }
 
@@ -628,4 +621,3 @@ fn html_to_plain(html: &str) -> String {
     plain
 }
 */
-

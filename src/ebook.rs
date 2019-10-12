@@ -1,19 +1,19 @@
 use std::error::Error;
-use std::process::Command;
 use std::fs::{self, File};
 use std::io::{self, Write};
+use std::process::Command;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use walkdir::WalkDir;
 use handlebars::{self, Handlebars};
+use walkdir::WalkDir;
 
-use crate::dict_word::{DictWord, DictWordHeader};
-use crate::letter_groups::LetterGroups;
-use crate::helpers::{md2html, markdown_helper, is_hidden};
 use crate::app::{AppStartParams, ZipWith};
+use crate::dict_word::{DictWord, DictWordHeader};
 use crate::error::ToolError;
+use crate::helpers::{is_hidden, markdown_helper, md2html};
+use crate::letter_groups::LetterGroups;
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -58,7 +58,7 @@ pub struct EbookMetadata {
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum EbookFormat {
     Epub,
-    Mobi
+    Mobi,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -80,59 +80,101 @@ impl Ebook {
         // Can't loop because the arg of include_str! must be a string literal.
 
         let k = "content-page.xhtml".to_string();
-        afs.insert(k.clone(), include_str!("../assets/content-page.xhtml").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/content-page.xhtml").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "about.md".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/about.md").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/about.md").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "copyright.md".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/copyright.md").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/copyright.md").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "entries-epub.xhtml".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/entries-epub.xhtml").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/entries-epub.xhtml").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "entries-mobi.xhtml".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/entries-mobi.xhtml").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/entries-mobi.xhtml").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "htmltoc.xhtml".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/htmltoc.xhtml").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/htmltoc.xhtml").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "toc.ncx".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/toc.ncx").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/toc.ncx").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "package.opf".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/package.opf").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/package.opf").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "cover.xhtml".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/cover.xhtml").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/cover.xhtml").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
         let k = "titlepage.xhtml".to_string();
-        afs.insert(k.clone(), include_str!("../assets/OEBPS/titlepage.xhtml").to_string());
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/OEBPS/titlepage.xhtml").to_string(),
+        );
         reg_tmpl(&mut h, &k, &afs);
 
-        afb.insert("cover.jpg".to_string(), include_bytes!("../assets/OEBPS/cover.jpg").to_vec());
+        afb.insert(
+            "cover.jpg".to_string(),
+            include_bytes!("../assets/OEBPS/cover.jpg").to_vec(),
+        );
 
-        afb.insert("style.css".to_string(), include_bytes!("../assets/OEBPS/style.css").to_vec());
+        afb.insert(
+            "style.css".to_string(),
+            include_bytes!("../assets/OEBPS/style.css").to_vec(),
+        );
 
-        afb.insert("container.xml".to_string(), include_bytes!("../assets/META-INF/container.xml").to_vec());
+        afb.insert(
+            "container.xml".to_string(),
+            include_bytes!("../assets/META-INF/container.xml").to_vec(),
+        );
 
-        afb.insert("com.apple.ibooks.display-options.xml".to_string(), include_bytes!("../assets/META-INF/com.apple.ibooks.display-options.xml").to_vec());
+        afb.insert(
+            "com.apple.ibooks.display-options.xml".to_string(),
+            include_bytes!("../assets/META-INF/com.apple.ibooks.display-options.xml").to_vec(),
+        );
 
         let mut meta = EbookMetadata::default();
         match ebook_format {
             EbookFormat::Epub => {
                 meta.is_epub = true;
                 meta.is_mobi = false;
-            },
+            }
             EbookFormat::Mobi => {
                 meta.is_epub = false;
                 meta.is_mobi = true;
@@ -156,10 +198,16 @@ impl Ebook {
     }
 
     pub fn add_word(&mut self, new_word: DictWord) {
-        let w_key = format!("{} {}", new_word.word_header.word, new_word.word_header.dict_label);
+        let w_key = format!(
+            "{} {}",
+            new_word.word_header.word, new_word.word_header.dict_label
+        );
 
         if self.dict_words.contains_key(&w_key) {
-            warn!("Double word: '{}'. Entries should be unique for word within one dictionary.", &w_key);
+            warn!(
+                "Double word: '{}'. Entries should be unique for word within one dictionary.",
+                &w_key
+            );
 
             let ww = DictWord {
                 word_header: DictWordHeader {
@@ -169,15 +217,17 @@ impl Ebook {
                     grammar: new_word.word_header.grammar,
                     inflections: new_word.word_header.inflections,
                 },
-                definition_md: new_word.definition_md
+                definition_md: new_word.definition_md,
             };
             let ww_key = format!("{} double", &w_key);
             self.dict_words.insert(ww_key, ww);
-
         } else {
             let w = self.dict_words.insert(w_key.clone(), new_word);
             if w.is_some() {
-                error!("Unhandled double word '{}', new value replacing the old.", w_key);
+                error!(
+                    "Unhandled double word '{}', new value replacing the old.",
+                    w_key
+                );
             }
         }
     }
@@ -243,7 +293,7 @@ impl Ebook {
                 } else {
                     p.to_path_buf()
                 }
-            },
+            }
             None => PathBuf::from("."),
         };
         let build_base_dir = match parent.canonicalize() {
@@ -251,15 +301,18 @@ impl Ebook {
             Err(e) => {
                 let msg = format!("Can't canonicalize: {:?}\nError: {:?}", parent, e);
                 return Err(Box::new(ToolError::Exit(msg)));
-            },
+            }
         };
         if !build_base_dir.exists() {
             match fs::create_dir(&build_base_dir) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
-                    let msg = format!("Can't create directory: {:?}\nError: {:?}", build_base_dir, e);
+                    let msg = format!(
+                        "Can't create directory: {:?}\nError: {:?}",
+                        build_base_dir, e
+                    );
                     return Err(Box::new(ToolError::Exit(msg)));
-                },
+                }
             };
         }
         self.build_base_dir = Some(build_base_dir.clone());
@@ -298,7 +351,6 @@ impl Ebook {
         };
 
         for (order_idx, group) in groups.groups.values_mut().enumerate() {
-
             if order_idx == 0 {
                 group.title = self.meta.title.clone();
             }
@@ -320,11 +372,10 @@ impl Ebook {
             // entries-00.xhtml, entries-01.xhtml and so on.
 
             let group_file_name = format!("entries-{:02}.xhtml", order_idx);
-            self.entries_manifest.push(
-                EntriesManifest {
-                    id: format!("item_entries_{:02}", order_idx),
-                    href: group_file_name.clone(),
-                });
+            self.entries_manifest.push(EntriesManifest {
+                id: format!("item_entries_{:02}", order_idx),
+                href: group_file_name.clone(),
+            });
 
             let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
             let mut file = File::create(dir.join(group_file_name))?;
@@ -506,7 +557,10 @@ impl Ebook {
 
         let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
         for filename in ["cover.jpg", "style.css"].iter() {
-            let file_content = self.asset_files_byte.get(&filename.to_string()).ok_or("missing get key")?;
+            let file_content = self
+                .asset_files_byte
+                .get(&filename.to_string())
+                .ok_or("missing get key")?;
             let mut file = File::create(dir.join(filename))?;
             file.write_all(file_content)?;
         }
@@ -529,7 +583,10 @@ impl Ebook {
 
         let dir = self.meta_inf_dir.as_ref().ok_or("missing meta_inf_dir")?;
         for filename in ["container.xml", "com.apple.ibooks.display-options.xml"].iter() {
-            let file_content = self.asset_files_byte.get(&filename.to_string()).ok_or("missing get key")?;
+            let file_content = self
+                .asset_files_byte
+                .get(&filename.to_string())
+                .ok_or("missing get key")?;
             let mut file = File::create(dir.join(filename))?;
             file.write_all(file_content)?;
         }
@@ -561,7 +618,10 @@ impl Ebook {
     fn zip_with_shell(&self) -> Result<(), Box<dyn Error>> {
         info!("zip_with_shell()");
 
-        let d = self.build_base_dir.as_ref().ok_or("missing build_base_dir")?;
+        let d = self
+            .build_base_dir
+            .as_ref()
+            .ok_or("missing build_base_dir")?;
         let dir: &str = d.to_str().unwrap();
         let n = self.output_path.file_name().ok_or("mising file_name")?;
         let epub_name: &str = n.to_str().unwrap();
@@ -597,7 +657,8 @@ impl Ebook {
 
             // mimetype file first, not compressed
             {
-                let o = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+                let o = zip::write::FileOptions::default()
+                    .compression_method(zip::CompressionMethod::Stored);
                 zip.start_file("mimetype", o)?;
                 zip.write_all(b"application/epub+zip")?;
             }
@@ -611,7 +672,11 @@ impl Ebook {
                 let o = zip::write::FileOptions::default();
 
                 zip.start_file("META-INF/com.apple.ibooks.display-options.xml", o)?;
-                zip.write_all(self.asset_files_byte.get("com.apple.ibooks.display-options.xml").unwrap())?;
+                zip.write_all(
+                    self.asset_files_byte
+                        .get("com.apple.ibooks.display-options.xml")
+                        .unwrap(),
+                )?;
 
                 zip.start_file("META-INF/container.xml", o)?;
                 zip.write_all(self.asset_files_byte.get("container.xml").unwrap())?;
@@ -666,7 +731,11 @@ impl Ebook {
         }
     }
 
-    pub fn run_kindlegen(&self, kindlegen_path: &PathBuf, mobi_compression: usize) -> Result<(), Box<dyn Error>> {
+    pub fn run_kindlegen(
+        &self,
+        kindlegen_path: &PathBuf,
+        mobi_compression: usize,
+    ) -> Result<(), Box<dyn Error>> {
         info!("run_kindlegen()");
 
         let oebps_dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
@@ -679,37 +748,39 @@ impl Ebook {
         }
 
         let output = if cfg!(target_os = "windows") {
-            match Command::new("cmd").arg("/C")
+            match Command::new("cmd")
+                .arg("/C")
                 .arg(kindlegen_path)
                 .arg(opf_path)
                 .arg(format!("-c{}", mobi_compression))
                 .arg("-dont_append_source")
                 .arg("-o")
                 .arg(output_file_name)
-                .output() {
-                    Ok(o) => o,
-                    Err(e) => {
-                        let msg = format!("🔥 Failed to run KindleGen: {:?}", e);
-                        return Err(Box::new(ToolError::Exit(msg)));
-                    }
+                .output()
+            {
+                Ok(o) => o,
+                Err(e) => {
+                    let msg = format!("🔥 Failed to run KindleGen: {:?}", e);
+                    return Err(Box::new(ToolError::Exit(msg)));
                 }
+            }
         } else {
             // sh expects a command string after -c.
-            let cmd_string = format!("{} \"{}\" -c{} -dont_append_source -o \"{}\"",
+            let cmd_string = format!(
+                "{} \"{}\" -c{} -dont_append_source -o \"{}\"",
                 kindlegen_path.to_str().unwrap(),
                 opf_path.to_str().unwrap(),
                 mobi_compression,
-                output_file_name.to_str().unwrap());
+                output_file_name.to_str().unwrap()
+            );
 
-            match Command::new("sh").arg("-c")
-                .arg(cmd_string)
-                .output() {
-                    Ok(o) => o,
-                    Err(e) => {
-                        let msg = format!("🔥 Failed to run KindleGen: {:?}", e);
-                        return Err(Box::new(ToolError::Exit(msg)));
-                    }
+            match Command::new("sh").arg("-c").arg(cmd_string).output() {
+                Ok(o) => o,
+                Err(e) => {
+                    let msg = format!("🔥 Failed to run KindleGen: {:?}", e);
+                    return Err(Box::new(ToolError::Exit(msg)));
                 }
+            }
         };
 
         io::stdout().write_all(&output.stdout)?;
@@ -752,7 +823,10 @@ impl Ebook {
                 self.write_oebps_files()?;
 
                 if !app_params.dont_run_kindlegen {
-                    let kindlegen_path = &app_params.kindlegen_path.as_ref().ok_or("kindlegen_path is missing.")?;
+                    let kindlegen_path = &app_params
+                        .kindlegen_path
+                        .as_ref()
+                        .ok_or("kindlegen_path is missing.")?;
                     self.run_kindlegen(&kindlegen_path, app_params.mobi_compression)?;
                 }
             }
@@ -790,4 +864,3 @@ impl Default for EbookMetadata {
         }
     }
 }
-

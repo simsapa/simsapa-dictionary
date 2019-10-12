@@ -1,6 +1,6 @@
+use regex::Regex;
 use std::default::Default;
 use std::error::Error;
-use regex::Regex;
 
 use crate::error::ToolError;
 
@@ -26,7 +26,11 @@ impl DictWord {
 
     pub fn as_markdown_and_toml_string(&self) -> String {
         let header = toml::to_string(&self.word_header).unwrap();
-        format!("``` toml\n{}\n```\n\n{}", &header.trim(), &self.definition_md.trim())
+        format!(
+            "``` toml\n{}\n```\n\n{}",
+            &header.trim(),
+            &self.definition_md.trim()
+        )
     }
 
     pub fn from_markdown(s: &str) -> Result<DictWord, Box<dyn Error>> {
@@ -37,7 +41,10 @@ impl DictWord {
         let word_header: DictWordHeader = match toml::from_str(toml) {
             Ok(x) => x,
             Err(e) => {
-                let msg = format!("🔥 Can't serialize from TOML String: {:?}\nError: {:?}", &toml, e);
+                let msg = format!(
+                    "🔥 Can't serialize from TOML String: {:?}\nError: {:?}",
+                    &toml, e
+                );
                 return Err(Box::new(ToolError::Exit(msg)));
             }
         };
@@ -85,12 +92,18 @@ impl DictWord {
         // See... with markdown link
         // (see *[abbha](/define/abbha)*) -> (see abbha)
         let re_see_markdown_links = Regex::new(r"\(see \*\[([^\]]+)\]\([^\)]+\)\**\)").unwrap();
-        summary = re_see_markdown_links.replace_all(&summary, "(see $1)").trim().to_string();
+        summary = re_see_markdown_links
+            .replace_all(&summary, "(see $1)")
+            .trim()
+            .to_string();
 
         // markdown links
         // [abbha](/define/abbha) -> abbha
         let re_markdown_links = Regex::new(r"\[([^\]]+)\]\([^\)]+\)").unwrap();
-        summary = re_markdown_links.replace_all(&summary, "$1").trim().to_string();
+        summary = re_markdown_links
+            .replace_all(&summary, "$1")
+            .trim()
+            .to_string();
 
         // remaining markdown markup: *, []
         let re_markdown = Regex::new(r"[\*\[\]]").unwrap();
@@ -109,7 +122,10 @@ impl DictWord {
         // grammar abbr., with- or without dot, with- or without parens
         let re_abbr_one = Regex::new(r"^\(*(d|f|m|ṃ|n|r|s|t)\.*\)*\.*\b").unwrap();
         let re_abbr_two = Regex::new(r"^\(*(ac|fn|id|mf|pl|pp|pr|sg|si)\.*\)*\.*\b").unwrap();
-        let re_abbr_three = Regex::new(r"^\(*(abl|acc|act|adv|aor|dat|fpp|fut|gen|inc|ind|inf|loc|mfn|neg|opt)\.*\)*\.*\b").unwrap();
+        let re_abbr_three = Regex::new(
+            r"^\(*(abl|acc|act|adv|aor|dat|fpp|fut|gen|inc|ind|inf|loc|mfn|neg|opt)\.*\)*\.*\b",
+        )
+        .unwrap();
         let re_abbr_four = Regex::new(r"^\(*(caus|part|pass|pron)\.*\)*\.*\b").unwrap();
         let re_abbr_more = Regex::new(r"^\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|neuter|plural|singular)\.*\)*\.*\b").unwrap();
 
@@ -209,7 +225,10 @@ impl DictWord {
         if !summary.is_empty() {
             let sum_length = 50;
             if summary.char_indices().count() > sum_length {
-                let (char_idx, _char) = summary.char_indices().nth(sum_length).ok_or("Bad char index")?;
+                let (char_idx, _char) = summary
+                    .char_indices()
+                    .nth(sum_length)
+                    .ok_or("Bad char index")?;
                 summary = summary[..char_idx].trim().to_string();
             }
 
@@ -244,4 +263,3 @@ impl Default for DictWordHeader {
         }
     }
 }
-

@@ -7,8 +7,8 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
 
-extern crate zip;
 extern crate html2md;
+extern crate zip;
 
 #[macro_use]
 extern crate log;
@@ -18,18 +18,18 @@ extern crate kankyo;
 extern crate clap;
 extern crate chrono;
 
-extern crate handlebars;
 extern crate comrak;
+extern crate handlebars;
 
 use clap::App;
 
 pub mod app;
-pub mod ebook;
 pub mod dict_word;
-pub mod letter_groups;
-pub mod pali;
+pub mod ebook;
 pub mod error;
 pub mod helpers;
+pub mod letter_groups;
+pub mod pali;
 
 use std::process::exit;
 
@@ -75,12 +75,18 @@ fn main() {
         }
 
         RunCommand::SuttaCentralJsonToMarkdown => {
-            let p = &app_params.markdown_paths.expect("markdown_path is missing.");
+            let p = &app_params
+                .markdown_paths
+                .expect("markdown_path is missing.");
             let output_markdown_path = p.get(0).unwrap().to_path_buf();
 
             let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
 
-            app::process_suttacentral_json(&app_params.json_path, &app_params.dict_label, &mut ebook);
+            app::process_suttacentral_json(
+                &app_params.json_path,
+                &app_params.dict_label,
+                &mut ebook,
+            );
 
             for (_key, word) in ebook.dict_words.iter_mut() {
                 ok_or_exit(app_params.used_first_arg, word.clean_summary());
@@ -92,12 +98,18 @@ fn main() {
         }
 
         RunCommand::NyanatilokaToMarkdown => {
-            let p = &app_params.markdown_paths.expect("markdown_path is missing.");
+            let p = &app_params
+                .markdown_paths
+                .expect("markdown_path is missing.");
             let output_markdown_path = p.get(0).unwrap().to_path_buf();
 
             let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
 
-            app::process_nyanatiloka_entries(&app_params.nyanatiloka_root, &app_params.dict_label, &mut ebook);
+            app::process_nyanatiloka_entries(
+                &app_params.nyanatiloka_root,
+                &app_params.dict_label,
+                &mut ebook,
+            );
 
             for (_key, word) in ebook.dict_words.iter_mut() {
                 ok_or_exit(app_params.used_first_arg, word.clean_summary());
@@ -117,7 +129,10 @@ fn main() {
             let p = paths.expect("markdown_paths is missing.");
             let markdown_paths = p.to_vec();
 
-            ok_or_exit(app_params.used_first_arg, app::process_markdown_list(markdown_paths, &mut ebook));
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_markdown_list(markdown_paths, &mut ebook),
+            );
 
             info!("Added words: {}", ebook.len());
 

@@ -24,7 +24,10 @@ const ROMANIZED_PALI_ALPHABET: &str = "a ā b bh c ch d dh ḍ ḍh e f g gh h i
 const RPA_DOUBLES_FIRST: &str = "bh ch dh ḍh gh jh kh ph th ṭh a ā b c d ḍ e f g h i ī j k l ḷ m ṃ n ṅ ṇ ñ o p q r s t ṭ u ū v w x y z";
 
 pub fn romanized_pali_letter_index(word: &str) -> usize {
-    let alphabet: Vec<String> = ROMANIZED_PALI_ALPHABET.split(' ').map(String::from).collect();
+    let alphabet: Vec<String> = ROMANIZED_PALI_ALPHABET
+        .split(' ')
+        .map(String::from)
+        .collect();
     let word_clean = word.trim().to_lowercase();
 
     match first_letter(&word_clean) {
@@ -32,7 +35,7 @@ pub fn romanized_pali_letter_index(word: &str) -> usize {
             Ok(x) => x,
             Err(_) => alphabet.len(),
         },
-        None => alphabet.len()
+        None => alphabet.len(),
     }
 }
 
@@ -42,10 +45,9 @@ pub fn first_letter(word: &str) -> Option<String> {
 
     for i in doubles_first.iter() {
         if word_clean.starts_with(*i) {
-            return Some(String::from(*i))
+            return Some(String::from(*i));
         }
     }
 
     None
 }
-

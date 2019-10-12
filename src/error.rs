@@ -2,7 +2,7 @@ use std::error::Error;
 use std::{error, fmt};
 
 pub enum ToolError {
-    Exit(String)
+    Exit(String),
 }
 
 impl fmt::Display for ToolError {

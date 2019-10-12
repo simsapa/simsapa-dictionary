@@ -1,16 +1,22 @@
-use std::path::PathBuf;
 use std::error::Error;
+use std::path::PathBuf;
 use std::process::exit;
 use std::thread::sleep;
 use std::time::Duration;
 
+use handlebars::{Context, Handlebars, Helper, HelperResult, JsonRender, Output, RenderContext};
 use regex::Regex;
 use walkdir::DirEntry;
-use handlebars::{Handlebars, RenderContext, Helper, Context, JsonRender, HelperResult, Output};
 
 use comrak::{markdown_to_html, ComrakOptions};
 
-pub fn markdown_helper(h: &Helper, _: &Handlebars, _: &Context, _rc: &mut RenderContext, out: &mut dyn Output) -> HelperResult {
+pub fn markdown_helper(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
     let param = h.param(0).unwrap();
     let html = md2html(param.value().render().as_ref());
     out.write(&html)?;
@@ -29,7 +35,8 @@ pub fn md2html(markdown: &str) -> String {
 }
 
 pub fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
+    entry
+        .file_name()
         .to_str()
         .map(|s| s.starts_with('.'))
         .unwrap_or(false)
