@@ -14,7 +14,7 @@ if [ ! -e "$BIN_PATH" ]; then
     exit 2
 fi
 
-# Create test-temp and copy in the data.
+# Remove previous test-temp, create it again, and copy in the data.
 
 if [[ -d "$TEST_TEMP" ]]; then
     rm "$TEST_TEMP" -r
@@ -108,6 +108,9 @@ echo "=== Test: Build a MOBI with first argument without path ==="
 
 cd "$TEST_TEMP/data/data with space"
 
+if [[ -L ./simsapa_dictionary ]]; then
+    rm ./simsapa_dictionary
+fi
 ln -s ../../../target/debug/simsapa_dictionary ./simsapa_dictionary
 
 ./simsapa_dictionary "ncped with space.md"
@@ -124,6 +127,38 @@ else
     rm "./ncped with space.mobi"
     echo "Test Passed."
 fi
+
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build an EPUB with first argument when kindlegen is not found ==="
+
+PATH_ORIG="$PATH"
+export PATH="/usr/local/bin:/usr/bin:/bin:"
+
+cd "$TEST_TEMP/data/data with space"
+
+if [[ -L ./simsapa_dictionary ]]; then
+    rm ./simsapa_dictionary
+fi
+ln -s ../../../target/debug/simsapa_dictionary ./simsapa_dictionary
+
+./simsapa_dictionary "ncped with space.md"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "./ncped with space.epub" ]; then
+    echo "Test Failed."
+    exit 2
+else
+    rm "./ncped with space.epub"
+    echo "Test Passed."
+fi
+
+export PATH="$PATH_ORIG"
 
 # === Clean up. ===
 

@@ -106,14 +106,24 @@ pub fn process_first_arg() -> Option<AppStartParams> {
 
     let mut params = AppStartParams::default();
     params.markdown_paths = Some(vec![ensure_parent(&markdown_path)]);
-    params.ebook_format = EbookFormat::Mobi;
+
+    params.kindlegen_path = look_for_kindlegen();
+
+    params.ebook_format = if params.kindlegen_path.is_some() {
+        EbookFormat::Mobi
+    } else {
+        EbookFormat::Epub
+    };
 
     let filename = markdown_path.file_name().unwrap();
     let dir = markdown_path.parent().unwrap();
-    let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
-    params.output_path = Some(p);
 
-    params.kindlegen_path = look_for_kindlegen();
+    let file_ext = if params.kindlegen_path.is_some() {
+        "mobi"
+    } else {
+        "epub"
+    };
+    params.output_path = Some(dir.join(PathBuf::from(filename).with_extension(file_ext)));
 
     params.run_command = RunCommand::MarkdownToEbook;
 
@@ -138,16 +148,16 @@ fn look_for_kindlegen() -> Option<PathBuf> {
             match Command::new("cmd").arg("/C").arg("where kindlegen.exe").output() {
                 Ok(o) => o,
                 Err(e) => {
-                    error!("🔥 Failed to find KindleGen: {:?}", e);
-                    exit(2);
+                    warn!("🔥 Failed to find KindleGen: {:?}", e);
+                    return None;
                 }
             }
         } else {
             match Command::new("sh").arg("-c").arg("which kindlegen").output() {
                 Ok(o) => o,
                 Err(e) => {
-                    error!("🔥 Failed to find KindleGen: {:?}", e);
-                    exit(2);
+                    warn!("🔥 Failed to find KindleGen: {:?}", e);
+                    return None;
                 }
             }
         };
@@ -158,8 +168,8 @@ fn look_for_kindlegen() -> Option<PathBuf> {
             info!("🔎 Found KindleGen in: {}", s);
             Some(PathBuf::from(s))
         } else {
-            error!("🔥 Failed to find KindleGen.");
-            exit(2);
+            warn!("🔥 Failed to find KindleGen.");
+            None
         }
     }
 }

@@ -105,8 +105,6 @@ fn main() {
             let p = &app_params.markdown_paths.expect("markdown_paths is missing.");
             let markdown_paths = p.to_vec();
 
-            let kindlegen_path = &app_params.kindlegen_path.expect("kindlegen_path is missing.");
-
             app::process_markdown_list(markdown_paths, &mut ebook);
 
             info!("Added words: {}", ebook.len());
@@ -135,6 +133,7 @@ fn main() {
                     ebook.write_oebps_files();
 
                     if !app_params.dont_run_kindlegen {
+                        let kindlegen_path = &app_params.kindlegen_path.expect("kindlegen_path is missing.");
                         ebook.run_kindlegen(&kindlegen_path, app_params.mobi_compression);
                     }
                 }
