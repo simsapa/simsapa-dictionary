@@ -6,6 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
+extern crate calamine;
 
 extern crate html2md;
 extern crate zip;
@@ -118,7 +119,7 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
-        RunCommand::MarkdownToEbook | RunCommand::TsvToEbook => {
+        RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
             let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
@@ -135,10 +136,10 @@ fn main() {
                     );
                 }
 
-                RunCommand::TsvToEbook => {
+                RunCommand::XlsxToEbook => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_tsv_list(source_paths, &mut ebook),
+                        app::process_xlsx_list(source_paths, &mut ebook),
                     );
                 }
 

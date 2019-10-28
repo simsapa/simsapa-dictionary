@@ -104,7 +104,7 @@ fi
 # ===============================================
 # ///////////////////////////////////////////////
 
-echo "=== Test: Build a MOBI with first argument without path ==="
+echo "=== Test: Build a MOBI from Markdown with first argument without path ==="
 
 cd "$TEST_TEMP/data/data with space"
 
@@ -131,7 +131,7 @@ fi
 # ===============================================
 # ///////////////////////////////////////////////
 
-echo "=== Test: Build an EPUB with first argument when kindlegen is not found ==="
+echo "=== Test: Build an EPUB from Markdown with first argument when kindlegen is not found ==="
 
 PATH_ORIG="$PATH"
 export PATH="/usr/local/bin:/usr/bin:/bin:"
@@ -159,6 +159,71 @@ else
 fi
 
 export PATH="$PATH_ORIG"
+
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a MOBI from XLSX with first argument with path ==="
+
+cd "$TEST_TEMP"
+
+./simsapa_dictionary "data/data with space/ncped with space.xlsx"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "./data/data with space/ncped with space.mobi" ]; then
+    echo "Test Failed."
+    exit 2
+else
+    rm "./data/data with space/ncped with space.mobi"
+    echo "Test Passed."
+fi
+
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a MOBI from XLSX with subcommand ==="
+
+cd "$TEST_TEMP"
+
+# Not using the --kindlegen_path option, it should detect that kindlegen is in PATH.
+
+# Using --source_path without ./
+
+# Using --output_path without ./, it should add that as a prefix.
+
+./simsapa_dictionary xlsx_to_ebook \
+    --source_path "data/data with space/ncped with space.xlsx" \
+    --dict_label "" \
+    --ebook_format mobi \
+    --output_path "ncped here.mobi" \
+    --mobi_compression 0 2>&1 | tee output.log
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+# Check for Kindlegen warnings.
+warns=$(grep -E '^Warning' output.log | grep -vE 'Index not supported for enhanced mobi.')
+
+if [[ "$warns" != "" ]]; then
+    echo "Kindlegen warnings:"
+    echo "$warns"
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "./ncped here.mobi" ]; then
+    echo "Test Failed."
+    exit 2
+else
+    rm "./ncped here.mobi"
+    echo "Test Passed."
+fi
 
 # === Clean up. ===
 

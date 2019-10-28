@@ -100,8 +100,8 @@ subcommands:
             required: false
             takes_value: false
 
-  - tsv_to_ebook:
-      about: "Process a TSV (Tab Seperated Values) file and generate an EPUB or MOBI dictionary."
+  - xlsx_to_ebook:
+      about: "Process a XLSX (MS Excel Spreadsheet) file and generate an EPUB or MOBI dictionary."
 
       args:
         - ebook_format:
@@ -114,35 +114,35 @@ subcommands:
             possible_values: [ "EPUB", "Epub", "epub", "MOBI", "Mobi", "mobi" ]
 
         - source_paths_list:
-            help: "A file with a list of TSV file paths, one per line. Either this or 'source_path' must be used."
+            help: "A file with a list of XLSX file paths, one per line. Either this or 'source_path' must be used."
             long: source_paths_list
             value_name: PATH
             required: false
             takes_value: true
 
         - source_path:
-            help: "A single TSV file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            help: "A single XLSX file to read dictionary entries from. Either this or 'source_paths_list' must be used."
             long: source_path
             value_name: PATH
             required: false
             takes_value: true
 
         - title:
-            help: "Use this title for the ebook, instead of the one defined in the TSV file."
+            help: "Use this title for the ebook, instead of the one defined in the XLSX file."
             long: title
             value_name: TITLE
             required: false
             takes_value: true
 
         - dict_label:
-            help: "Use this dict_label property, instead of the one defined in the TSV file."
+            help: "Use this dict_label property, instead of the one defined in the XLSX file."
             long: dict_label
             value_name: LABEL
             required: false
             takes_value: true
 
         - output_path:
-            help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first TSV source."
+            help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first XLSX source."
             long: output_path
             value_name: PATH
             required: false
