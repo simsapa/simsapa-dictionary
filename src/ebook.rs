@@ -150,8 +150,8 @@ impl Ebook {
         reg_tmpl(&mut h, &k, &afs);
 
         afb.insert(
-            "cover.jpg".to_string(),
-            include_bytes!("../assets/OEBPS/cover.jpg").to_vec(),
+            "default_cover.jpg".to_string(),
+            include_bytes!("../assets/OEBPS/default_cover.jpg").to_vec(),
         );
 
         afb.insert(
@@ -556,7 +556,7 @@ impl Ebook {
         info!("copy_static()");
 
         let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
-        for filename in ["cover.jpg", "style.css"].iter() {
+        for filename in ["default_cover.jpg", "style.css"].iter() {
             let file_content = self
                 .asset_files_byte
                 .get(&filename.to_string())
@@ -855,7 +855,7 @@ impl Default for EbookMetadata {
             description: "Pali - English".to_string(),
             creator: "Simsapa Dhamma Reader".to_string(),
             source: "https://simsapa.github.io".to_string(),
-            cover_path: "cover.jpg".to_string(),
+            cover_path: "default_cover.jpg".to_string(),
             book_id: "SimsapaPaliDictionary".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),

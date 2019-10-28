@@ -34,7 +34,7 @@
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
     <item id="style" href="style.css" media-type="text/css"/>
 
-    <item id="item_cover" href="cover.jpg" media-type="image/jpeg" properties="cover-image"/>
+    <item id="item_cover" href="{{meta.cover_path}}" media-type="image/jpeg" properties="cover-image"/>
 
     <item id="item_titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml"/>
     <item id="item_about" href="about.xhtml" media-type="application/xhtml+xml"/>
