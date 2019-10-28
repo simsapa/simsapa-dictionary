@@ -4,10 +4,12 @@
 **Table of Contents**
 
 - [Simsapa Dictionary Tool](#simsapa-dictionary-tool)
+    - [Feedback, corrections, bug reports](#feedback-corrections-bug-reports)
     - [Example dictionary](#example-dictionary)
     - [CLI Options](#cli-options)
-        - [--help](#--help)
+        - [help](#help)
         - [markdown_to_ebook](#markdowntoebook)
+    - [Sources](#sources)
 
 <!-- markdown-toc end -->
 
@@ -122,10 +124,10 @@ ndped-example.md
 
 ## CLI Options
 
-### --help
+### help
 
 ```
-./simsapa_dictionary --help
+./simsapa_dictionary help
 ```
 
 ```
@@ -178,10 +180,10 @@ OPTIONS:
                                         Mobi, mobi]
         --kindlegen_path <PATH>         The KindleGen tool must be available either (a) in the current folder with this
                                         tool, (b) in the system PATH, (c) declared with this option.
-        --markdown_path <PATH>          A single Markdown file to read dictionary entries from. Either this or
-                                        'markdown_paths_list' must be used.
-        --markdown_paths_list <PATH>    A file with a list of Markdown file paths, one per line. Either this or
-                                        'markdown_path' must be used.
+        --source_path <PATH>            A single Markdown file to read dictionary entries from. Either this or
+                                        'source_paths_list' must be used.
+        --source_paths_list <PATH>      A file with a list of Markdown file paths, one per line. Either this or
+                                        'source_path' must be used.
         --mobi_compression <INT>        Compression level, 0-2, as used by KindleGen. 0: no compression, 1: standard DOC
                                         compression, 2: Kindle huffdic compression. [default: 0]  [possible values: 0,
                                         1, 2]

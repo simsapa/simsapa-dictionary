@@ -19,7 +19,7 @@ pub struct AppStartParams {
     pub ebook_format: EbookFormat,
     pub json_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
-    pub markdown_paths: Option<Vec<PathBuf>>,
+    pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
@@ -39,6 +39,7 @@ pub enum RunCommand {
     SuttaCentralJsonToMarkdown,
     NyanatilokaToMarkdown,
     MarkdownToEbook,
+    TsvToEbook,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -66,7 +67,7 @@ impl Default for AppStartParams {
             ebook_format: EbookFormat::Epub,
             json_path: None,
             nyanatiloka_root: None,
-            markdown_paths: None,
+            source_paths: None,
             output_path: None,
             kindlegen_path: None,
             title: None,
@@ -94,23 +95,29 @@ pub fn process_first_arg() -> Option<AppStartParams> {
     }
 
     let _bin_path = args.next();
-    let markdown_path = if let Some(a) = args.next() {
+    let source_path = if let Some(a) = args.next() {
         PathBuf::from(a)
     } else {
         return None;
     };
 
-    if !markdown_path.exists() {
-        return None;
-    }
-
-    if "md" != markdown_path.extension().unwrap() {
+    if !source_path.exists() {
         return None;
     }
 
     let mut params = AppStartParams::default();
     params.used_first_arg = true;
-    params.markdown_paths = Some(vec![ensure_parent(&markdown_path)]);
+    params.source_paths = Some(vec![ensure_parent(&source_path)]);
+
+    // Source must be either .md or .tsv
+    let ext = source_path.extension().unwrap();
+    if "md" == ext {
+        params.run_command = RunCommand::MarkdownToEbook;
+    } else if "tsv" == ext {
+        params.run_command = RunCommand::TsvToEbook;
+    } else {
+        return None;
+    }
 
     params.kindlegen_path = look_for_kindlegen();
 
@@ -120,8 +127,8 @@ pub fn process_first_arg() -> Option<AppStartParams> {
         EbookFormat::Epub
     };
 
-    let filename = markdown_path.file_name().unwrap();
-    let dir = markdown_path.parent().unwrap();
+    let filename = source_path.file_name().unwrap();
+    let dir = source_path.parent().unwrap();
 
     let file_ext = if params.kindlegen_path.is_some() {
         "mobi"
@@ -129,8 +136,6 @@ pub fn process_first_arg() -> Option<AppStartParams> {
         "epub"
     };
     params.output_path = Some(dir.join(PathBuf::from(filename).with_extension(file_ext)));
-
-    params.run_command = RunCommand::MarkdownToEbook;
 
     Some(params)
 }
@@ -199,11 +204,11 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if let Ok(x) = sub_matches
-            .value_of("markdown_path")
+            .value_of("output_path")
             .unwrap()
             .parse::<String>()
         {
-            params.markdown_paths = Some(vec![PathBuf::from(&x)]);
+            params.output_path = Some(PathBuf::from(&x));
         }
 
         if let Ok(x) = sub_matches
@@ -215,6 +220,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::SuttaCentralJsonToMarkdown;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
         if let Ok(x) = sub_matches
             .value_of("nyanatiloka_root")
@@ -231,11 +237,11 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if let Ok(x) = sub_matches
-            .value_of("markdown_path")
+            .value_of("output_path")
             .unwrap()
             .parse::<String>()
         {
-            params.markdown_paths = Some(vec![PathBuf::from(&x)]);
+            params.output_path = Some(PathBuf::from(&x));
         }
 
         if let Ok(x) = sub_matches
@@ -247,6 +253,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::NyanatilokaToMarkdown;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
         if sub_matches.is_present("ebook_format") {
             if let Ok(x) = sub_matches
@@ -265,22 +272,22 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             }
         }
 
-        if !sub_matches.is_present("markdown_path")
-            && !sub_matches.is_present("markdown_paths_list")
+        if !sub_matches.is_present("source_path")
+            && !sub_matches.is_present("source_paths_list")
         {
-            let msg = "🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.".to_string();
+            let msg = "🔥 Either 'source_path' or 'source_paths_list' must be used with command 'markdown_to_ebook'.".to_string();
             return Err(Box::new(ToolError::Exit(msg)));
         }
 
-        if sub_matches.is_present("markdown_path") {
+        if sub_matches.is_present("source_path") {
             if let Ok(x) = sub_matches
-                .value_of("markdown_path")
+                .value_of("source_path")
                 .unwrap()
                 .parse::<String>()
             {
                 let path = PathBuf::from(&x);
                 if path.exists() {
-                    params.markdown_paths = Some(vec![path]);
+                    params.source_paths = Some(vec![path]);
                 } else {
                     let msg = format!("🔥 Path does not exist: {:?}", &path);
                     return Err(Box::new(ToolError::Exit(msg)));
@@ -304,9 +311,9 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             }
         }
 
-        if sub_matches.is_present("markdown_paths_list") {
+        if sub_matches.is_present("source_paths_list") {
             if let Ok(x) = sub_matches
-                .value_of("markdown_paths_list")
+                .value_of("source_paths_list")
                 .unwrap()
                 .parse::<String>()
             {
@@ -328,7 +335,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                     }
                 }
 
-                params.markdown_paths = Some(paths);
+                params.source_paths = Some(paths);
             }
         }
 
@@ -336,8 +343,8 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
 
             None => {
-                let a = params.markdown_paths.as_ref().ok_or("empty paths")?;
-                let p = ensure_parent(a.get(0).unwrap());
+                let a = params.output_path.as_ref().ok_or("can't use output_path")?;
+                let p = ensure_parent(a);
                 let filename = p.file_name().unwrap();
                 let dir = p.parent().unwrap();
                 match params.ebook_format {
@@ -406,7 +413,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         params.show_logs = true;
     }
 
-    params.markdown_paths = if let Some(paths) = params.markdown_paths {
+    params.source_paths = if let Some(paths) = params.source_paths {
         Some(ensure_parent_all(&paths))
     } else {
         None
@@ -518,20 +525,20 @@ pub fn process_nyanatiloka_entries(
 }
 
 pub fn process_markdown_list(
-    markdown_paths: Vec<PathBuf>,
+    source_paths: Vec<PathBuf>,
     ebook: &mut Ebook,
 ) -> Result<(), Box<dyn Error>> {
-    for p in markdown_paths.iter() {
+    for p in source_paths.iter() {
         process_markdown(p, ebook)?;
     }
 
     Ok(())
 }
 
-pub fn process_markdown(markdown_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
-    info! {"=== Begin processing {:?} ===", markdown_path};
+pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Begin processing {:?} ===", source_path};
 
-    let s = fs::read_to_string(markdown_path).unwrap();
+    let s = fs::read_to_string(source_path).unwrap();
 
     // Split the Dictionary header and the DictWord entries.
     let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
@@ -604,6 +611,27 @@ pub fn process_markdown(markdown_path: &PathBuf, ebook: &mut Ebook) -> Result<()
 
 fn html_to_markdown(html: &str) -> String {
     html2md::parse_html(html)
+}
+
+pub fn process_tsv_list(
+    source_paths: Vec<PathBuf>,
+    ebook: &mut Ebook,
+) -> Result<(), Box<dyn Error>> {
+    for p in source_paths.iter() {
+        process_tsv(p, ebook)?;
+    }
+
+    Ok(())
+}
+
+pub fn process_tsv(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Begin processing {:?} ===", source_path};
+
+    // let s = fs::read_to_string(source_path).unwrap();
+
+    // TODO
+
+    Ok(())
 }
 
 /*

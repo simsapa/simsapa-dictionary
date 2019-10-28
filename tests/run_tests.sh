@@ -45,12 +45,12 @@ cd "$TEST_TEMP"
 
 # Not using the --kindlegen_path option, it should detect that kindlegen is in PATH.
 
-# Using --markdown_path without ./
+# Using --source_path without ./
 
 # Using --output_path without ./, it should add that as a prefix.
 
 ./simsapa_dictionary markdown_to_ebook \
-    --markdown_path "data/data with space/ncped with space.md" \
+    --source_path "data/data with space/ncped with space.md" \
     --dict_label "" \
     --ebook_format mobi \
     --output_path "ncped here.mobi" \

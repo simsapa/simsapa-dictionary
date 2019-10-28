@@ -10,7 +10,7 @@ KINDLEGEN_PATH="$HOME/lib/kindlegen/kindlegen"
 for i in dhammika dppn ncped nyana pts; do
 
     cargo run -- markdown_to_ebook \
-        --markdown_path "$SRC_DIR/$i.md" \
+        --source_path "$SRC_DIR/$i.md" \
         --dict_label "" \
         --ebook_format mobi \
         --output_path "$OUT_DIR/$i.mobi" \
@@ -18,7 +18,7 @@ for i in dhammika dppn ncped nyana pts; do
         --kindlegen_path "$KINDLEGEN_PATH"
 
     cargo run -- markdown_to_ebook \
-        --markdown_path "$SRC_DIR/$i.md" \
+        --source_path "$SRC_DIR/$i.md" \
         --dict_label "" \
         --ebook_format epub \
         --output_path "$OUT_DIR/$i.epub"
@@ -28,7 +28,7 @@ done
 # === Combined ===
 
 cargo run -- markdown_to_ebook \
-    --markdown_paths_list ./scripts/combined_dict_md_paths.txt \
+    --source_paths_list ./scripts/combined_dict_md_paths.txt \
     --title "Combined Pali - English Dictionary" \
     --ebook_format mobi \
     --output_path "$OUT_DIR/combined-dictionary.mobi" \
@@ -36,7 +36,7 @@ cargo run -- markdown_to_ebook \
     --kindlegen_path "$KINDLEGEN_PATH"
 
 cargo run -- markdown_to_ebook \
-    --markdown_paths_list ./scripts/combined_dict_md_paths.txt \
+    --source_paths_list ./scripts/combined_dict_md_paths.txt \
     --title "Combined Pali - English Dictionary" \
     --ebook_format epub \
     --output_path "$OUT_DIR/combined-dictionary.epub"
