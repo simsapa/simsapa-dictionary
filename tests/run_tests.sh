@@ -225,6 +225,28 @@ else
     echo "Test Passed."
 fi
 
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a MOBI with custom cover with path ==="
+
+cd "$TEST_TEMP"
+
+./simsapa_dictionary "data/data with space/ncped custom cover.md"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "./data/data with space/ncped custom cover.mobi" ]; then
+    echo "Test Failed."
+    exit 2
+else
+    rm "./data/data with space/ncped custom cover.mobi"
+    echo "Test Passed."
+fi
+
 # === Clean up. ===
 
 cd "$PRJ_ROOT" && rm "$TEST_TEMP" -r
