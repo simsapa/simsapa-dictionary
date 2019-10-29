@@ -38,7 +38,7 @@ impl LetterGroups {
                     title: "".to_string(),
                     group_letter: first_letter,
                     letter_index: key,
-                    dict_words: vec![i.clone()],
+                    dict_words: Vec::new(),
                 })
                 .dict_words
                 .push(i.clone());
