@@ -14,6 +14,7 @@ use crate::dict_word::{DictWord, DictWordHeader};
 use crate::error::ToolError;
 use crate::helpers::{is_hidden, markdown_helper, md2html};
 use crate::letter_groups::LetterGroups;
+use crate::pali::to_velthuis;
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -30,7 +31,7 @@ pub struct Ebook {
     #[serde(skip)]
     pub output_path: PathBuf,
 
-    /// Build base dir is the folder of the source input file.
+    /// Build base dir is 'ebook-build' in the folder of the source input file.
     #[serde(skip)]
     pub build_base_dir: Option<PathBuf>,
 
@@ -54,6 +55,7 @@ pub struct EbookMetadata {
     pub book_id: String,
     pub created_date_human: String,
     pub created_date_opf: String,
+    pub use_velthuis: bool,
     pub is_epub: bool,
     pub is_mobi: bool,
 }
@@ -201,6 +203,14 @@ impl Ebook {
     }
 
     pub fn add_word(&mut self, new_word: DictWord) {
+        let new_word = if self.meta.use_velthuis {
+            let mut w = new_word;
+            w.word_header.word = to_velthuis(&w.word_header.word);
+            w
+        } else {
+            new_word
+        };
+
         let w_key = format!(
             "{} {}",
             new_word.word_header.word, new_word.word_header.dict_label
@@ -567,7 +577,6 @@ impl Ebook {
             // Cover path is relative to the folder of the source input file, which is the parent
             // of the build base dir.
             let p = base.parent().unwrap().join(PathBuf::from(filename.clone()));
-            println!("{:?}", p);
             if p.exists() {
                 // If the file is found, copy that.
                 fs::copy(&p, dir.join(filename))?;
@@ -887,6 +896,7 @@ impl Default for EbookMetadata {
             book_id: "SimsapaPaliDictionary".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
+            use_velthuis: false,
             is_epub: true,
             is_mobi: false,
         }
