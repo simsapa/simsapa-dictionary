@@ -7,8 +7,9 @@ use std::process::Command;
 use chrono::prelude::*;
 use regex::Regex;
 use walkdir::WalkDir;
+use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
-use crate::dict_word::{DictWord, DictWordHeader};
+use crate::dict_word::{DictWord, DictWordHeader, DictWordXlsx};
 use crate::ebook::{
     Ebook, EbookFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
 };
@@ -19,7 +20,7 @@ pub struct AppStartParams {
     pub ebook_format: EbookFormat,
     pub json_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
-    pub markdown_paths: Option<Vec<PathBuf>>,
+    pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
@@ -39,6 +40,7 @@ pub enum RunCommand {
     SuttaCentralJsonToMarkdown,
     NyanatilokaToMarkdown,
     MarkdownToEbook,
+    XlsxToEbook,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -66,7 +68,7 @@ impl Default for AppStartParams {
             ebook_format: EbookFormat::Epub,
             json_path: None,
             nyanatiloka_root: None,
-            markdown_paths: None,
+            source_paths: None,
             output_path: None,
             kindlegen_path: None,
             title: None,
@@ -94,23 +96,29 @@ pub fn process_first_arg() -> Option<AppStartParams> {
     }
 
     let _bin_path = args.next();
-    let markdown_path = if let Some(a) = args.next() {
+    let source_path = if let Some(a) = args.next() {
         PathBuf::from(a)
     } else {
         return None;
     };
 
-    if !markdown_path.exists() {
-        return None;
-    }
-
-    if "md" != markdown_path.extension().unwrap() {
+    if !source_path.exists() {
         return None;
     }
 
     let mut params = AppStartParams::default();
     params.used_first_arg = true;
-    params.markdown_paths = Some(vec![ensure_parent(&markdown_path)]);
+    params.source_paths = Some(vec![ensure_parent(&source_path)]);
+
+    // Source must be either .md or .xlsx
+    let ext = source_path.extension().unwrap();
+    if "md" == ext {
+        params.run_command = RunCommand::MarkdownToEbook;
+    } else if "xlsx" == ext {
+        params.run_command = RunCommand::XlsxToEbook;
+    } else {
+        return None;
+    }
 
     params.kindlegen_path = look_for_kindlegen();
 
@@ -120,8 +128,8 @@ pub fn process_first_arg() -> Option<AppStartParams> {
         EbookFormat::Epub
     };
 
-    let filename = markdown_path.file_name().unwrap();
-    let dir = markdown_path.parent().unwrap();
+    let filename = source_path.file_name().unwrap();
+    let dir = source_path.parent().unwrap();
 
     let file_ext = if params.kindlegen_path.is_some() {
         "mobi"
@@ -129,8 +137,6 @@ pub fn process_first_arg() -> Option<AppStartParams> {
         "epub"
     };
     params.output_path = Some(dir.join(PathBuf::from(filename).with_extension(file_ext)));
-
-    params.run_command = RunCommand::MarkdownToEbook;
 
     Some(params)
 }
@@ -183,6 +189,168 @@ fn look_for_kindlegen() -> Option<PathBuf> {
     }
 }
 
+fn process_to_ebook(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if sub_matches.is_present("ebook_format") {
+        if let Ok(x) = sub_matches
+            .value_of("ebook_format")
+                .unwrap()
+                .parse::<String>()
+        {
+            let s = x.trim().to_lowercase();
+            if s == "epub" {
+                params.ebook_format = EbookFormat::Epub;
+            } else if s == "mobi" {
+                params.ebook_format = EbookFormat::Mobi;
+            } else {
+                params.ebook_format = EbookFormat::Epub;
+            }
+        }
+    }
+
+    if !sub_matches.is_present("source_path")
+        && !sub_matches.is_present("source_paths_list")
+    {
+        let msg = "🔥 Either 'source_path' or 'source_paths_list' must be used.".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    }
+
+    if sub_matches.is_present("source_path") {
+        if let Ok(x) = sub_matches
+            .value_of("source_path")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    if sub_matches.is_present("title") {
+        if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
+            params.title = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("dict_label") {
+        if let Ok(x) = sub_matches
+            .value_of("dict_label")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.dict_label = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("source_paths_list") {
+        if let Ok(x) = sub_matches
+            .value_of("source_paths_list")
+                .unwrap()
+                .parse::<String>()
+        {
+            let list_path = PathBuf::from(&x);
+            let s = match fs::read_to_string(&list_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    let msg = format!("🔥 Can't read path. {:?}", e);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            };
+            let s = s.trim();
+
+            let paths: Vec<PathBuf> = s.split('\n').map(PathBuf::from).collect();
+            for path in paths.iter() {
+                if !path.exists() {
+                    let msg = format!("🔥 Path does not exist: {:?}", &path);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            }
+
+            params.source_paths = Some(paths);
+        }
+    }
+
+    match sub_matches.value_of("output_path") {
+        Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
+
+        None => {
+            let a = params.output_path.as_ref().ok_or("can't use output_path")?;
+            let p = ensure_parent(a);
+            let filename = p.file_name().unwrap();
+            let dir = p.parent().unwrap();
+            match params.ebook_format {
+                EbookFormat::Epub => {
+                    let p = dir.join(PathBuf::from(filename).with_extension("epub"));
+                    params.output_path = Some(ensure_parent(&p));
+                }
+                EbookFormat::Mobi => {
+                    let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
+                    params.output_path = Some(ensure_parent(&p));
+                }
+            }
+        }
+    }
+
+    if sub_matches.is_present("mobi_compression") {
+        if let Ok(x) = sub_matches
+            .value_of("mobi_compression")
+                .unwrap()
+                .parse::<usize>()
+        {
+            params.mobi_compression = x;
+        }
+    }
+
+    if sub_matches.is_present("dont_run_kindlegen") {
+        params.dont_run_kindlegen = true;
+    } else {
+        // Only checking when we will need to run KindleGen.
+
+        if sub_matches.is_present("kindlegen_path") {
+            if let Ok(x) = sub_matches
+                .value_of("kindlegen_path")
+                    .unwrap()
+                    .parse::<String>()
+            {
+                let path = PathBuf::from(&x);
+                if path.exists() {
+                    params.kindlegen_path = Some(path);
+                } else {
+                    let msg = format!("🔥 Path does not exist: {:?}", &path);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            }
+        } else {
+            params.kindlegen_path = look_for_kindlegen();
+        }
+    }
+
+    if sub_matches.is_present("dont_remove_generated_files") {
+        params.dont_remove_generated_files = true;
+    }
+
+    if sub_matches.is_present("zip_with_lib") {
+        params.zip_with = ZipWith::ZipLib;
+    }
+
+    if sub_matches.is_present("zip_with_cli") {
+        params.zip_with = ZipWith::ZipCli;
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
 #[allow(clippy::cognitive_complexity)]
 pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box<dyn Error>> {
     let mut params = AppStartParams::default();
@@ -199,11 +367,11 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if let Ok(x) = sub_matches
-            .value_of("markdown_path")
+            .value_of("output_path")
             .unwrap()
             .parse::<String>()
         {
-            params.markdown_paths = Some(vec![PathBuf::from(&x)]);
+            params.output_path = Some(PathBuf::from(&x));
         }
 
         if let Ok(x) = sub_matches
@@ -215,6 +383,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::SuttaCentralJsonToMarkdown;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
         if let Ok(x) = sub_matches
             .value_of("nyanatiloka_root")
@@ -231,11 +400,11 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if let Ok(x) = sub_matches
-            .value_of("markdown_path")
+            .value_of("output_path")
             .unwrap()
             .parse::<String>()
         {
-            params.markdown_paths = Some(vec![PathBuf::from(&x)]);
+            params.output_path = Some(PathBuf::from(&x));
         }
 
         if let Ok(x) = sub_matches
@@ -247,166 +416,18 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::NyanatilokaToMarkdown;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
-        if sub_matches.is_present("ebook_format") {
-            if let Ok(x) = sub_matches
-                .value_of("ebook_format")
-                .unwrap()
-                .parse::<String>()
-            {
-                let s = x.trim().to_lowercase();
-                if s == "epub" {
-                    params.ebook_format = EbookFormat::Epub;
-                } else if s == "mobi" {
-                    params.ebook_format = EbookFormat::Mobi;
-                } else {
-                    params.ebook_format = EbookFormat::Epub;
-                }
-            }
-        }
-
-        if !sub_matches.is_present("markdown_path")
-            && !sub_matches.is_present("markdown_paths_list")
-        {
-            let msg = "🔥 Either 'markdown_path' or 'markdown_paths_list' must be used with command 'markdown_to_mobi'.".to_string();
-            return Err(Box::new(ToolError::Exit(msg)));
-        }
-
-        if sub_matches.is_present("markdown_path") {
-            if let Ok(x) = sub_matches
-                .value_of("markdown_path")
-                .unwrap()
-                .parse::<String>()
-            {
-                let path = PathBuf::from(&x);
-                if path.exists() {
-                    params.markdown_paths = Some(vec![path]);
-                } else {
-                    let msg = format!("🔥 Path does not exist: {:?}", &path);
-                    return Err(Box::new(ToolError::Exit(msg)));
-                }
-            }
-        }
-
-        if sub_matches.is_present("title") {
-            if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
-                params.title = Some(x);
-            }
-        }
-
-        if sub_matches.is_present("dict_label") {
-            if let Ok(x) = sub_matches
-                .value_of("dict_label")
-                .unwrap()
-                .parse::<String>()
-            {
-                params.dict_label = Some(x);
-            }
-        }
-
-        if sub_matches.is_present("markdown_paths_list") {
-            if let Ok(x) = sub_matches
-                .value_of("markdown_paths_list")
-                .unwrap()
-                .parse::<String>()
-            {
-                let list_path = PathBuf::from(&x);
-                let s = match fs::read_to_string(&list_path) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        let msg = format!("🔥 Can't read path. {:?}", e);
-                        return Err(Box::new(ToolError::Exit(msg)));
-                    }
-                };
-                let s = s.trim();
-
-                let paths: Vec<PathBuf> = s.split('\n').map(PathBuf::from).collect();
-                for path in paths.iter() {
-                    if !path.exists() {
-                        let msg = format!("🔥 Path does not exist: {:?}", &path);
-                        return Err(Box::new(ToolError::Exit(msg)));
-                    }
-                }
-
-                params.markdown_paths = Some(paths);
-            }
-        }
-
-        match sub_matches.value_of("output_path") {
-            Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
-
-            None => {
-                let a = params.markdown_paths.as_ref().ok_or("empty paths")?;
-                let p = ensure_parent(a.get(0).unwrap());
-                let filename = p.file_name().unwrap();
-                let dir = p.parent().unwrap();
-                match params.ebook_format {
-                    EbookFormat::Epub => {
-                        let p = dir.join(PathBuf::from(filename).with_extension("epub"));
-                        params.output_path = Some(ensure_parent(&p));
-                    }
-                    EbookFormat::Mobi => {
-                        let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
-                        params.output_path = Some(ensure_parent(&p));
-                    }
-                }
-            }
-        }
-
-        if sub_matches.is_present("mobi_compression") {
-            if let Ok(x) = sub_matches
-                .value_of("mobi_compression")
-                .unwrap()
-                .parse::<usize>()
-            {
-                params.mobi_compression = x;
-            }
-        }
-
-        if sub_matches.is_present("dont_run_kindlegen") {
-            params.dont_run_kindlegen = true;
-        } else {
-            // Only checking when we will need to run KindleGen.
-
-            if sub_matches.is_present("kindlegen_path") {
-                if let Ok(x) = sub_matches
-                    .value_of("kindlegen_path")
-                    .unwrap()
-                    .parse::<String>()
-                {
-                    let path = PathBuf::from(&x);
-                    if path.exists() {
-                        params.kindlegen_path = Some(path);
-                    } else {
-                        let msg = format!("🔥 Path does not exist: {:?}", &path);
-                        return Err(Box::new(ToolError::Exit(msg)));
-                    }
-                }
-            } else {
-                params.kindlegen_path = look_for_kindlegen();
-            }
-        }
-
-        if sub_matches.is_present("dont_remove_generated_files") {
-            params.dont_remove_generated_files = true;
-        }
-
-        if sub_matches.is_present("zip_with_lib") {
-            params.zip_with = ZipWith::ZipLib;
-        }
-
-        if sub_matches.is_present("zip_with_cli") {
-            params.zip_with = ZipWith::ZipCli;
-        }
-
-        params.run_command = RunCommand::MarkdownToEbook;
+        process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_ebook") {
+        process_to_ebook(&mut params, sub_matches, RunCommand::XlsxToEbook)?;
     }
 
     if matches.is_present("show_logs") {
         params.show_logs = true;
     }
 
-    params.markdown_paths = if let Some(paths) = params.markdown_paths {
+    params.source_paths = if let Some(paths) = params.source_paths {
         Some(ensure_parent_all(&paths))
     } else {
         None
@@ -518,20 +539,48 @@ pub fn process_nyanatiloka_entries(
 }
 
 pub fn process_markdown_list(
-    markdown_paths: Vec<PathBuf>,
+    source_paths: Vec<PathBuf>,
     ebook: &mut Ebook,
 ) -> Result<(), Box<dyn Error>> {
-    for p in markdown_paths.iter() {
+    for p in source_paths.iter() {
         process_markdown(p, ebook)?;
     }
 
     Ok(())
 }
 
-pub fn process_markdown(markdown_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
-    info! {"=== Begin processing {:?} ===", markdown_path};
+fn parse_str_to_metadata(s: &str, ebook_format: EbookFormat) -> Result<EbookMetadata, Box<dyn Error>> {
+    let mut meta: EbookMetadata = match toml::from_str(s) {
+        Ok(x) => x,
+        Err(e) => {
+            let msg = format!(
+                "🔥 Can't serialize from TOML String: {:?}\nError: {:?}",
+                &s, e
+            );
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    };
+    meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
+    meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
-    let s = fs::read_to_string(markdown_path).unwrap();
+    match ebook_format {
+        EbookFormat::Epub => {
+            meta.is_epub = true;
+            meta.is_mobi = false;
+        }
+        EbookFormat::Mobi => {
+            meta.is_epub = false;
+            meta.is_mobi = true;
+        }
+    }
+
+    Ok(meta)
+}
+
+pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Begin processing {:?} ===", source_path};
+
+    let s = fs::read_to_string(source_path).unwrap();
 
     // Split the Dictionary header and the DictWord entries.
     let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
@@ -550,31 +599,7 @@ pub fn process_markdown(markdown_path: &PathBuf, ebook: &mut Ebook) -> Result<()
         .replace("``` toml", "")
         .replace("```", "");
 
-    let mut meta: EbookMetadata = match toml::from_str(&a) {
-        Ok(x) => x,
-        Err(e) => {
-            let msg = format!(
-                "🔥 Can't serialize from TOML String: {:?}\nError: {:?}",
-                &a, e
-            );
-            return Err(Box::new(ToolError::Exit(msg)));
-        }
-    };
-    meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
-    meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-
-    match ebook.ebook_format {
-        EbookFormat::Epub => {
-            meta.is_epub = true;
-            meta.is_mobi = false;
-        }
-        EbookFormat::Mobi => {
-            meta.is_epub = false;
-            meta.is_mobi = true;
-        }
-    }
-
-    ebook.meta = meta;
+    ebook.meta = parse_str_to_metadata(&a, ebook.ebook_format)?;
 
     let a = parts.get(1).unwrap().to_string();
     let entries: Vec<Result<DictWord, Box<dyn Error>>> = a
@@ -604,6 +629,111 @@ pub fn process_markdown(markdown_path: &PathBuf, ebook: &mut Ebook) -> Result<()
 
 fn html_to_markdown(html: &str) -> String {
     html2md::parse_html(html)
+}
+
+pub fn process_xlsx_list(
+    source_paths: Vec<PathBuf>,
+    ebook: &mut Ebook,
+) -> Result<(), Box<dyn Error>> {
+    for p in source_paths.iter() {
+        process_xlsx(p, ebook)?;
+    }
+
+    Ok(())
+}
+
+pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Begin processing XLSX {:?} ===", source_path};
+
+    let mut workbook: Xlsx<_> = open_workbook(source_path)?;
+
+    let sheet_names = workbook.sheet_names();
+
+    let metadata_name = if sheet_names.contains(&"Metadata".to_string()) {
+        "Metadata"
+    } else if sheet_names.contains(&"metadata".to_string()) {
+        "metadata"
+    } else {
+        let msg = "Can't find sheet: 'Metadata'".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    };
+
+    let entries_name = if sheet_names.contains(&"Word entries".to_string()) {
+        "Word entries"
+    } else if sheet_names.contains(&"Word Entries".to_string()) {
+        "Word Entries"
+    } else {
+        let msg = "Can't find sheet: 'Word entries'".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    };
+
+    let metadata_range = workbook.worksheet_range(metadata_name)
+        .ok_or_else(|| format!("Can't find sheet: '{}'", &metadata_name))??;
+    let entries_range = workbook.worksheet_range(entries_name)
+        .ok_or_else(|| format!("Can't find sheet: '{}'", &entries_name))??;
+
+    // Parse Metadata sheet
+
+    {
+        let mut iter = RangeDeserializerBuilder::new()
+            .has_headers(true)
+            .from_range(&metadata_range)?;
+
+        match iter.next() {
+            Some(x) => {
+                let mut meta: EbookMetadata = x?;
+                meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
+                meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+
+                match ebook.ebook_format {
+                    EbookFormat::Epub => {
+                        meta.is_epub = true;
+                        meta.is_mobi = false;
+                    }
+                    EbookFormat::Mobi => {
+                        meta.is_epub = false;
+                        meta.is_mobi = true;
+                    }
+                }
+
+                ebook.meta = meta;
+            },
+            None => {
+                let msg = "Expected at least one row in the Metadata sheet.".to_string();
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    // Parse Word entries sheet
+
+    {
+        let iter = RangeDeserializerBuilder::new()
+            .has_headers(true)
+            .from_range(&entries_range)?;
+
+        let entries: Vec<Result<DictWordXlsx, String>> = iter
+            .map(|e| {
+                match e {
+                    Ok(x) => Ok(x),
+                    Err(e) => {
+                        Err(format!("Can't parse: {:?}", e))
+                    }
+                }
+            })
+        .collect();
+
+    for i in entries.iter() {
+        match i {
+            Ok(x) => ebook.add_word(DictWord::from_xlsx(x)),
+            Err(msg) => {
+                return Err(Box::new(ToolError::Exit(msg.clone())));
+            }
+        }
+    }
+    }
+
+    Ok(())
 }
 
 /*

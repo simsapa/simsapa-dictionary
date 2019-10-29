@@ -6,6 +6,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
+extern crate calamine;
 
 extern crate html2md;
 extern crate zip;
@@ -76,11 +77,10 @@ fn main() {
 
         RunCommand::SuttaCentralJsonToMarkdown => {
             let p = &app_params
-                .markdown_paths
-                .expect("markdown_path is missing.");
-            let output_markdown_path = p.get(0).unwrap().to_path_buf();
+                .output_path
+                .expect("output_path is missing.");
 
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
+            let mut ebook = Ebook::new(app_params.ebook_format, &p);
 
             app::process_suttacentral_json(
                 &app_params.json_path,
@@ -99,11 +99,10 @@ fn main() {
 
         RunCommand::NyanatilokaToMarkdown => {
             let p = &app_params
-                .markdown_paths
-                .expect("markdown_path is missing.");
-            let output_markdown_path = p.get(0).unwrap().to_path_buf();
+                .output_path
+                .expect("output_path is missing.");
 
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_markdown_path);
+            let mut ebook = Ebook::new(app_params.ebook_format, &p);
 
             app::process_nyanatiloka_entries(
                 &app_params.nyanatiloka_root,
@@ -120,19 +119,32 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
-        RunCommand::MarkdownToEbook => {
+        RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
             let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
 
-            let paths = app_params.markdown_paths.clone();
-            let p = paths.expect("markdown_paths is missing.");
-            let markdown_paths = p.to_vec();
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
 
-            ok_or_exit(
-                app_params.used_first_arg,
-                app::process_markdown_list(markdown_paths, &mut ebook),
-            );
+            match app_params.run_command {
+                RunCommand::MarkdownToEbook => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_markdown_list(source_paths, &mut ebook),
+                    );
+                }
+
+                RunCommand::XlsxToEbook => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_xlsx_list(source_paths, &mut ebook),
+                    );
+                }
+
+                _ => {},
+            }
 
             info!("Added words: {}", ebook.len());
 

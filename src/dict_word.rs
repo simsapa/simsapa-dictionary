@@ -11,6 +11,16 @@ pub struct DictWord {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DictWordXlsx {
+    pub dict_label: String,
+    pub word: String,
+    pub summary: String,
+    // pub grammar: String,
+    // pub inflections: Vec<String>,
+    pub definition_md: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DictWordHeader {
     pub dict_label: String,
     pub word: String,
@@ -53,6 +63,19 @@ impl DictWord {
             word_header,
             definition_md: parts.get(1).unwrap().to_string(),
         })
+    }
+
+    pub fn from_xlsx(w: &DictWordXlsx) -> DictWord {
+        DictWord {
+            word_header: DictWordHeader {
+                dict_label: w.dict_label.clone(),
+                word: w.word.clone(),
+                summary: w.summary.clone(),
+                grammar: "".to_string(),
+                inflections: Vec::new(),
+            },
+            definition_md: w.definition_md.clone(),
+        }
     }
 
     pub fn clean_summary(&mut self) -> Result<(), Box<dyn Error>> {

@@ -14,6 +14,7 @@ use crate::dict_word::{DictWord, DictWordHeader};
 use crate::error::ToolError;
 use crate::helpers::{is_hidden, markdown_helper, md2html};
 use crate::letter_groups::LetterGroups;
+use crate::pali::to_velthuis;
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -29,8 +30,11 @@ pub struct Ebook {
 
     #[serde(skip)]
     pub output_path: PathBuf,
+
+    /// Build base dir is 'ebook-build' in the folder of the source input file.
     #[serde(skip)]
     pub build_base_dir: Option<PathBuf>,
+
     #[serde(skip)]
     pub mimetype_path: Option<PathBuf>,
     #[serde(skip)]
@@ -51,6 +55,7 @@ pub struct EbookMetadata {
     pub book_id: String,
     pub created_date_human: String,
     pub created_date_opf: String,
+    pub use_velthuis: bool,
     pub is_epub: bool,
     pub is_mobi: bool,
 }
@@ -150,8 +155,8 @@ impl Ebook {
         reg_tmpl(&mut h, &k, &afs);
 
         afb.insert(
-            "cover.jpg".to_string(),
-            include_bytes!("../assets/OEBPS/cover.jpg").to_vec(),
+            "default_cover.jpg".to_string(),
+            include_bytes!("../assets/OEBPS/default_cover.jpg").to_vec(),
         );
 
         afb.insert(
@@ -198,6 +203,14 @@ impl Ebook {
     }
 
     pub fn add_word(&mut self, new_word: DictWord) {
+        let new_word = if self.meta.use_velthuis {
+            let mut w = new_word;
+            w.word_header.word = to_velthuis(&w.word_header.word);
+            w
+        } else {
+            new_word
+        };
+
         let w_key = format!(
             "{} {}",
             new_word.word_header.word, new_word.word_header.dict_label
@@ -556,7 +569,31 @@ impl Ebook {
         info!("copy_static()");
 
         let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
-        for filename in ["cover.jpg", "style.css"].iter() {
+        let base = self.build_base_dir.as_ref().ok_or("missing build_base_dir")?;
+
+        // cover image
+        {
+            let filename = self.meta.cover_path.clone();
+            // Cover path is relative to the folder of the source input file, which is the parent
+            // of the build base dir.
+            let p = base.parent().unwrap().join(PathBuf::from(filename.clone()));
+            if p.exists() {
+                // If the file is found, copy that.
+                fs::copy(&p, dir.join(filename))?;
+            } else {
+                // If not found, try looking it up in the embedded assets.
+                let file_content = self
+                    .asset_files_byte
+                    .get(&filename.to_string())
+                    .ok_or("missing get key")?;
+                let mut file = File::create(dir.join(filename))?;
+                file.write_all(file_content)?;
+            }
+        }
+
+        // stylesheet
+        {
+            let filename = "style.css";
             let file_content = self
                 .asset_files_byte
                 .get(&filename.to_string())
@@ -855,10 +892,11 @@ impl Default for EbookMetadata {
             description: "Pali - English".to_string(),
             creator: "Simsapa Dhamma Reader".to_string(),
             source: "https://simsapa.github.io".to_string(),
-            cover_path: "cover.jpg".to_string(),
+            cover_path: "default_cover.jpg".to_string(),
             book_id: "SimsapaPaliDictionary".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
+            use_velthuis: false,
             is_epub: true,
             is_mobi: false,
         }

@@ -51,3 +51,30 @@ pub fn first_letter(word: &str) -> Option<String> {
 
     None
 }
+
+pub fn to_velthuis(word: &str) -> String {
+    // https://en.wikipedia.org/wiki/Pali#Text_in_ASCII
+    word
+        .replace('ā', "aa")
+        .replace('ī', "ii")
+        .replace('ū', "uu")
+        .replace('ṃ', ".m")
+        .replace('ṁ', ".m")
+        .replace('ṇ', ".n")
+        .replace('ñ', "~n")
+        .replace('ṭ', ".t")
+        .replace('ḍ', ".d")
+        .replace('ṅ', "\"n")
+        .replace('ḷ', ".l")
+        .replace('Ā', "AA")
+        .replace('Ī', "II")
+        .replace('Ū', "UU")
+        .replace('Ṃ', ".M")
+        .replace('Ṁ', ".M")
+        .replace('Ṇ', ".N")
+        .replace('Ñ', "~N")
+        .replace('Ṭ', ".T")
+        .replace('Ḍ', ".D")
+        .replace('Ṅ', "\"N")
+        .replace('Ḷ', ".L")
+}

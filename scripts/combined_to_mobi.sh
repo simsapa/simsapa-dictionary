@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cargo run -- markdown_to_ebook \
-	--markdown_paths_list ./scripts/combined_dict_md_paths.txt \
+	--source_paths_list ./scripts/combined_dict_md_paths.txt \
 	--title "Combined Pali - English Dictionary" \
 	--ebook_format mobi \
 	--output_path ../simsapa-dictionary_releases/combined-dictionary.mobi \
