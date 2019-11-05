@@ -1,11 +1,11 @@
-{{#if title}}
-<h1>{{title}}</h1>
+{{#if group.title}}
+<h1>{{group.title}}</h1>
 {{/if}}
 
-<h2>{{group_letter}}</h2>
+<h2>{{group.group_letter}}</h2>
 
-{{#each dict_words}}
-<h4>&#35; {{word_header.word}}</h4>
+{{#each group.dict_words}}
+<h4>&#42; {{word_header.word}} {{#if ../meta.use_velthuis}}[{{to_velthuis word_header.word}}]{{/if}}</h4>
 {{#if word_header.grammar ~}}
 <p>({{word_header.grammar}})</p>
 {{/if ~}}

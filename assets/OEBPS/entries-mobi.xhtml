@@ -1,13 +1,13 @@
-{{#if title}}
-<h1>{{title}}</h1>
+{{#if group.title}}
+<h1>{{group.title}}</h1>
 {{/if}}
 
-<h2>{{group_letter}}</h2>
+<h2>{{group.group_letter}}</h2>
 
 {{! Spaces and newlines in <idx:entry> are significant for dictionary entry search}}
 
-{{#each dict_words}}
-<idx:entry><idx:orth><h4>{{word_header.word}}</h4><p>{{#if word_header.grammar}} <i>{{word_header.grammar}}</i>{{/if}}{{#if word_header.dict_label}} <i>{{word_header.dict_label}}</i>{{/if}}{{#if word_header.summary}} <i>{{word_header.summary}}</i>{{/if}}{{#if word_header.inflections}}</p><idx:infl>{{#each word_header.inflections}} <idx:iform value="{{this}}"/>{{/each}}</idx:infl>{{/if}}</idx:orth></idx:entry>
+{{#each group.dict_words}}
+<idx:entry><idx:orth><h4>{{#if ../meta.use_velthuis}}{{to_velthuis word_header.word}}{{else}}{{word_header.word}}{{/if}}</h4><p>{{#if word_header.grammar}} <i>{{word_header.grammar}}</i>{{/if}}{{#if word_header.dict_label}} <i>{{word_header.dict_label}}</i>{{/if}}{{#if word_header.summary}} <i>{{word_header.summary}}</i>{{/if}}{{#if word_header.inflections}}</p><idx:infl>{{#each word_header.inflections}} <idx:iform value="{{this}}"/>{{/each}}</idx:infl>{{/if}}</idx:orth></idx:entry>
 
 {{markdown definition_md}}
 {{/each}}

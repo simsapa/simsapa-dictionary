@@ -9,7 +9,7 @@ pub struct LetterGroups {
 
 type Groups = BTreeMap<usize, LetterGroup>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct LetterGroup {
     pub title: String,
     pub group_letter: String,

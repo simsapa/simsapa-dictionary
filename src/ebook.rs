@@ -12,9 +12,8 @@ use walkdir::WalkDir;
 use crate::app::{AppStartParams, ZipWith};
 use crate::dict_word::{DictWord, DictWordHeader};
 use crate::error::ToolError;
-use crate::helpers::{is_hidden, markdown_helper, md2html};
-use crate::letter_groups::LetterGroups;
-use crate::pali::to_velthuis;
+use crate::helpers::{self, is_hidden, md2html};
+use crate::letter_groups::{LetterGroups, LetterGroup};
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -45,7 +44,7 @@ pub struct Ebook {
     pub templates: Handlebars,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct EbookMetadata {
     pub title: String,
     pub description: String,
@@ -72,6 +71,12 @@ pub struct EntriesManifest {
     href: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct LetterGroupTemplateData {
+    group: LetterGroup,
+    meta: EbookMetadata,
+}
+
 impl Ebook {
     pub fn new(ebook_format: EbookFormat, output_path: &PathBuf) -> Self {
         // asset_files_string
@@ -80,7 +85,8 @@ impl Ebook {
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
 
-        h.register_helper("markdown", Box::new(markdown_helper));
+        h.register_helper("markdown", Box::new(helpers::markdown_helper));
+        h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -203,14 +209,6 @@ impl Ebook {
     }
 
     pub fn add_word(&mut self, new_word: DictWord) {
-        let new_word = if self.meta.use_velthuis {
-            let mut w = new_word;
-            w.word_header.word = to_velthuis(&w.word_header.word);
-            w
-        } else {
-            new_word
-        };
-
         let w_key = format!(
             "{} {}",
             new_word.word_header.word, new_word.word_header.dict_label
@@ -368,7 +366,12 @@ impl Ebook {
                 group.title = self.meta.title.clone();
             }
 
-            let content_html = match self.templates.render(template_name, &group) {
+            let data = LetterGroupTemplateData {
+                group: group.clone(),
+                meta: self.meta.clone(),
+            };
+
+            let content_html = match self.templates.render(template_name, &data) {
                 Ok(x) => x,
                 Err(e) => {
                     error!("Can't render template {}, {:?}", template_name, e);
