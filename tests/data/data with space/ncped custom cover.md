@@ -22,6 +22,8 @@ word = "ababa"
 summary = "the name of a hell, or place in Avīci, where one s"
 grammar = ""
 inflections = []
+synonyms= []
+antonyms = []
 ```
 
 ababa
@@ -34,6 +36,8 @@ word = "abbhantara"
 summary = "interior, internal; being within, included in, amo"
 grammar = ""
 inflections = []
+synonyms= []
+antonyms = []
 ```
 
 abbhantara
@@ -51,6 +55,8 @@ word = "ajjhokāse"
 summary = "in the open air, in the open."
 grammar = ""
 inflections = []
+synonyms= []
+antonyms = []
 ```
 
 ajjhokāse
@@ -63,6 +69,8 @@ word = "aṭṭita"
 summary = "distressed; grieved; pained (see aṭṭiyati)"
 grammar = ""
 inflections = []
+synonyms= []
+antonyms = []
 ```
 
 aṭṭita
@@ -75,6 +83,8 @@ word = "cakkhuma"
 summary = "possessing eyes, gifted with sight; (one) who has"
 grammar = ""
 inflections = []
+synonyms= []
+antonyms = []
 ```
 
 cakkhuma(t)
@@ -90,6 +100,8 @@ word = "cakkhuviññāṇa"
 summary = "cognizance by the sense-organ that is the eye."
 grammar = ""
 inflections = []
+synonyms= []
+antonyms = []
 ```
 
 cakkhuviññāṇa

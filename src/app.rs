@@ -463,6 +463,8 @@ pub fn process_suttacentral_json(
                 summary: "".to_string(),
                 grammar: "".to_string(),
                 inflections: Vec::new(),
+                synonyms: Vec::new(),
+                antonyms: Vec::new(),
             },
             definition_md: html_to_markdown(&e.text),
         };
@@ -530,6 +532,8 @@ pub fn process_nyanatiloka_entries(
                 summary: "".to_string(),
                 grammar: "".to_string(),
                 inflections: Vec::new(),
+                synonyms: Vec::new(),
+                antonyms: Vec::new(),
             },
             definition_md: html_to_markdown(&e.text),
         };

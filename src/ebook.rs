@@ -227,6 +227,8 @@ impl Ebook {
                     summary: new_word.word_header.summary,
                     grammar: new_word.word_header.grammar,
                     inflections: new_word.word_header.inflections,
+                    synonyms: new_word.word_header.synonyms,
+                    antonyms: new_word.word_header.antonyms,
                 },
                 definition_md: new_word.definition_md,
             };
