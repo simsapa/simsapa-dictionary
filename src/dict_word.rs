@@ -12,21 +12,50 @@ pub struct DictWord {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DictWordXlsx {
+
+    #[serde(default)]
     pub dict_label: String,
+
     pub word: String,
+
+    #[serde(default)]
     pub summary: String,
-    // pub grammar: String,
-    // pub inflections: Vec<String>,
+
+    #[serde(default)]
+    pub grammar: String,
+
+    /// comma-seperated list
+    #[serde(default)]
+    pub inflections: String,
+
+    /// comma-seperated list
+    #[serde(default)]
+    pub synonyms: String,
+
+    /// comma-seperated list
+    #[serde(default)]
+    pub antonyms: String,
+
     pub definition_md: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DictWordHeader {
+    #[serde(default)]
     pub dict_label: String,
+
     pub word: String,
+
+    #[serde(default)]
     pub summary: String,
+    #[serde(default)]
     pub grammar: String,
+    #[serde(default)]
     pub inflections: Vec<String>,
+    #[serde(default)]
+    pub synonyms: Vec<String>,
+    #[serde(default)]
+    pub antonyms: Vec<String>,
 }
 
 impl DictWord {
@@ -65,14 +94,25 @@ impl DictWord {
         })
     }
 
+    fn parse_csv_list(s: &str) -> Vec<String> {
+        let s = s.trim();
+        if s.is_empty() {
+            Vec::new()
+        } else {
+            s.split(',').map(|i| i.trim().to_string()).collect()
+        }
+    }
+
     pub fn from_xlsx(w: &DictWordXlsx) -> DictWord {
         DictWord {
             word_header: DictWordHeader {
                 dict_label: w.dict_label.clone(),
                 word: w.word.clone(),
                 summary: w.summary.clone(),
-                grammar: "".to_string(),
-                inflections: Vec::new(),
+                grammar: w.grammar.clone(),
+                inflections: DictWord::parse_csv_list(&w.inflections),
+                synonyms: DictWord::parse_csv_list(&w.synonyms),
+                antonyms: DictWord::parse_csv_list(&w.antonyms),
             },
             definition_md: w.definition_md.clone(),
         }
@@ -283,6 +323,8 @@ impl Default for DictWordHeader {
             summary: "summary".to_string(),
             grammar: "m.".to_string(),
             inflections: Vec::new(),
+            synonyms: Vec::new(),
+            antonyms: Vec::new(),
         }
     }
 }
