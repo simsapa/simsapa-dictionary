@@ -10,4 +10,23 @@
 <idx:entry><idx:orth><h4>{{#if ../meta.use_velthuis}}{{to_velthuis word_header.word}}{{else}}{{word_header.word}}{{/if}}</h4><p>{{#if word_header.grammar}} <i>{{word_header.grammar}}</i>{{/if}}{{#if word_header.dict_label}} <i>{{word_header.dict_label}}</i>{{/if}}{{#if word_header.summary}} <i>{{word_header.summary}}</i>{{/if}}{{#if word_header.inflections}}</p><idx:infl>{{#each word_header.inflections}} <idx:iform value="{{this}}"/>{{/each}}</idx:infl>{{/if}}</idx:orth></idx:entry>
 
 {{markdown definition_md}}
+
+{{#if word_header.synonyms}}
+<p>Synonyms:</p>
+<ul>
+{{#each word_header.synonyms}}
+<li>{{this}}</li>
+{{/each}}
+</ul>
+{{/if}}
+
+{{#if word_header.antonyms}}
+<p>Antonyms:</p>
+<ul>
+{{#each word_header.antonyms}}
+<li>{{this}}</li>
+{{/each}}
+</ul>
+{{/if}}
+
 {{/each}}

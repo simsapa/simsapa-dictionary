@@ -17,4 +17,23 @@
 {{/if ~}}
 
 {{markdown definition_md}}
+
+{{#if word_header.synonyms}}
+<p>Synonyms:</p>
+<ul>
+{{#each word_header.synonyms}}
+<li>{{this}}</li>
+{{/each}}
+</ul>
+{{/if}}
+
+{{#if word_header.antonyms}}
+<p>Antonyms:</p>
+<ul>
+{{#each word_header.antonyms}}
+<li>{{this}}</li>
+{{/each}}
+</ul>
+{{/if}}
+
 {{/each}}
