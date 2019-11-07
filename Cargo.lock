@@ -200,6 +200,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "deunicode"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -765,6 +770,7 @@ dependencies = [
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "comrak 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "deunicode 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "handlebars 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "html2md 0.2.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1057,6 +1063,7 @@ dependencies = [
 "checksum combine 3.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "da3da6baa321ec19e1cc41d31bf599f00c783d0517095cdaf0332e3fe8d20680"
 "checksum comrak 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ea4c29f52463abf5c7a3ae33dd9b404e2031af82f547cfe65bfac17ba785ea2e"
 "checksum crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
+"checksum deunicode 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ca8a0f5bbdedde60605d0719b998e282af68e2b1c50203110211fe4abe857560"
 "checksum digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f3d0c8c8752312f9713efd397ff63acb9f85585afbf179282e720e7704954dd5"
 "checksum either 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 "checksum encoding_rs 0.8.20 (registry+https://github.com/rust-lang/crates.io-index)" = "87240518927716f79692c2ed85bfe6e98196d18c6401ec75355760233a7e12e9"

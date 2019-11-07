@@ -36,6 +36,10 @@ pub struct DictWordXlsx {
     #[serde(default)]
     pub antonyms: String,
 
+    /// comma-seperated list
+    #[serde(default)]
+    pub see_also: String,
+
     pub definition_md: String,
 }
 
@@ -56,6 +60,8 @@ pub struct DictWordHeader {
     pub synonyms: Vec<String>,
     #[serde(default)]
     pub antonyms: Vec<String>,
+    #[serde(default)]
+    pub see_also: Vec<String>,
 }
 
 impl DictWord {
@@ -113,6 +119,7 @@ impl DictWord {
                 inflections: DictWord::parse_csv_list(&w.inflections),
                 synonyms: DictWord::parse_csv_list(&w.synonyms),
                 antonyms: DictWord::parse_csv_list(&w.antonyms),
+                see_also: DictWord::parse_csv_list(&w.see_also),
             },
             definition_md: w.definition_md.clone(),
         }
@@ -325,6 +332,7 @@ impl Default for DictWordHeader {
             inflections: Vec::new(),
             synonyms: Vec::new(),
             antonyms: Vec::new(),
+            see_also: Vec::new(),
         }
     }
 }

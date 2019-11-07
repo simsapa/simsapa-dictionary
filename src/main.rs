@@ -21,6 +21,7 @@ extern crate chrono;
 
 extern crate comrak;
 extern crate handlebars;
+extern crate deunicode;
 
 use clap::App;
 
@@ -38,6 +39,7 @@ use app::RunCommand;
 use ebook::Ebook;
 use helpers::ok_or_exit;
 
+#[allow(clippy::cognitive_complexity)]
 fn main() {
     std::env::set_var("RUST_LOG", "error");
     match kankyo::init() {
@@ -163,6 +165,35 @@ fn main() {
             if !app_params.dont_remove_generated_files {
                 ok_or_exit(app_params.used_first_arg, ebook.remove_generated_files());
             }
+        }
+
+        RunCommand::MarkdownToBabylon => {
+            let o = app_params.output_path.clone();
+            let output_path = o.expect("output_path is missing.");
+            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_markdown_list(source_paths, &mut ebook),
+            );
+
+            info!("Added words: {}", ebook.len());
+
+            if let Some(ref title) = app_params.title {
+                ebook.meta.title = title.clone();
+            }
+
+            if let Some(ref dict_label) = app_params.dict_label {
+                for (_key, word) in ebook.dict_words.iter_mut() {
+                    word.word_header.dict_label = dict_label.clone();
+                }
+            }
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
         }
     }
 
