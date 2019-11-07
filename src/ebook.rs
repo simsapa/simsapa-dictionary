@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use handlebars::{self, Handlebars};
 use walkdir::WalkDir;
+use deunicode::deunicode;
 
 use crate::app::{AppStartParams, ZipWith};
 use crate::dict_word::{DictWord, DictWordHeader};
@@ -46,16 +47,29 @@ pub struct Ebook {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EbookMetadata {
+
     pub title: String,
+
+    #[serde(default)]
     pub description: String,
+    #[serde(default)]
     pub creator: String,
+    /// Source URL
+    #[serde(default)]
     pub source: String,
+    #[serde(default)]
     pub cover_path: String,
+    #[serde(default)]
     pub book_id: String,
+    #[serde(default)]
     pub created_date_human: String,
+    #[serde(default)]
     pub created_date_opf: String,
+    #[serde(default)]
     pub use_velthuis: bool,
+    #[serde(default)]
     pub is_epub: bool,
+    #[serde(default)]
     pub is_mobi: bool,
 }
 
@@ -229,6 +243,7 @@ impl Ebook {
                     inflections: new_word.word_header.inflections,
                     synonyms: new_word.word_header.synonyms,
                     antonyms: new_word.word_header.antonyms,
+                    see_also: new_word.word_header.see_also,
                 },
                 definition_md: new_word.definition_md,
             };
@@ -874,6 +889,106 @@ impl Ebook {
             }
         }
 
+        Ok(())
+    }
+
+    pub fn write_babylon_source(&self) -> Result<(), Box<dyn Error>> {
+
+        let mut content = String::new();
+
+        // Must start with a blank line.
+        content.push_str("\n");
+
+        // Write the header.
+        content.push_str(&format!(r#"#stripmethod=keep
+#sametypesequence=h
+#bookname={}
+#author={}
+#description={}
+#website={}
+#date={}"#,
+&self.meta.title,
+&self.meta.creator,
+&self.meta.description,
+&self.meta.source,
+&self.meta.created_date_opf));
+
+        // Write the entries.
+        for (_, word) in self.dict_words.iter() {
+            // Blank line before each entry, including the first.
+            content.push_str("\n\n");
+
+            // start with the word
+            content.push_str(&word.word_header.word);
+            // If the ascii transliteration differs, add it as an inflection to help searching.
+            let s = deunicode(&word.word_header.word);
+            if word.word_header.word != s {
+                content.push_str(&'|'.to_string());
+                content.push_str(&s);
+            }
+
+            // inflections
+            if !word.word_header.inflections.is_empty() {
+                content.push_str(&'|'.to_string());
+                let inflections = word.word_header.inflections.join(&'|'.to_string());
+                content.push_str(&inflections);
+            }
+            content.push_str(&'\n'.to_string());
+
+            let mut text = String::new();
+
+            // grammar note
+            if !word.word_header.grammar.is_empty() {
+                text.push_str(&format!("<p><i>{}</i></p>", &word.word_header.grammar));
+            }
+
+            // definition
+            text.push_str(&helpers::md2html(&word.definition_md));
+
+            // synonyms
+            if !word.word_header.synonyms.is_empty() {
+                let s: String = word.word_header.synonyms.iter()
+                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                text.push_str(&format!("<p>Synonyms: {}</p>", &s));
+            }
+
+            // antonyms
+            if !word.word_header.antonyms.is_empty() {
+                let s: String = word.word_header.antonyms.iter()
+                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                text.push_str(&format!("<p>Antonyms: {}</p>", &s));
+            }
+
+            // see also
+            if !word.word_header.see_also.is_empty() {
+                let s: String = word.word_header.see_also.iter()
+                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                text.push_str(&format!("<p>See also: {}</p>", &s));
+            }
+
+            content.push_str(&text.replace('\n', ""));
+        }
+
+        // End with a blank line.
+        content.push_str("\n\n");
+
+        let mut file = File::create(&self.output_path)?;
+        file.write_all(content.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn create_babylon(&mut self) -> Result<(), Box<dyn Error>> {
+        self.write_babylon_source()?;
         Ok(())
     }
 

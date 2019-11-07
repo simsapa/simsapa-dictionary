@@ -188,6 +188,45 @@ subcommands:
             required: false
             takes_value: false
 
+  - markdown_to_babylon:
+      about: "Process a Markdown file and generate a Babylon source dictionary (GLS)."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of Markdown file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single Markdown file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the ebook, instead of the one defined in the Markdown file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the Markdown file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first Markdown source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
   - suttacentral_json_to_markdown:
       about: "Process a dictionary JSON file from SuttaCentral and write a Markdown file with TOML headers."
 
