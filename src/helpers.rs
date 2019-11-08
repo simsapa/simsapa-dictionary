@@ -38,6 +38,35 @@ pub fn to_velthuis(
     Ok(())
 }
 
+pub fn word_list(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let prefix = h.param(0).unwrap().value().render();
+    let items = h.param(1).unwrap().value();
+
+    let items_content = if let Some(items) = items.as_array() {
+        if !items.is_empty() {
+            items.iter()
+                .map(|i| format!("<a href=\"bword://{}\">{}</a>", i.render(), i.render()))
+                .collect::<Vec<String>>()
+                .join(", ")
+        } else {
+            return Ok(());
+        }
+    } else {
+        return Ok(());
+    };
+
+    let content = format!("<p>{} {}</p>", &prefix, &items_content);
+    out.write(&content)?;
+    Ok(())
+}
+
 pub fn md2html(markdown: &str) -> String {
     let mut opts = ComrakOptions::default();
     opts.smart = true;
@@ -46,7 +75,7 @@ pub fn md2html(markdown: &str) -> String {
     let re = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
     let res = re.replace_all(markdown, "$1").to_string();
 
-    markdown_to_html(&res, &opts)
+    markdown_to_html(&res, &opts).trim().to_string()
 }
 
 pub fn is_hidden(entry: &DirEntry) -> bool {

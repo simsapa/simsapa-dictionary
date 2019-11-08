@@ -195,6 +195,35 @@ fn main() {
 
             ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
         }
+
+        RunCommand::MarkdownToStardict => {
+            let o = app_params.output_path.clone();
+            let output_path = o.expect("output_path is missing.");
+            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_markdown_list(source_paths, &mut ebook),
+            );
+
+            info!("Added words: {}", ebook.len());
+
+            if let Some(ref title) = app_params.title {
+                ebook.meta.title = title.clone();
+            }
+
+            if let Some(ref dict_label) = app_params.dict_label {
+                for (_key, word) in ebook.dict_words.iter_mut() {
+                    word.word_header.dict_label = dict_label.clone();
+                }
+            }
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_stardict());
+        }
     }
 
     info!("Finished.");

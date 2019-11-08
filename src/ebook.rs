@@ -11,7 +11,7 @@ use walkdir::WalkDir;
 use deunicode::deunicode;
 
 use crate::app::{AppStartParams, ZipWith};
-use crate::dict_word::{DictWord, DictWordHeader};
+use crate::dict_word::DictWord;
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html};
 use crate::letter_groups::{LetterGroups, LetterGroup};
@@ -54,6 +54,8 @@ pub struct EbookMetadata {
     pub description: String,
     #[serde(default)]
     pub creator: String,
+    #[serde(default)]
+    pub email: String,
     /// Source URL
     #[serde(default)]
     pub source: String,
@@ -61,6 +63,8 @@ pub struct EbookMetadata {
     pub cover_path: String,
     #[serde(default)]
     pub book_id: String,
+    #[serde(default)]
+    pub version: String,
     #[serde(default)]
     pub created_date_human: String,
     #[serde(default)]
@@ -101,6 +105,7 @@ impl Ebook {
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
+        h.register_helper("word_list", Box::new(helpers::word_list));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -174,6 +179,15 @@ impl Ebook {
         );
         reg_tmpl(&mut h, &k, &afs);
 
+        let k = "stardict_textual.xml".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/stardict_textual.xml").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        // binary storage (not templates)
+
         afb.insert(
             "default_cover.jpg".to_string(),
             include_bytes!("../assets/OEBPS/default_cover.jpg").to_vec(),
@@ -223,10 +237,17 @@ impl Ebook {
     }
 
     pub fn add_word(&mut self, new_word: DictWord) {
+        let mut new_word = new_word;
         let w_key = format!(
             "{} {}",
             new_word.word_header.word, new_word.word_header.dict_label
         );
+
+        // If the ascii transliteration differs, add it as an inflection to help searching.
+        let s = deunicode(&new_word.word_header.word);
+        if new_word.word_header.word != s {
+            new_word.word_header.inflections.push(s);
+        }
 
         if self.dict_words.contains_key(&w_key) {
             warn!(
@@ -234,21 +255,9 @@ impl Ebook {
                 &w_key
             );
 
-            let ww = DictWord {
-                word_header: DictWordHeader {
-                    dict_label: new_word.word_header.dict_label,
-                    word: format!("{} FIXME: double", new_word.word_header.word),
-                    summary: new_word.word_header.summary,
-                    grammar: new_word.word_header.grammar,
-                    inflections: new_word.word_header.inflections,
-                    synonyms: new_word.word_header.synonyms,
-                    antonyms: new_word.word_header.antonyms,
-                    see_also: new_word.word_header.see_also,
-                },
-                definition_md: new_word.definition_md,
-            };
-            let ww_key = format!("{} double", &w_key);
-            self.dict_words.insert(ww_key, ww);
+            new_word.word_header.word = format!("{} FIXME: double", new_word.word_header.word);
+            let double_key = format!("{} double", &w_key);
+            self.dict_words.insert(double_key, new_word);
         } else {
             let w = self.dict_words.insert(w_key.clone(), new_word);
             if w.is_some() {
@@ -904,11 +913,13 @@ impl Ebook {
 #sametypesequence=h
 #bookname={}
 #author={}
+#email={}
 #description={}
 #website={}
 #date={}"#,
 &self.meta.title,
 &self.meta.creator,
+&self.meta.email,
 &self.meta.description,
 &self.meta.source,
 &self.meta.created_date_opf));
@@ -920,12 +931,6 @@ impl Ebook {
 
             // start with the word
             content.push_str(&word.word_header.word);
-            // If the ascii transliteration differs, add it as an inflection to help searching.
-            let s = deunicode(&word.word_header.word);
-            if word.word_header.word != s {
-                content.push_str(&'|'.to_string());
-                content.push_str(&s);
-            }
 
             // inflections
             if !word.word_header.inflections.is_empty() {
@@ -992,6 +997,29 @@ impl Ebook {
         Ok(())
     }
 
+    pub fn write_stardict_xml(&self) -> Result<(), Box<dyn Error>> {
+        info!("write_stardict_xml()");
+
+        let template = "stardict_textual.xml".to_string();
+        let content = match self.templates.render(&template, &self) {
+            Ok(x) => x,
+            Err(e) => {
+                error!("Can't render template {}, {:?}", template, e);
+                "FIXME: Template rendering error.".to_string()
+            }
+        };
+
+        let mut file = File::create(&self.output_path)?;
+        file.write_all(content.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn create_stardict(&mut self) -> Result<(), Box<dyn Error>> {
+        self.write_stardict_xml()?;
+        Ok(())
+    }
+
     fn set_paths_to_none(&mut self) {
         // TODO these should be grouped in one type, all depending on base dir being created.
         self.build_base_dir = None;
@@ -1011,9 +1039,11 @@ impl Default for EbookMetadata {
             title: "Dictionary".to_string(),
             description: "Pali - English".to_string(),
             creator: "Simsapa Dhamma Reader".to_string(),
+            email: "person@example.com".to_string(),
             source: "https://simsapa.github.io".to_string(),
             cover_path: "default_cover.jpg".to_string(),
             book_id: "SimsapaPaliDictionary".to_string(),
+            version: "0.1.0".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
             use_velthuis: false,
