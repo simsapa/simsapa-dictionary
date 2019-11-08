@@ -607,7 +607,7 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::XlsxToEbook)?;
-    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_babylon") {
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_babylon_gls") {
         process_to_babylon(&mut params, sub_matches, RunCommand::MarkdownToBabylon)?;
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_stardict_xml") {
         process_to_stardict(&mut params, sub_matches, RunCommand::MarkdownToStardict)?;

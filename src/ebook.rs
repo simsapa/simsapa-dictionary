@@ -913,11 +913,13 @@ impl Ebook {
 #sametypesequence=h
 #bookname={}
 #author={}
+#email={}
 #description={}
 #website={}
 #date={}"#,
 &self.meta.title,
 &self.meta.creator,
+&self.meta.email,
 &self.meta.description,
 &self.meta.source,
 &self.meta.created_date_opf));

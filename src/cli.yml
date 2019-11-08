@@ -188,7 +188,7 @@ subcommands:
             required: false
             takes_value: false
 
-  - markdown_to_babylon:
+  - markdown_to_babylon_gls:
       about: "Process a Markdown file and generate a Babylon source dictionary (GLS)."
 
       args:
