@@ -9,8 +9,24 @@ PRJ_ROOT=$(pwd)
 BIN_PATH=./target/debug/simsapa_dictionary
 TEST_TEMP="$PRJ_ROOT/test-temp"
 
+STARDICT_TEXT2BIN="/usr/lib/stardict-tools/stardict-text2bin"
+STARDICT_BABYLON="/usr/lib/stardict-tools/babylon"
+
+# Compiling
+cargo build
+
+if [[ "$?" != "0" ]]; then
+    echo "Failed to compile."
+    exit 2
+fi
+
 if [ ! -e "$BIN_PATH" ]; then
-    echo "Binary not found. Did run 'cargo build'?"
+    echo "Binary not found."
+    exit 2
+fi
+
+if [ ! -e "$STARDICT_TEXT2BIN" -o ! -e "$STARDICT_BABYLON"]; then
+    echo "Stardict binary tools not found. Is the 'stardict-tools' package installed?"
     exit 2
 fi
 
@@ -163,6 +179,30 @@ export PATH="$PATH_ORIG"
 # ===============================================
 # ///////////////////////////////////////////////
 
+echo "=== Test: Build an EPUB with subcommand, output path missing ==="
+
+cd "$TEST_TEMP"
+
+./simsapa_dictionary markdown_to_ebook \
+    --source_path "data/data with space/ncped with space.md" \
+    --ebook_format epub
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "./data/data with space/ncped with space.epub" ]; then
+    echo "Test Failed."
+    exit 2
+else
+    rm "./data/data with space/ncped with space.epub"
+    echo "Test Passed."
+fi
+
+# ===============================================
+# ///////////////////////////////////////////////
+
 echo "=== Test: Build a MOBI from XLSX with first argument with path ==="
 
 cd "$TEST_TEMP"
@@ -247,7 +287,150 @@ else
     echo "Test Passed."
 fi
 
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a Babylon GLS from Markdown and generate a Stardict dictionary. ==="
+
+cd "$TEST_TEMP"
+
+name_space="ncped with space"
+name_dash="ncped-with-space"
+
+./simsapa_dictionary markdown_to_babylon_gls \
+    --source_path "data/data with space/$name_space.md"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "data/data with space/$name_dash.gls" ]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+cd "data/data with space/"
+
+$STARDICT_BABYLON "$name_dash.gls"
+
+if [ ! -e "$name_dash.dict.dz" ] || [ ! -e "$name_dash.idx" ] || [ ! -e "$name_dash.ifo" ] || [ ! -e "$name_dash.syn" ]; then
+    echo "Failed to generate Stardict files."
+    exit 2
+else
+    rm "$name_dash.gls" "$name_dash.dict.dz" "$name_dash.idx" "$name_dash.ifo" "$name_dash.syn"
+    echo "Test Passed."
+fi
+
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a Babylon GLS from XLSX and generate a Stardict dictionary. ==="
+
+cd "$TEST_TEMP"
+
+name_space="ncped with space"
+name_dash="ncped-with-space"
+
+./simsapa_dictionary xlsx_to_babylon_gls \
+    --source_path "data/data with space/$name_space.xlsx"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "data/data with space/$name_dash.gls" ]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+cd "data/data with space/"
+
+$STARDICT_BABYLON "$name_dash.gls"
+
+if [ ! -e "$name_dash.dict.dz" ] || [ ! -e "$name_dash.idx" ] || [ ! -e "$name_dash.ifo" ] || [ ! -e "$name_dash.syn" ]; then
+    echo "Failed to generate Stardict files."
+    exit 2
+else
+    rm "$name_dash.gls" "$name_dash.dict.dz" "$name_dash.idx" "$name_dash.ifo" "$name_dash.syn"
+    echo "Test Passed."
+fi
+
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a Stardict XML from Markdown and generate a Stardict dictionary. ==="
+
+cd "$TEST_TEMP"
+
+name_space="ncped with space"
+name_dash="ncped-with-space"
+
+./simsapa_dictionary markdown_to_stardict_xml \
+    --source_path "data/data with space/$name_space.md"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "data/data with space/$name_dash.xml" ]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+cd "data/data with space/"
+
+$STARDICT_TEXT2BIN "$name_dash.xml" "$name_dash.ifo"
+
+if [ ! -e "$name_dash.dict.dz" ] || [ ! -e "$name_dash.idx" ] || [ ! -e "$name_dash.ifo" ] || [ ! -e "$name_dash.syn" ]; then
+    echo "Failed to generate Stardict files."
+    exit 2
+else
+    rm "$name_dash.xml" "$name_dash.dict.dz" "$name_dash.idx" "$name_dash.ifo" "$name_dash.syn"
+    echo "Test Passed."
+fi
+
+# ===============================================
+# ///////////////////////////////////////////////
+
+echo "=== Test: Build a Stardict XML from XLSX and generate a Stardict dictionary. ==="
+
+cd "$TEST_TEMP"
+
+name_space="ncped with space"
+name_dash="ncped-with-space"
+
+./simsapa_dictionary xlsx_to_stardict_xml \
+    --source_path "data/data with space/$name_space.xlsx"
+
+if [[ "$?" != "0" ]]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+if [ ! -e "data/data with space/$name_dash.xml" ]; then
+    echo "Test Failed."
+    exit 2
+fi
+
+cd "data/data with space/"
+
+$STARDICT_TEXT2BIN "$name_dash.xml" "$name_dash.ifo"
+
+if [ ! -e "$name_dash.dict.dz" ] || [ ! -e "$name_dash.idx" ] || [ ! -e "$name_dash.ifo" ] || [ ! -e "$name_dash.syn" ]; then
+    echo "Failed to generate Stardict files."
+    exit 2
+else
+    rm "$name_dash.xml" "$name_dash.dict.dz" "$name_dash.idx" "$name_dash.ifo" "$name_dash.syn"
+    echo "Test Passed."
+fi
+
 # === Clean up. ===
+
+echo "All tests passed."
+echo "Cleaning up generated test files."
 
 cd "$PRJ_ROOT" && rm "$TEST_TEMP" -r
 

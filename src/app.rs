@@ -42,7 +42,9 @@ pub enum RunCommand {
     MarkdownToEbook,
     XlsxToEbook,
     MarkdownToBabylon,
+    XlsxToBabylon,
     MarkdownToStardict,
+    XlsxToStardict,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -285,7 +287,8 @@ fn process_to_ebook(
         Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
 
         None => {
-            let a = params.output_path.as_ref().ok_or("can't use output_path")?;
+            let s = params.source_paths.as_ref().unwrap();
+            let a = s.get(0).ok_or("can't use source_paths")?;
             let p = ensure_parent(a);
             let filename = p.file_name().unwrap();
             let dir = p.parent().unwrap();
@@ -426,19 +429,27 @@ fn process_to_babylon(
         }
     }
 
-    match sub_matches.value_of("output_path") {
-        Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
+    let path = match sub_matches.value_of("output_path") {
+        Some(x) => ensure_parent(&PathBuf::from(&x)),
 
         None => {
-            let a = params.output_path.as_ref().ok_or("can't use output_path")?;
+            let s = params.source_paths.as_ref().unwrap();
+            let a = s.get(0).ok_or("can't use source_paths")?;
             let p = ensure_parent(a);
             let filename = p.file_name().unwrap();
             let dir = p.parent().unwrap();
 
             let p = dir.join(PathBuf::from(filename).with_extension("gls"));
-            params.output_path = Some(ensure_parent(&p));
+            ensure_parent(&p)
         }
-    }
+    };
+
+    // The output filename has to be generated with no spaces. Calling Stardict's babylon
+    // converter, it passes the name to dictzip without quoting, and so dictzip can't find the
+    // file.
+
+    let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
+    params.output_path = Some(path.with_file_name(filename));
 
     params.run_command = run_command;
 
@@ -518,19 +529,26 @@ fn process_to_stardict(
         }
     }
 
-    match sub_matches.value_of("output_path") {
-        Some(x) => params.output_path = Some(ensure_parent(&PathBuf::from(&x))),
+    let path = match sub_matches.value_of("output_path") {
+        Some(x) => ensure_parent(&PathBuf::from(&x)),
 
         None => {
-            let a = params.output_path.as_ref().ok_or("can't use output_path")?;
+            let s = params.source_paths.as_ref().unwrap();
+            let a = s.get(0).ok_or("can't use source_paths")?;
             let p = ensure_parent(a);
             let filename = p.file_name().unwrap();
             let dir = p.parent().unwrap();
 
             let p = dir.join(PathBuf::from(filename).with_extension("xml"));
-            params.output_path = Some(ensure_parent(&p));
+            ensure_parent(&p)
         }
-    }
+    };
+
+    // The output filename has to be generated with no spaces. Calling stardict-text2bin passes the
+    // name to dictzip without quoting, and so dictzip can't find the file.
+
+    let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
+    params.output_path = Some(path.with_file_name(filename));
 
     params.run_command = run_command;
 
@@ -605,12 +623,21 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::XlsxToEbook)?;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_babylon_gls") {
         process_to_babylon(&mut params, sub_matches, RunCommand::MarkdownToBabylon)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_babylon_gls") {
+        process_to_babylon(&mut params, sub_matches, RunCommand::XlsxToBabylon)?;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_stardict_xml") {
         process_to_stardict(&mut params, sub_matches, RunCommand::MarkdownToStardict)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_stardict_xml") {
+        process_to_stardict(&mut params, sub_matches, RunCommand::XlsxToStardict)?;
     }
 
     if matches.is_present("show_logs") {

@@ -7,46 +7,46 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="6in"
-   height="9in"
-   viewBox="0 0 152.4 228.60001"
-   version="1.1"
-   id="svg8"
-   inkscape:version="1.0beta1 (fe3e306, 2019-09-17)"
-   sodipodi:docname="circle_cover.svg"
-   inkscape:export-filename="/home/yume/prods/apps/simsapa-project/simsapa-dictionary/assets/circle_cover.png"
+   inkscape:export-ydpi="133.33334"
    inkscape:export-xdpi="133.33334"
-   inkscape:export-ydpi="133.33334">
+   inkscape:export-filename="/home/yume/prods/apps/simsapa-project/simsapa-dictionary/assets/circle_cover.png"
+   sodipodi:docname="circle_cover.svg"
+   inkscape:version="1.0beta1 (fe3e306, 2019-09-17)"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 152.4 228.60001"
+   height="9in"
+   width="6in">
   <defs
      id="defs2" />
   <sodipodi:namedview
-     inkscape:guide-bbox="true"
-     inkscape:snap-bbox-edge-midpoints="false"
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="0.49497475"
-     inkscape:cx="-201.00586"
-     inkscape:cy="611.38972"
-     inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
-     showgrid="false"
-     units="in"
-     inkscape:snap-center="true"
-     inkscape:snap-object-midpoints="true"
-     inkscape:snap-bbox="true"
-     inkscape:snap-bbox-midpoints="true"
-     inkscape:snap-page="true"
-     inkscape:window-width="1920"
-     inkscape:window-height="1043"
-     inkscape:window-x="0"
-     inkscape:window-y="37"
-     inkscape:window-maximized="1"
+     showguides="true"
      inkscape:document-rotation="0"
-     showguides="true" />
+     inkscape:window-maximized="1"
+     inkscape:window-y="37"
+     inkscape:window-x="0"
+     inkscape:window-height="1043"
+     inkscape:window-width="1920"
+     inkscape:snap-page="true"
+     inkscape:snap-bbox-midpoints="true"
+     inkscape:snap-bbox="true"
+     inkscape:snap-object-midpoints="true"
+     inkscape:snap-center="true"
+     units="in"
+     showgrid="false"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="530.26297"
+     inkscape:cx="421.9537"
+     inkscape:zoom="0.7"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base"
+     inkscape:snap-bbox-edge-midpoints="false"
+     inkscape:guide-bbox="true" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -55,58 +55,44 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
+     transform="translate(0,-68.399983)"
      id="layer1"
-     transform="translate(0,-68.399983)">
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
     <rect
-       style="opacity:1;fill:#89c2da;fill-opacity:1;stroke:none;stroke-width:0.26499999;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       y="68.399986"
+       x="0"
+       height="228.59999"
+       width="152.39999"
        id="rect4493"
-       width="152.39999"
-       height="228.59999"
-       x="0"
-       y="68.399986" />
+       style="opacity:1;fill:#89c2da;fill-opacity:1;stroke:none;stroke-width:0.26499999;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     <rect
-       style="opacity:1;fill:#327da0;fill-opacity:0;stroke:none;stroke-width:0.26499999;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="rect4491"
-       width="152.39999"
-       height="228.59999"
+       y="68.399986"
        x="0"
-       y="68.399986" />
+       height="228.59999"
+       width="152.39999"
+       id="rect4491"
+       style="opacity:1;fill:#327da0;fill-opacity:0;stroke:none;stroke-width:0.26499999;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     <circle
-       r="65.873543"
-       cy="182.69998"
-       cx="76.199997"
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.141111;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:22.8"
        id="path901"
-       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.141111;stroke-linecap:round;stroke-linejoin:round;stroke-dashoffset:22.8" />
-    <g
-       id="g4517"
-       transform="translate(8.5315704e-6,-22.262764)">
-      <text
-         id="text4487"
-         y="199.8447"
-         x="22.99404"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.9333px;line-height:5.29167px;font-family:'Crimson Text';-inkscape-font-specification:'Crimson Text Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;letter-spacing:0.529167px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.265;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         xml:space="preserve"><tspan
-           sodipodi:role="line"
-           id="tspan879"
-           x="22.99404"
-           y="199.8447">DICTIONARY</tspan></text>
-      <text
-         id="text4497"
-         y="224.05524"
-         x="39.342094"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.1111px;line-height:5.29167px;font-family:'Crimson Text';-inkscape-font-specification:'Crimson Text Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         xml:space="preserve"><tspan
-           sodipodi:role="line"
-           id="tspan881"
-           x="39.342094"
-           y="224.05524">Pali - English</tspan></text>
-    </g>
+       cx="76.199997"
+       cy="182.69998"
+       r="65.873543" />
+    <text
+       id="text4487"
+       y="188.16527"
+       x="22.994047"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.9333px;line-height:5.29167px;font-family:'Crimson Text';-inkscape-font-specification:'Crimson Text Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;letter-spacing:0.529167px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.265;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;stop-opacity:1"
+       xml:space="preserve"><tspan
+         sodipodi:role="line"
+         id="tspan879"
+         x="22.994047"
+         y="188.16527">DICTIONARY</tspan></text>
   </g>
 </svg>

@@ -238,9 +238,14 @@ impl Ebook {
 
     pub fn add_word(&mut self, new_word: DictWord) {
         let mut new_word = new_word;
+        let label = if new_word.word_header.dict_label.is_empty() {
+            "unlabeled".to_string()
+        } else {
+            new_word.word_header.dict_label.clone()
+        };
         let w_key = format!(
             "{} {}",
-            new_word.word_header.word, new_word.word_header.dict_label
+            new_word.word_header.word, label
         );
 
         // If the ascii transliteration differs, add it as an inflection to help searching.
