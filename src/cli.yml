@@ -1,7 +1,7 @@
 name: "Simsapa Dictionary Tool"
 version: "0.1.0"
 author: "https://simsapa.github.io/"
-about: "Generating Pali language dictionaries in MOBI and EPUB format."
+about: "Generating dictionaries in various formats"
 
 args:
   - show_logs:
@@ -227,6 +227,45 @@ subcommands:
             required: false
             takes_value: true
 
+  - xlsx_to_babylon_gls:
+      about: "Process an XLSX file and generate a Babylon source dictionary (GLS)."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of XLSX file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single XLSX file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary, instead of the one defined in the XLSX file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the XLSX file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The GLS file to write. Defaults to the same file name and folder as the first XLSX source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
   - markdown_to_stardict_xml:
       about: "Process a Markdown file and generate a Stardict textual dictionary file (XML)."
 
@@ -261,6 +300,45 @@ subcommands:
 
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first Markdown source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+  - xlsx_to_stardict_xml:
+      about: "Process an XLSX file and generate a Stardict textual dictionary file (XML)."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of XLSX file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single XLSX file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary, instead of the one defined in the XLSX file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the XLSX file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The XML file to write. Defaults to the same file name and folder as the first XLSX source."
             long: output_path
             value_name: PATH
             required: false

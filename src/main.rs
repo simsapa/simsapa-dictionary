@@ -167,7 +167,7 @@ fn main() {
             }
         }
 
-        RunCommand::MarkdownToBabylon => {
+        RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
             let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
@@ -176,10 +176,23 @@ fn main() {
             let p = paths.expect("source_paths is missing.");
             let source_paths = p.to_vec();
 
-            ok_or_exit(
-                app_params.used_first_arg,
-                app::process_markdown_list(source_paths, &mut ebook),
-            );
+            match app_params.run_command {
+                RunCommand::MarkdownToBabylon => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_markdown_list(source_paths, &mut ebook),
+                    );
+                }
+
+                RunCommand::XlsxToBabylon => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_xlsx_list(source_paths, &mut ebook),
+                    );
+                }
+
+                _ => {}
+            }
 
             info!("Added words: {}", ebook.len());
 
@@ -196,7 +209,7 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
         }
 
-        RunCommand::MarkdownToStardict => {
+        RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
             let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
@@ -205,10 +218,23 @@ fn main() {
             let p = paths.expect("source_paths is missing.");
             let source_paths = p.to_vec();
 
-            ok_or_exit(
-                app_params.used_first_arg,
-                app::process_markdown_list(source_paths, &mut ebook),
-            );
+            match app_params.run_command {
+                RunCommand::MarkdownToStardict => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_markdown_list(source_paths, &mut ebook),
+                    );
+                }
+
+                RunCommand::XlsxToStardict => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_xlsx_list(source_paths, &mut ebook),
+                    );
+                }
+
+                _ => {}
+            }
 
             info!("Added words: {}", ebook.len());
 
