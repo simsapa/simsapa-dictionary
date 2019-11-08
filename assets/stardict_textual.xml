@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<stardict>
+  <info>
+    <version>{{#if meta.version}}{{meta.version}}{{else}}0.1.0{{/if}}</version>
+    <bookname>{{meta.title}}</bookname>
+    <author>{{meta.creator}}</author>
+    <email>{{meta.email}}</email>
+    <website>{{meta.source}}</website>
+    <description>{{meta.description}}</description>
+    <date>{{meta.created_date_opf}}</date>
+    <dicttype><!-- this element is normally empty --></dicttype>
+  </info>
+
+  <contents>
+
+    {{#each dict_words ~}}
+    <article>
+      <key>{{word_header.word}}</key>
+
+      {{#if word_header.inflections ~}}
+      {{#each word_header.inflections ~}}
+      <synonym>{{this}}</synonym>
+      {{/each ~}}
+      {{/if ~}}
+
+      <definition type="h">
+        <![CDATA[
+{{#if word_header.grammar ~}}<p><i>{{word_header.grammar}}</i></p>{{/if ~}}
+{{markdown definition_md ~}}
+{{word_list "Synonyms:" word_header.synonyms ~}}
+{{word_list "Antonyms:" word_header.antonyms ~}}
+{{word_list "See also:" word_header.see_also ~}}
+        ]]>
+      </definition>
+    </article>
+    {{/each ~}}
+
+  </contents>
+</stardict>
+
