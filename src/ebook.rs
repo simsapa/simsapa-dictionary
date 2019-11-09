@@ -106,6 +106,7 @@ impl Ebook {
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_list", Box::new(helpers::word_list));
+        h.register_helper("grammar_and_phonetic", Box::new(helpers::grammar_and_phonetic));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -238,14 +239,20 @@ impl Ebook {
 
     pub fn add_word(&mut self, new_word: DictWord) {
         let mut new_word = new_word;
+
         let label = if new_word.word_header.dict_label.is_empty() {
             "unlabeled".to_string()
         } else {
             new_word.word_header.dict_label.clone()
         };
+        let grammar = if new_word.word_header.grammar.is_empty() {
+            "uncategorized".to_string()
+        } else {
+            new_word.word_header.grammar.clone()
+        };
         let w_key = format!(
-            "{} {}",
-            new_word.word_header.word, label
+            "{} {} {}",
+            new_word.word_header.word, grammar, label
         );
 
         // If the ascii transliteration differs, add it as an inflection to help searching.
@@ -947,9 +954,21 @@ impl Ebook {
 
             let mut text = String::new();
 
-            // grammar note
-            if !word.word_header.grammar.is_empty() {
-                text.push_str(&format!("<p><i>{}</i></p>", &word.word_header.grammar));
+            // grammar and phonetic notation
+            if !word.word_header.grammar.is_empty() || !word.word_header.phonetic.is_empty() {
+                let g = if word.word_header.grammar.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("<i style=\"color: green;\">{}</i>", word.word_header.grammar)
+                };
+
+                let ph = if word.word_header.phonetic.is_empty() {
+                    "".to_string()
+                } else {
+                    format!(" <span>[{}]</span>", word.word_header.phonetic)
+                };
+
+                text.push_str(&format!("<p>{}{}</p>", g, ph));
             }
 
             // definition

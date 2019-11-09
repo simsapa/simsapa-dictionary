@@ -67,6 +67,37 @@ pub fn word_list(
     Ok(())
 }
 
+pub fn grammar_and_phonetic(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let grammar = h.param(0).unwrap().value().render();
+    let phonetic = h.param(1).unwrap().value().render();
+
+    if grammar.is_empty() && phonetic.is_empty() {
+        return Ok(());
+    }
+
+    let g = if grammar.is_empty() {
+        "".to_string()
+    } else {
+        format!("<i style=\"color: green;\">{}</i>", grammar)
+    };
+
+    let ph = if phonetic.is_empty() {
+        "".to_string()
+    } else {
+        format!(" <span>[{}]</span>", phonetic)
+    };
+
+    out.write(&format!("<p>{}{}</p>", g, ph))?;
+    Ok(())
+}
+
 pub fn md2html(markdown: &str) -> String {
     let mut opts = ComrakOptions::default();
     opts.smart = true;

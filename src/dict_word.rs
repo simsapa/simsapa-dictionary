@@ -24,6 +24,9 @@ pub struct DictWordXlsx {
     #[serde(default)]
     pub grammar: String,
 
+    #[serde(default)]
+    pub phonetic: String,
+
     /// comma-seperated list
     #[serde(default)]
     pub inflections: String,
@@ -54,6 +57,8 @@ pub struct DictWordHeader {
     pub summary: String,
     #[serde(default)]
     pub grammar: String,
+    #[serde(default)]
+    pub phonetic: String,
     #[serde(default)]
     pub inflections: Vec<String>,
     #[serde(default)]
@@ -116,6 +121,7 @@ impl DictWord {
                 word: w.word.clone(),
                 summary: w.summary.clone(),
                 grammar: w.grammar.clone(),
+                phonetic: w.phonetic.clone(),
                 inflections: DictWord::parse_csv_list(&w.inflections),
                 synonyms: DictWord::parse_csv_list(&w.synonyms),
                 antonyms: DictWord::parse_csv_list(&w.antonyms),
@@ -327,8 +333,9 @@ impl Default for DictWordHeader {
         DictWordHeader {
             dict_label: "ABCD".to_string(),
             word: "word".to_string(),
-            summary: "summary".to_string(),
-            grammar: "m.".to_string(),
+            summary: "A sound or a combination of sounds".to_string(),
+            grammar: "noun".to_string(),
+            phonetic: "wûrd".to_string(),
             inflections: Vec::new(),
             synonyms: Vec::new(),
             antonyms: Vec::new(),

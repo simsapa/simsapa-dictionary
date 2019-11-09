@@ -25,7 +25,7 @@
 
       <definition type="h">
         <![CDATA[
-{{#if word_header.grammar ~}}<p><i>{{word_header.grammar}}</i></p>{{/if ~}}
+{{grammar_and_phonetic word_header.grammar word_header.phonetic ~}}
 {{markdown definition_md ~}}
 {{word_list "Synonyms:" word_header.synonyms ~}}
 {{word_list "Antonyms:" word_header.antonyms ~}}
