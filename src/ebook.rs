@@ -15,6 +15,7 @@ use crate::dict_word::DictWord;
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html};
 use crate::letter_groups::{LetterGroups, LetterGroup};
+use crate::pali;
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -70,6 +71,8 @@ pub struct EbookMetadata {
     #[serde(default)]
     pub created_date_opf: String,
     #[serde(default)]
+    pub word_prefix: String,
+    #[serde(default)]
     pub use_velthuis: bool,
     #[serde(default)]
     pub is_epub: bool,
@@ -106,6 +109,7 @@ impl Ebook {
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_list", Box::new(helpers::word_list));
+        h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -238,20 +242,43 @@ impl Ebook {
 
     pub fn add_word(&mut self, new_word: DictWord) {
         let mut new_word = new_word;
+
         let label = if new_word.word_header.dict_label.is_empty() {
             "unlabeled".to_string()
         } else {
             new_word.word_header.dict_label.clone()
         };
+        let grammar = if new_word.word_header.grammar.is_empty() {
+            "uncategorized".to_string()
+        } else {
+            new_word.word_header.grammar.clone()
+        };
         let w_key = format!(
-            "{} {}",
-            new_word.word_header.word, label
+            "{} {} {}",
+            new_word.word_header.word, grammar, label
         );
 
-        // If the ascii transliteration differs, add it as an inflection to help searching.
-        let s = deunicode(&new_word.word_header.word);
-        if new_word.word_header.word != s {
-            new_word.word_header.inflections.push(s);
+        // Add transliterations to help searching:
+        // - given with the transliteration attribute
+        // - velthuis
+        // - ascii
+
+        if !new_word.word_header.transliteration.is_empty() {
+            new_word.word_header.inflections.push(new_word.word_header.transliteration.clone());
+        }
+
+        if self.meta.use_velthuis {
+            let s = pali::to_velthuis(&new_word.word_header.word);
+            if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
+                new_word.word_header.inflections.push(s);
+            }
+        }
+
+        {
+            let s = deunicode(&new_word.word_header.word);
+            if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
+                new_word.word_header.inflections.push(s);
+            }
         }
 
         if self.dict_words.contains_key(&w_key) {
@@ -947,10 +974,15 @@ impl Ebook {
 
             let mut text = String::new();
 
-            // grammar note
-            if !word.word_header.grammar.is_empty() {
-                text.push_str(&format!("<p><i>{}</i></p>", &word.word_header.grammar));
-            }
+            // grammar, phonetic, transliteration
+            let s = helpers::format_grammar_phonetic_transliteration(
+                &word.word_header.word,
+                &word.word_header.grammar,
+                &word.word_header.phonetic,
+                &word.word_header.transliteration,
+                self.meta.use_velthuis);
+
+            text.push_str(&s);
 
             // definition
             text.push_str(&helpers::md2html(&word.definition_md));
@@ -1051,6 +1083,7 @@ impl Default for EbookMetadata {
             version: "0.1.0".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
+            word_prefix: "".to_string(),
             use_velthuis: false,
             is_epub: true,
             is_mobi: false,

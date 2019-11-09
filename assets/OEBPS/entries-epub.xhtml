@@ -5,10 +5,8 @@
 <h2>{{group.group_letter}}</h2>
 
 {{#each group.dict_words}}
-<h4>&#42; {{word_header.word}} {{#if ../meta.use_velthuis}}[{{to_velthuis word_header.word}}]{{/if}}</h4>
-{{#if word_header.grammar ~}}
-<p>({{word_header.grammar}})</p>
-{{/if ~}}
+<h4>{{#if ../meta.word_prefix}}{{../meta.word_prefix}} {{/if}}{{word_header.word}}</h4>
+{{grammar_phonetic_transliteration word_header ../meta.use_velthuis ~}}
 {{#if word_header.dict_label ~}}
 <p>[{{word_header.dict_label}}]</p>
 {{/if ~}}
