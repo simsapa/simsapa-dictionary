@@ -105,7 +105,7 @@ impl Ebook {
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
 
-        h.register_helper("word_title", Box::new(helpers::word_title));
+        h.register_helper("epub_word_title", Box::new(helpers::epub_word_title));
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_list", Box::new(helpers::word_list));

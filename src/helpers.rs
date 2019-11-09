@@ -67,7 +67,7 @@ pub fn word_list(
     Ok(())
 }
 
-pub fn word_title(
+pub fn epub_word_title(
     h: &Helper,
     _: &Handlebars,
     _: &Context,
