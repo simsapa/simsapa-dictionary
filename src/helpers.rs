@@ -67,25 +67,16 @@ pub fn word_list(
     Ok(())
 }
 
-pub fn grammar_phonetic_transliteration(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _rc: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
-
-    let word_header = h.param(0).unwrap().value();
-
-    let word = word_header.get("word").unwrap().render();
-    let grammar = word_header.get("grammar").unwrap().render();
-    let phonetic = word_header.get("phonetic").unwrap().render();
-    let transliteration = word_header.get("transliteration").unwrap().render();
-
-    let use_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
-
+pub fn format_grammar_phonetic_transliteration(
+    word: &str,
+    grammar: &str,
+    phonetic: &str,
+    transliteration: &str,
+    use_velthuis: bool)
+    -> String
+{
     if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !use_velthuis {
-        return Ok(());
+        return "".to_string();
     }
 
     let g = if grammar.is_empty() {
@@ -110,7 +101,27 @@ pub fn grammar_phonetic_transliteration(
         format!(" <span>({})</span>", transliteration)
     };
 
-    out.write(&format!("<p>{}{}{}</p>", g, ph, tr))?;
+    format!("<p>{}{}{}</p>", g, ph, tr)
+}
+
+pub fn grammar_phonetic_transliteration(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let word_header = h.param(0).unwrap().value();
+
+    let word = word_header.get("word").unwrap().render();
+    let grammar = word_header.get("grammar").unwrap().render();
+    let phonetic = word_header.get("phonetic").unwrap().render();
+    let transliteration = word_header.get("transliteration").unwrap().render();
+
+    let use_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
+
+    out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, use_velthuis))?;
     Ok(())
 }
 

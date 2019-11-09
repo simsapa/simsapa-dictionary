@@ -974,22 +974,15 @@ impl Ebook {
 
             let mut text = String::new();
 
-            // grammar and phonetic notation
-            if !word.word_header.grammar.is_empty() || !word.word_header.phonetic.is_empty() {
-                let g = if word.word_header.grammar.is_empty() {
-                    "".to_string()
-                } else {
-                    format!("<i style=\"color: green;\">{}</i>", word.word_header.grammar)
-                };
+            // grammar, phonetic, transliteration
+            let s = helpers::format_grammar_phonetic_transliteration(
+                &word.word_header.word,
+                &word.word_header.grammar,
+                &word.word_header.phonetic,
+                &word.word_header.transliteration,
+                self.meta.use_velthuis);
 
-                let ph = if word.word_header.phonetic.is_empty() {
-                    "".to_string()
-                } else {
-                    format!(" <span>[{}]</span>", word.word_header.phonetic)
-                };
-
-                text.push_str(&format!("<p>{}{}</p>", g, ph));
-            }
+            text.push_str(&s);
 
             // definition
             text.push_str(&helpers::md2html(&word.definition_md));
