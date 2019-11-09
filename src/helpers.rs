@@ -67,7 +67,7 @@ pub fn word_list(
     Ok(())
 }
 
-pub fn epub_word_title(
+pub fn grammar_phonetic_transliteration(
     h: &Helper,
     _: &Handlebars,
     _: &Context,
@@ -75,40 +75,16 @@ pub fn epub_word_title(
     out: &mut dyn Output,
 ) -> HelperResult {
 
-    let prefix = h.param(0).unwrap().value().render();
-    let word = h.param(1).unwrap().value().render();
-    let use_velthuis = h.param(2).unwrap().value().as_bool().unwrap();
+    let word_header = h.param(0).unwrap().value();
 
-    let mut title = String::new();
+    let word = word_header.get("word").unwrap().render();
+    let grammar = word_header.get("grammar").unwrap().render();
+    let phonetic = word_header.get("phonetic").unwrap().render();
+    let transliteration = word_header.get("transliteration").unwrap().render();
 
-    if !prefix.is_empty() {
-        title.push_str(&prefix);
-        title.push_str(" ");
-    }
+    let use_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
 
-    title.push_str(&word);
-
-    if use_velthuis {
-        let s = format!(" [{}]", pali::to_velthuis(&word));
-        title.push_str(&s);
-    }
-
-    out.write(&title)?;
-    Ok(())
-}
-
-pub fn grammar_and_phonetic(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _rc: &mut RenderContext,
-    out: &mut dyn Output,
-) -> HelperResult {
-
-    let grammar = h.param(0).unwrap().value().render();
-    let phonetic = h.param(1).unwrap().value().render();
-
-    if grammar.is_empty() && phonetic.is_empty() {
+    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !use_velthuis {
         return Ok(());
     }
 
@@ -124,7 +100,17 @@ pub fn grammar_and_phonetic(
         format!(" <span>[{}]</span>", phonetic)
     };
 
-    out.write(&format!("<p>{}{}</p>", g, ph))?;
+    let tr = if transliteration.is_empty() {
+        if use_velthuis {
+            format!(" <span>({})</span>", pali::to_velthuis(&word))
+        } else {
+            "".to_string()
+        }
+    } else {
+        format!(" <span>({})</span>", transliteration)
+    };
+
+    out.write(&format!("<p>{}{}{}</p>", g, ph, tr))?;
     Ok(())
 }
 

@@ -15,6 +15,7 @@ use crate::dict_word::DictWord;
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html};
 use crate::letter_groups::{LetterGroups, LetterGroup};
+use crate::pali;
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -105,11 +106,10 @@ impl Ebook {
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
 
-        h.register_helper("epub_word_title", Box::new(helpers::epub_word_title));
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_list", Box::new(helpers::word_list));
-        h.register_helper("grammar_and_phonetic", Box::new(helpers::grammar_and_phonetic));
+        h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -258,10 +258,27 @@ impl Ebook {
             new_word.word_header.word, grammar, label
         );
 
-        // If the ascii transliteration differs, add it as an inflection to help searching.
-        let s = deunicode(&new_word.word_header.word);
-        if new_word.word_header.word != s {
-            new_word.word_header.inflections.push(s);
+        // Add transliterations to help searching:
+        // - given with the transliteration attribute
+        // - velthuis
+        // - ascii
+
+        if !new_word.word_header.transliteration.is_empty() {
+            new_word.word_header.inflections.push(new_word.word_header.transliteration.clone());
+        }
+
+        if self.meta.use_velthuis {
+            let s = pali::to_velthuis(&new_word.word_header.word);
+            if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
+                new_word.word_header.inflections.push(s);
+            }
+        }
+
+        {
+            let s = deunicode(&new_word.word_header.word);
+            if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
+                new_word.word_header.inflections.push(s);
+            }
         }
 
         if self.dict_words.contains_key(&w_key) {

@@ -5,8 +5,8 @@
 <h2>{{group.group_letter}}</h2>
 
 {{#each group.dict_words}}
-<h4>{{epub_word_title ../meta.word_prefix word_header.word ../meta.use_velthuis}}</h4>
-{{grammar_and_phonetic word_header.grammar word_header.phonetic ~}}
+<h4>{{#if ../meta.word_prefix}}{{../meta.word_prefix}} {{/if}}{{word_header.word}}</h4>
+{{grammar_phonetic_transliteration word_header ../meta.use_velthuis ~}}
 {{#if word_header.dict_label ~}}
 <p>[{{word_header.dict_label}}]</p>
 {{/if ~}}
