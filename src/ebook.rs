@@ -70,6 +70,8 @@ pub struct EbookMetadata {
     #[serde(default)]
     pub created_date_opf: String,
     #[serde(default)]
+    pub word_prefix: String,
+    #[serde(default)]
     pub use_velthuis: bool,
     #[serde(default)]
     pub is_epub: bool,
@@ -103,6 +105,7 @@ impl Ebook {
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
 
+        h.register_helper("word_title", Box::new(helpers::word_title));
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_list", Box::new(helpers::word_list));
@@ -1070,6 +1073,7 @@ impl Default for EbookMetadata {
             version: "0.1.0".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
+            word_prefix: "".to_string(),
             use_velthuis: false,
             is_epub: true,
             is_mobi: false,

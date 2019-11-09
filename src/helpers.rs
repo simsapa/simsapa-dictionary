@@ -67,6 +67,36 @@ pub fn word_list(
     Ok(())
 }
 
+pub fn word_title(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let prefix = h.param(0).unwrap().value().render();
+    let word = h.param(1).unwrap().value().render();
+    let use_velthuis = h.param(2).unwrap().value().as_bool().unwrap();
+
+    let mut title = String::new();
+
+    if !prefix.is_empty() {
+        title.push_str(&prefix);
+        title.push_str(" ");
+    }
+
+    title.push_str(&word);
+
+    if use_velthuis {
+        let s = format!(" [{}]", pali::to_velthuis(&word));
+        title.push_str(&s);
+    }
+
+    out.write(&title)?;
+    Ok(())
+}
+
 pub fn grammar_and_phonetic(
     h: &Helper,
     _: &Handlebars,
