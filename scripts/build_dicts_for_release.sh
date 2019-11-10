@@ -12,7 +12,7 @@ for i in dhammika dppn ncped nyana pts; do
     cargo run -- markdown_to_ebook \
         --source_path "$SRC_DIR/$i.md" \
         --dict_label "" \
-        --ebook_format mobi \
+        --output_format mobi \
         --output_path "$OUT_DIR/$i.mobi" \
         --mobi_compression 0 \
         --kindlegen_path "$KINDLEGEN_PATH"
@@ -20,7 +20,7 @@ for i in dhammika dppn ncped nyana pts; do
     cargo run -- markdown_to_ebook \
         --source_path "$SRC_DIR/$i.md" \
         --dict_label "" \
-        --ebook_format epub \
+        --output_format epub \
         --output_path "$OUT_DIR/$i.epub"
 
 done
@@ -30,7 +30,7 @@ done
 cargo run -- markdown_to_ebook \
     --source_paths_list ./scripts/combined_dict_md_paths.txt \
     --title "Combined Pali - English Dictionary" \
-    --ebook_format mobi \
+    --output_format mobi \
     --output_path "$OUT_DIR/combined-dictionary.mobi" \
     --mobi_compression 0 \
     --kindlegen_path "$KINDLEGEN_PATH"
@@ -38,6 +38,6 @@ cargo run -- markdown_to_ebook \
 cargo run -- markdown_to_ebook \
     --source_paths_list ./scripts/combined_dict_md_paths.txt \
     --title "Combined Pali - English Dictionary" \
-    --ebook_format epub \
+    --output_format epub \
     --output_path "$OUT_DIR/combined-dictionary.epub"
 

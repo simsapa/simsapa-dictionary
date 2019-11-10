@@ -82,7 +82,7 @@ fn main() {
                 .output_path
                 .expect("output_path is missing.");
 
-            let mut ebook = Ebook::new(app_params.ebook_format, &p);
+            let mut ebook = Ebook::new(app_params.output_format, &p);
 
             app::process_suttacentral_json(
                 &app_params.json_path,
@@ -104,7 +104,7 @@ fn main() {
                 .output_path
                 .expect("output_path is missing.");
 
-            let mut ebook = Ebook::new(app_params.ebook_format, &p);
+            let mut ebook = Ebook::new(app_params.output_format, &p);
 
             app::process_nyanatiloka_entries(
                 &app_params.nyanatiloka_root,
@@ -124,7 +124,7 @@ fn main() {
         RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+            let mut ebook = Ebook::new(app_params.output_format, &output_path);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -170,7 +170,7 @@ fn main() {
         RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+            let mut ebook = Ebook::new(app_params.output_format, &output_path);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -212,7 +212,7 @@ fn main() {
         RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+            let mut ebook = Ebook::new(app_params.output_format, &output_path);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");

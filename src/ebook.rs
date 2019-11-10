@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use handlebars::{self, Handlebars};
 use walkdir::WalkDir;
 use deunicode::deunicode;
+//use regex::Regex;
 
 use crate::app::{AppStartParams, ZipWith};
 use crate::dict_word::DictWord;
@@ -23,7 +24,7 @@ pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
 #[derive(Serialize, Deserialize)]
 pub struct Ebook {
     pub meta: EbookMetadata,
-    pub ebook_format: EbookFormat,
+    pub output_format: OutputFormat,
     pub dict_words: BTreeMap<String, DictWord>,
     pub entries_manifest: Vec<EntriesManifest>,
     pub asset_files_string: BTreeMap<String, String>,
@@ -74,16 +75,14 @@ pub struct EbookMetadata {
     pub word_prefix: String,
     #[serde(default)]
     pub use_velthuis: bool,
-    #[serde(default)]
-    pub is_epub: bool,
-    #[serde(default)]
-    pub is_mobi: bool,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
-pub enum EbookFormat {
+pub enum OutputFormat {
     Epub,
     Mobi,
+    BabylonGls,
+    StardictXml,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -99,7 +98,7 @@ pub struct LetterGroupTemplateData {
 }
 
 impl Ebook {
-    pub fn new(ebook_format: EbookFormat, output_path: &PathBuf) -> Self {
+    pub fn new(output_format: OutputFormat, output_path: &PathBuf) -> Self {
         // asset_files_string
         let mut afs: BTreeMap<String, String> = BTreeMap::new();
         // asset_files_byte
@@ -212,21 +211,9 @@ impl Ebook {
             include_bytes!("../assets/META-INF/com.apple.ibooks.display-options.xml").to_vec(),
         );
 
-        let mut meta = EbookMetadata::default();
-        match ebook_format {
-            EbookFormat::Epub => {
-                meta.is_epub = true;
-                meta.is_mobi = false;
-            }
-            EbookFormat::Mobi => {
-                meta.is_epub = false;
-                meta.is_mobi = true;
-            }
-        }
-
         Ebook {
-            meta,
-            ebook_format,
+            meta: EbookMetadata::default(),
+            output_format,
             dict_words: BTreeMap::new(),
             entries_manifest: Vec::new(),
             asset_files_string: afs,
@@ -280,6 +267,10 @@ impl Ebook {
                 new_word.word_header.inflections.push(s);
             }
         }
+
+        // // Remove links until we can resolve them to entry file locations.
+        // let re = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
+        // let res = re.replace_all(markdown, "$1").to_string();
 
         if self.dict_words.contains_key(&w_key) {
             warn!(
@@ -386,7 +377,7 @@ impl Ebook {
         }
         self.build_base_dir = Some(build_base_dir.clone());
 
-        if let EbookFormat::Epub = self.ebook_format {
+        if let OutputFormat::Epub = self.output_format {
             self.mimetype_path = Some(build_base_dir.join("mimetype"));
 
             let meta_inf_dir = build_base_dir.join("META-INF");
@@ -414,9 +405,13 @@ impl Ebook {
 
         info!("Writing {} letter groups ...", groups.len());
 
-        let template_name = match self.ebook_format {
-            EbookFormat::Epub => "entries-epub.xhtml",
-            EbookFormat::Mobi => "entries-mobi.xhtml",
+        let template_name = match self.output_format {
+            OutputFormat::Epub => "entries-epub.xhtml",
+            OutputFormat::Mobi => "entries-mobi.xhtml",
+            _ => {
+                let msg = "🔥 Only Epub or Mobi makes sense here.".to_string();
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
         };
 
         for (order_idx, group) in groups.groups.values_mut().enumerate() {
@@ -695,7 +690,7 @@ impl Ebook {
     pub fn write_oebps_files(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_oebps_files()");
 
-        if let EbookFormat::Epub = self.ebook_format {
+        if let OutputFormat::Epub = self.output_format {
             self.write_cover()?;
         }
 
@@ -909,15 +904,15 @@ impl Ebook {
     pub fn create_ebook(&mut self, app_params: &AppStartParams) -> Result<(), Box<dyn Error>> {
         self.create_ebook_build_folders()?;
 
-        match self.ebook_format {
-            EbookFormat::Epub => {
+        match self.output_format {
+            OutputFormat::Epub => {
                 self.write_mimetype()?;
                 self.write_meta_inf_files()?;
                 self.write_oebps_files()?;
                 self.zip_files_as_epub(app_params.zip_with)?;
             }
 
-            EbookFormat::Mobi => {
+            OutputFormat::Mobi => {
                 self.write_oebps_files()?;
 
                 if !app_params.dont_run_kindlegen {
@@ -927,6 +922,11 @@ impl Ebook {
                         .ok_or("kindlegen_path is missing.")?;
                     self.run_kindlegen(&kindlegen_path, app_params.mobi_compression)?;
                 }
+            }
+
+            _ => {
+                let msg = "🔥 Use create_ebook() only for Epub and Mobi.".to_string();
+                return Err(Box::new(ToolError::Exit(msg)));
             }
         }
 
@@ -1085,8 +1085,6 @@ impl Default for EbookMetadata {
             created_date_opf: "".to_string(),
             word_prefix: "".to_string(),
             use_velthuis: false,
-            is_epub: true,
-            is_mobi: false,
         }
     }
 }

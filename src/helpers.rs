@@ -5,7 +5,6 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use handlebars::{Context, Handlebars, Helper, HelperResult, JsonRender, Output, RenderContext};
-use regex::Regex;
 use walkdir::DirEntry;
 
 use comrak::{markdown_to_html, ComrakOptions};
@@ -128,12 +127,7 @@ pub fn grammar_phonetic_transliteration(
 pub fn md2html(markdown: &str) -> String {
     let mut opts = ComrakOptions::default();
     opts.smart = true;
-
-    // Remove links until we can resolve them to entry file locations.
-    let re = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
-    let res = re.replace_all(markdown, "$1").to_string();
-
-    markdown_to_html(&res, &opts).trim().to_string()
+    markdown_to_html(markdown, &opts).trim().to_string()
 }
 
 pub fn is_hidden(entry: &DirEntry) -> bool {

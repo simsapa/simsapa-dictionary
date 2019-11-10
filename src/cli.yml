@@ -16,9 +16,9 @@ subcommands:
       about: "Process a Markdown file and generate an EPUB or MOBI dictionary."
 
       args:
-        - ebook_format:
+        - output_format:
             help: "Either EPUB or MOBI."
-            long: ebook_format
+            long: output_format
             value_name: FORMAT
             required: true
             takes_value: true
@@ -104,9 +104,9 @@ subcommands:
       about: "Process a XLSX (MS Excel Spreadsheet) file and generate an EPUB or MOBI dictionary."
 
       args:
-        - ebook_format:
+        - output_format:
             help: "Either EPUB or MOBI."
-            long: ebook_format
+            long: output_format
             value_name: FORMAT
             required: true
             takes_value: true

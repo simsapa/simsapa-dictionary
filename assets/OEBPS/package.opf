@@ -13,7 +13,7 @@
 
     <meta name="cover" content="item_cover"></meta>
 
-    {{#if meta.is_mobi ~}}
+    {{#if (eq output_format "Mobi") ~}}
     <x-metadata>
       <output encoding="utf-8"></output>
       <EmbeddedCover>{{meta.cover_path}}</EmbeddedCover>
@@ -27,7 +27,7 @@
   <manifest>
     <item id="htmltoc" href="htmltoc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
 
-    {{#if meta.is_epub ~}}
+    {{#if (eq output_format "Epub") ~}}
     <item id="cover_page" href="cover.xhtml" media-type="application/xhtml+xml" properties="svg"/>
     {{/if ~}}
 
@@ -48,9 +48,10 @@
   </manifest>
 
   <spine toc="ncx">
-    {{#if meta.is_epub ~}}
+    {{#if (eq output_format "Epub") ~}}
     <itemref idref="cover_page"/>
-    {{else}}
+    {{/if ~}}
+    {{#if (eq output_format "Mobi") ~}}
     <itemref idref="item_cover"/>
     {{/if ~}}
 

@@ -75,8 +75,6 @@ ndped-example.md
     book_id = "NcpedDictionarySimsapa"
     created_date_human = ""
     created_date_opf = ""
-    is_epub = true
-    is_mobi = false
     ```
     
     --- DICTIONARY WORD ENTRIES ---
@@ -162,7 +160,7 @@ SUBCOMMANDS:
 Process a Markdown file and generate an EPUB or MOBI dictionary.
 
 USAGE:
-    simsapa_dictionary markdown_to_ebook [FLAGS] [OPTIONS] --ebook_format <FORMAT>
+    simsapa_dictionary markdown_to_ebook [FLAGS] [OPTIONS] --output_format <FORMAT>
 
 FLAGS:
         --dont_remove_generated_files    Turns off the removal of the generated OPF, HTML, etc. files used to create the
@@ -176,7 +174,7 @@ FLAGS:
 
 OPTIONS:
         --dict_label <LABEL>            Use this dict_label property, instead of the one defined in the Markdown file.
-        --ebook_format <FORMAT>         Either EPUB or MOBI. [default: EPUB]  [possible values: EPUB, Epub, epub, MOBI,
+        --output_format <FORMAT>        Either EPUB or MOBI. [default: EPUB]  [possible values: EPUB, Epub, epub, MOBI,
                                         Mobi, mobi]
         --kindlegen_path <PATH>         The KindleGen tool must be available either (a) in the current folder with this
                                         tool, (b) in the system PATH, (c) declared with this option.
