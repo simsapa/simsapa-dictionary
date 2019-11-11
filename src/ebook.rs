@@ -300,6 +300,15 @@ impl Ebook {
         self.dict_words.is_empty()
     }
 
+    pub fn entries_as_markdown(&self) -> String {
+        info!("entries_as_markdown()");
+        self.dict_words
+            .values()
+            .map(|i| i.as_markdown_and_toml_string())
+            .collect::<Vec<String>>()
+            .join("\n\n")
+    }
+
     pub fn write_markdown(&self) -> Result<(), Box<dyn Error>> {
         info!("write_markdown()");
 
@@ -319,14 +328,7 @@ impl Ebook {
 
         // Write entries.
 
-        let content = self
-            .dict_words
-            .values()
-            .map(|i| i.as_markdown_and_toml_string())
-            .collect::<Vec<String>>()
-            .join("\n\n");
-
-        file.write_all(content.as_bytes())?;
+        file.write_all(self.entries_as_markdown().as_bytes())?;
 
         Ok(())
     }
@@ -1070,7 +1072,7 @@ impl Ebook {
         let re_bracket_links = Regex::new(r"\[\[([^]]+)\]\]").unwrap();
         // (see also *[abbuhati](/define/abbuhati)* and *[abbūhati](/define/abbūhati)*)
         // (see *[abbha](/define/abbha)*)
-        let re_see_also = Regex::new(r"\(see ([^\)]+)\)").unwrap();
+        let re_see_also = Regex::new(r" *\(see ([^\)]+)\)").unwrap();
 
         // words with and without italics (stars) have to be covered
         // word must be min. 3 chars long
@@ -1128,6 +1130,12 @@ fn reg_tmpl(h: &mut Handlebars, k: &str, afs: &BTreeMap<String, String>) {
     h.register_template_string(k, afs.get(k).unwrap()).unwrap();
 }
 
+impl Default for Ebook {
+    fn default() -> Self {
+        Ebook::new(OutputFormat::Epub, &PathBuf::from("ebook.epub"))
+    }
+}
+
 impl Default for EbookMetadata {
     fn default() -> Self {
         EbookMetadata {
@@ -1146,3 +1154,4 @@ impl Default for EbookMetadata {
         }
     }
 }
+
