@@ -8,8 +8,8 @@ use std::path::PathBuf;
 
 use handlebars::{self, Handlebars};
 use walkdir::WalkDir;
+use regex::Regex;
 use deunicode::deunicode;
-//use regex::Regex;
 
 use crate::app::{AppStartParams, ZipWith};
 use crate::dict_word::DictWord;
@@ -267,10 +267,6 @@ impl Ebook {
                 new_word.word_header.inflections.push(s);
             }
         }
-
-        // // Remove links until we can resolve them to entry file locations.
-        // let re = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
-        // let res = re.replace_all(markdown, "$1").to_string();
 
         if self.dict_words.contains_key(&w_key) {
             warn!(
@@ -1063,6 +1059,68 @@ impl Ebook {
         self.mimetype_path = None;
         self.meta_inf_dir = None;
         self.oebps_dir = None;
+    }
+
+    pub fn process_see_also_from_definition(&mut self) {
+        // [abbha(t)](/define/abbha(t))
+        // [abhu(ṃ)](/define/abhu(ṃ)
+        // FIXME (n) (t)
+        let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
+        // We're going to temporarily replace links as [[abbha]]
+        let re_bracket_links = Regex::new(r"\[\[([^]]+)\]\]").unwrap();
+        // (see also *[abbuhati](/define/abbuhati)* and *[abbūhati](/define/abbūhati)*)
+        // (see *[abbha](/define/abbha)*)
+        let re_see_also = Regex::new(r"\(see ([^\)]+)\)").unwrap();
+
+        // words with and without italics (stars) have to be covered
+        // word must be min. 3 chars long
+        // (also *anūpanāhi(n)*)
+        // (also *abhisāpeti*)
+        // (see *[upanāhi(n)](/define/upanāhi(n))*)
+        // (see *[upaparikkha(t)](/define/upaparikkha(t))*)
+        // FIXME (n) (t) (\([a-z]\)?)
+
+        let re_also_one_plain = Regex::new(r"\(also +([^\*\(\),]{3,})\)").unwrap();
+        let re_also_one_italics = Regex::new(r"\(also +\*([^\*\(\),]{3,})\*\)").unwrap();
+        // (also *abhisaṅkhaṭa* and *abhisaṅkhita*)
+        let re_also_two_plain = Regex::new(r"\(also +([^\*\(\), ]{3,})(, +| +and +|, +and +| +& +)([^\*\(\)]{3,})\)").unwrap();
+        let re_also_two_italics = Regex::new(r"\(also +\*([^\*\(\), ]{3,})\*(, +| +and +|, +and +| +& +)\*([^\*\(\)]{3,})\*\)").unwrap();
+        // (also *apabyūhati*, *apaviyūhati*, and *apabbūhati*)
+        let re_also_three_plain = Regex::new(r"\(also +([^\*\(\), ]{3,}), +([^\*\(\), ]{3,})(, +| +and +|, +and +| +& +)([^\*\(\)]{3,})\)").unwrap();
+        let re_also_three_italics = Regex::new(r"\(also +\*([^\*\(\), ]{3,})\*, +\*([^\*\(\), ]{3,})\*(, +| +and +|, +and +| +& +)\*([^\*\(\)]{3,})\*\)").unwrap();
+
+        // FIXME have to check valid words
+
+        for (_, w) in self.dict_words.iter_mut() {
+            let mut def: String = w.definition_md.clone();
+
+            // (also *abhisāpeti*) -> (see [abhisāpeti](/define/abhisāpeti))
+            def = re_also_three_italics.replace_all(&def, "(see [$1](/define/$1), [$2](/define/$2) and [$4](/define/$4))").to_string();
+            def = re_also_three_plain.replace_all(&def, "(see [$1](/define/$1), [$2](/define/$2) and [$4](/define/$4))").to_string();
+
+            def = re_also_two_italics.replace_all(&def, "(see [$1](/define/$1) and [$3](/define/$3))").to_string();
+            def = re_also_two_plain.replace_all(&def, "(see [$1](/define/$1) and [$3](/define/$3))").to_string();
+
+            def = re_also_one_italics.replace_all(&def, "(see [$1](/define/$1))").to_string();
+            def = re_also_one_plain.replace_all(&def, "(see [$1](/define/$1))").to_string();
+
+            // Collect /define links from the text and add to see_also list.
+
+            for link in re_define.captures_iter(&def) {
+                w.word_header.see_also.push(link[2].to_string());
+            }
+
+            // [wordlabel](/define/wordlink) -> [[wordlink]]
+            def = re_define.replace_all(&def, "[[$2]]").to_string();
+            // Remove 'See also' from the text.
+            def = re_see_also.replace_all(&def, "").to_string();
+            // [[wordlink]] -> [wordlink](bword://wordlink)
+            def = re_bracket_links.replace_all(&def, "[$1](bword://$1)").to_string();
+            // replace remaining /define links as bword://
+            def = re_define.replace_all(&def, "[$1](bword://$2)").to_string();
+
+            w.definition_md = def;
+        }
     }
 }
 
