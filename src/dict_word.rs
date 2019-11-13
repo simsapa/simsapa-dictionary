@@ -148,6 +148,10 @@ impl DictWord {
 
         let mut summary = self.definition_md.trim().to_string();
 
+        // strip links
+        let re_links = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
+        summary = re_links.replace_all(&summary, "$1").to_string();
+
         // newlines to space
         summary = summary.replace("\n", " ");
         // contract multiple spaces

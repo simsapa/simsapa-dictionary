@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use chrono::prelude::*;
-use regex::Regex;
 use walkdir::WalkDir;
+use regex::Regex;
 use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
 use crate::dict_word::{DictWord, DictWordHeader, DictWordXlsx};
@@ -691,7 +691,7 @@ pub fn process_suttacentral_json(
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
             },
-            definition_md: html_to_markdown(&e.text),
+            definition_md: html_to_markdown(&e.text).to_string(),
         };
 
         ebook.add_word(new_word)

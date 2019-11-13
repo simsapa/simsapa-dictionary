@@ -34,6 +34,7 @@ pub mod letter_groups;
 pub mod pali;
 
 use std::process::exit;
+use regex::Regex;
 
 use app::RunCommand;
 use ebook::Ebook;
@@ -90,11 +91,13 @@ fn main() {
                 &mut ebook,
             );
 
+            info!("Added words: {}", ebook.len());
+
+            ebook.process_see_also_from_definition();
+
             for (_key, word) in ebook.dict_words.iter_mut() {
                 ok_or_exit(app_params.used_first_arg, word.clean_summary());
             }
-
-            info!("Added words: {}", ebook.len());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -195,6 +198,12 @@ fn main() {
             }
 
             info!("Added words: {}", ebook.len());
+
+            // Convert /define/word links with bword://word, as recognized by Stardict.
+            for (_, w) in ebook.dict_words.iter_mut() {
+                let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
+                w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
+            }
 
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();

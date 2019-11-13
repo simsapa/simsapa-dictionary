@@ -1091,8 +1091,6 @@ impl Ebook {
         let re_also_three_plain = Regex::new(r"\(also +([^\*\(\), ]{3,}), +([^\*\(\), ]{3,})(, +| +and +|, +and +| +& +)([^\*\(\)]{3,})\)").unwrap();
         let re_also_three_italics = Regex::new(r"\(also +\*([^\*\(\), ]{3,})\*, +\*([^\*\(\), ]{3,})\*(, +| +and +|, +and +| +& +)\*([^\*\(\)]{3,})\*\)").unwrap();
 
-        // FIXME have to check valid words
-
         for (_, w) in self.dict_words.iter_mut() {
             let mut def: String = w.definition_md.clone();
 
@@ -1116,10 +1114,8 @@ impl Ebook {
             def = re_define.replace_all(&def, "[[$2]]").to_string();
             // Remove 'See also' from the text.
             def = re_see_also.replace_all(&def, "").to_string();
-            // [[wordlink]] -> [wordlink](bword://wordlink)
-            def = re_bracket_links.replace_all(&def, "[$1](bword://$1)").to_string();
-            // replace remaining /define links as bword://
-            def = re_define.replace_all(&def, "[$1](bword://$2)").to_string();
+            // [[wordlink]] -> [wordlink](/define/wordlink)
+            def = re_bracket_links.replace_all(&def, "[$1](/define/$1)").to_string();
 
             w.definition_md = def;
         }
