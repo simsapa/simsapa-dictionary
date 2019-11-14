@@ -93,11 +93,11 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_also_written_as();
+            ebook.process_strip_repeat_word_title();
+            ebook.process_grammar_note();
             ebook.process_see_also_from_definition();
-
-            for (_key, word) in ebook.dict_words.iter_mut() {
-                ok_or_exit(app_params.used_first_arg, word.clean_summary());
-            }
+            ok_or_exit(app_params.used_first_arg, ebook.process_summary());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -115,9 +115,7 @@ fn main() {
                 &mut ebook,
             );
 
-            for (_key, word) in ebook.dict_words.iter_mut() {
-                ok_or_exit(app_params.used_first_arg, word.clean_summary());
-            }
+            ok_or_exit(app_params.used_first_arg, ebook.process_summary());
 
             info!("Added words: {}", ebook.len());
 

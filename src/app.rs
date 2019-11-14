@@ -690,6 +690,7 @@ pub fn process_suttacentral_json(
                 synonyms: Vec::new(),
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
+                also_written_as: Vec::new(),
             },
             definition_md: html_to_markdown(&e.text).to_string(),
         };
@@ -762,6 +763,7 @@ pub fn process_nyanatiloka_entries(
                 synonyms: Vec::new(),
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
+                also_written_as: Vec::new(),
             },
             definition_md: html_to_markdown(&e.text),
         };

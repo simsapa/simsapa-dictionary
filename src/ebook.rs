@@ -1063,9 +1063,159 @@ impl Ebook {
         self.oebps_dir = None;
     }
 
+    pub fn process_also_written_as(&mut self) {
+        info!("process_also_written_as()");
+        // anūpanāhi(n)
+        // TODO anūpa(n)āhi(n)
+        let re_first_word = Regex::new(r"^ *([^ ]+)\((.)\)").unwrap();
+        // (also written as *aruṇugga*)
+        let re_also_written = Regex::new(r"\(also written as \**([^ ]+)\**\)").unwrap();
+
+        for (_, dict_word) in self.dict_words.iter_mut() {
+            //let word = dict_word.word_header.word.clone();
+            let mut s = dict_word.definition_md.trim().to_string();
+
+            // First word with parens indicating alternative form.
+
+            if let Some(caps) = re_first_word.captures(&s) {
+                let w = format!("{}{}", caps.get(1).unwrap().as_str(), caps.get(2).unwrap().as_str());
+                dict_word.word_header.also_written_as.push(w);
+                s = re_first_word.replace(&s, "").to_string().trim().to_string();
+            }
+
+            // (also written as...)
+
+            for cap in re_also_written.captures_iter(&s) {
+                dict_word.word_header.also_written_as.push(cap[1].to_string());
+            }
+
+            s = re_also_written.replace_all(&s, "").to_string();
+
+            dict_word.definition_md = s;
+        }
+
+        // TODO: variations in links and see also
+        // (also *anūpanāhi(n)*)
+        // (see *[upanāhi(n)](/define/upanāhi(n))*)
+        // (see *[upaparikkha(t)](/define/upaparikkha(t))*)
+        // [abhu(ṃ)](/define/abhu(ṃ))
+        //
+        // If an alternative form is mentioned in the definition_md:
+        // - find which form has an entry
+        // - if both forms have an entry, warn the user
+        // - merge the longer form into the shorter
+        // - add new form to inflections and also_written_as
+
+    }
+
+    pub fn process_strip_repeat_word_title(&mut self) {
+        info!("process_strip_repeat_word_title()");
+
+        for (_, dict_word) in self.dict_words.iter_mut() {
+            let word = dict_word.word_header.word.clone();
+            let mut s = dict_word.definition_md.trim().to_string();
+
+            // The simplest case, the whole word
+            // - abhijanat, abhikamin
+            // Don't match parens variations abhikami(n), which would leave only (n)
+            s = s.trim_start_matches(&format!("{}\n", word)).trim().to_string();
+
+            dict_word.definition_md = s;
+        }
+    }
+
+    pub fn process_grammar_note(&mut self) {
+        info!("process_grammar_note()");
+
+        // grammar abbr., with- or without dot, with- or without parens
+        let re_abbr_one = Regex::new(r"^[0-9 ]*\(*(d|f|m|ṃ|n|r|s|t)\.*\)*\.*\b").unwrap();
+        let re_abbr_two = Regex::new(r"^[0-9 ]*\(*(ac|fn|id|mf|pl|pp|pr|sg|si)\.*\)*\.*\b").unwrap();
+        let re_abbr_three = Regex::new(
+            r"^[0-9 ]*\(*(abl|acc|act|adv|aor|dat|fpp|fut|gen|inc|ind|inf|loc|mfn|neg|opt|par)\.*\)*\.*\b",
+        )
+            .unwrap();
+        let re_abbr_four = Regex::new(r"^[0-9 ]*\(*(caus|part|pass|pron)\.*\)*\.*\b").unwrap();
+        let re_abbr_more = Regex::new(r"^[0-9 ]*\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|neuter|plural|singular|trans)\.*\)*\.*\b").unwrap();
+
+        // ~ā
+        let re_suffix_a = Regex::new(r"^\\*~*[aā],* +").unwrap();
+
+        for (_key, dict_word) in self.dict_words.iter_mut() {
+            let mut def = dict_word.definition_md.trim().to_string();
+
+            let max_iter = 10;
+            let mut n_iter = 0;
+
+            loop {
+                let mut s = def.clone();
+
+                // (?)
+                s = s.trim_start_matches("(?)").trim().to_string();
+                s = s.trim_start_matches("?)").trim().to_string();
+
+                // pp space
+                s = s.trim_start_matches("pp ").trim().to_string();
+                // abbr, start with longer patterns
+                s = re_abbr_more.replace(&s, "").trim().to_string();
+                s = re_abbr_four.replace(&s, "").trim().to_string();
+                s = re_abbr_three.replace(&s, "").trim().to_string();
+                s = re_abbr_two.replace(&s, "").trim().to_string();
+                s = re_abbr_one.replace(&s, "").trim().to_string();
+
+                // FIXME somehow the above sometimes leaves the closing paren and dot
+                s = s.trim_start_matches(')').trim().to_string();
+                s = s.trim_start_matches('.').trim().to_string();
+                s = s.trim_start_matches(';').trim().to_string();
+
+                // ~ā
+                s = re_suffix_a.replace(&s, "").to_string();
+                // (& m.)
+                s = s.trim_start_matches(r"(& m.)").trim().to_string();
+                s = s.trim_start_matches(r"(& f.)").trim().to_string();
+                s = s.trim_start_matches(r"(& n.)").trim().to_string();
+
+                // m(fn).
+                s = s.trim_start_matches("(& mfn.)").trim().to_string();
+                s = s.trim_start_matches("m(fn)").trim().to_string();
+                s = s.trim_start_matches('.').trim().to_string();
+
+                // m.a
+                s = s.trim_start_matches("m.a").trim().to_string();
+                // &
+                s = s.trim_start_matches('&').trim().to_string();
+                // fpp[.]
+                s = s.trim_start_matches("fpp[.]").trim().to_string();
+
+                n_iter += 1;
+
+                if s == def {
+                    // stop if there was no change
+                    break;
+                } else if n_iter == max_iter {
+                    // or we hit max_iter
+                    info!("max_iter reached: {}", s);
+                    def = s;
+                    break;
+                } else {
+                    // apply changes and loop again
+                    def = s;
+                }
+            }
+
+            dict_word.word_header.grammar = dict_word.definition_md
+                .trim_end_matches(&def)
+                .trim_end_matches(',')
+                .trim()
+                .to_string();
+            dict_word.definition_md = def;
+        }
+    }
+
     pub fn process_see_also_from_definition(&mut self) {
+        info!("process_see_also_from_definition()");
+
         // [abbha(t)](/define/abbha(t))
-        // [abhu(ṃ)](/define/abhu(ṃ)
+        // [abhu(ṃ)](/define/abhu(ṃ))
         // FIXME (n) (t)
         let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
         // We're going to temporarily replace links as [[abbha]]
@@ -1119,6 +1269,204 @@ impl Ebook {
 
             w.definition_md = def;
         }
+    }
+
+    pub fn process_summary(&mut self) -> Result<(), Box<dyn Error>> {
+            let re_links = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
+            let re_spaces = Regex::new("  +").unwrap();
+            let re_chars = Regex::new(r"[\n\t<>]").unwrap();
+            let re_see_markdown_links = Regex::new(r"\(see \*\[([^\]]+)\]\([^\)]+\)\**\)").unwrap();
+            let re_markdown_links = Regex::new(r"\[([^\]]+)\]\([^\)]+\)").unwrap();
+            let re_markdown = Regex::new(r"[\*\[\]]").unwrap();
+
+            // Don't remove (see ...), so that one can look up the next word when noticing it in the
+            // search hits.
+
+            // (from|or|also ...)
+            let re_from = Regex::new(r"^\((from|or|also) +[^\)]+\)").unwrap();
+
+            // 1
+            // 1.
+            let re_num = Regex::new(r"^[0-9]\.*").unwrap();
+
+            // grammar abbr., with- or without dot, with- or without parens
+            let re_abbr_one = Regex::new(r"^\(*(d|f|m|ṃ|n|r|s|t)\.*\)*\.*\b").unwrap();
+            let re_abbr_two = Regex::new(r"^\(*(ac|fn|id|mf|pl|pp|pr|sg|si)\.*\)*\.*\b").unwrap();
+            let re_abbr_three = Regex::new(
+                r"^\(*(abl|acc|act|adv|aor|dat|fpp|fut|gen|inc|ind|inf|loc|mfn|neg|opt|par)\.*\)*\.*\b",
+            )
+                .unwrap();
+            let re_abbr_four = Regex::new(r"^\(*(caus|part|pass|pron)\.*\)*\.*\b").unwrap();
+            let re_abbr_more = Regex::new(r"^\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|neuter|plural|singular|trans)\.*\)*\.*\b").unwrap();
+
+            // ~ā
+            let re_suffix_a = Regex::new(r"^\\*~*[aā],* +").unwrap();
+
+            // (~ontī)
+            // (-ikā)n.
+            let re_suffix = Regex::new(r"^\([~-][^\)]+\)\w*\.*").unwrap();
+
+            // agga-m-agga
+            // abhi-uggantvā
+            let re_hyphenated_twice = Regex::new(r"^\w+-\w+-\w+\b").unwrap();
+            let re_hyphenated_once = Regex::new(r"^\w+-\w+\b").unwrap();
+
+        for (_key, dict_word) in self.dict_words.iter_mut() {
+            if !dict_word.word_header.summary.is_empty() {
+                dict_word.word_header.summary = dict_word.word_header.summary.trim().to_string();
+            }
+
+            if !dict_word.word_header.summary.is_empty() {
+                return Ok(());
+            }
+
+            let mut summary = dict_word.definition_md.trim().to_string();
+
+            // strip links
+            summary = re_links.replace_all(&summary, "$1").to_string();
+
+            // newlines to space
+            summary = summary.replace("\n", " ");
+            // contract multiple spaces
+            summary = re_spaces.replace_all(&summary, " ").trim().to_string();
+
+            // remaining html tags
+            summary = summary.replace("<sup>", "");
+            summary = summary.replace("</sup>", "");
+            summary = summary.replace("<i>", "");
+            summary = summary.replace("</i>", "");
+            summary = summary.replace("<b>", "");
+            summary = summary.replace("</b>", "");
+
+            summary = re_chars.replace_all(&summary, " ").trim().to_string();
+
+            // slash escapes
+            // un\-angered -> un-angered
+            // un\\-angered -> un-angered
+            summary = summary.replace(r"\\", "");
+            summary = summary.replace(r"\", "");
+
+            // See... with markdown link
+            // (see *[abbha](/define/abbha)*) -> (see abbha)
+            summary = re_see_markdown_links
+                .replace_all(&summary, "(see $1)")
+                .trim()
+                .to_string();
+
+            // markdown links
+            // [abbha](/define/abbha) -> abbha
+            summary = re_markdown_links
+                .replace_all(&summary, "$1")
+                .trim()
+                .to_string();
+
+            // remaining markdown markup: *, []
+            summary = re_markdown.replace_all(&summary, "").trim().to_string();
+
+            let word = dict_word.word_header.word.clone();
+
+            let max_iter = 10;
+            let mut n_iter = 0;
+
+            loop {
+                // the whole word
+                // abhijanat, abhikamin
+                let mut s = summary.trim_start_matches(&word).trim().to_string();
+
+                // part of the word
+                // abhijana(t)
+                // abhikami(n)
+                let (char_idx, _char) = word.char_indices().last().unwrap();
+                let w = word[..char_idx].to_string();
+                s = s.trim_start_matches(&w).trim().to_string();
+
+                s = re_hyphenated_twice.replace(&s, "").trim().to_string();
+                s = re_hyphenated_once.replace(&s, "").trim().to_string();
+
+                s = re_num.replace(&s, "").trim().to_string();
+                s = re_suffix.replace(&s, "").trim().to_string();
+
+                s = re_from.replace(&s, "").trim().to_string();
+
+                s = s.trim_start_matches('.').trim().to_string();
+                s = s.trim_start_matches(',').trim().to_string();
+                s = s.trim_start_matches('-').trim().to_string();
+
+                // (?)
+                s = s.trim_start_matches("(?)").trim().to_string();
+                s = s.trim_start_matches("?)").trim().to_string();
+
+                // pp space
+                s = s.trim_start_matches("pp ").trim().to_string();
+                // abbr, start with longer patterns
+                s = re_abbr_more.replace(&s, "").trim().to_string();
+                s = re_abbr_four.replace(&s, "").trim().to_string();
+                s = re_abbr_three.replace(&s, "").trim().to_string();
+                s = re_abbr_two.replace(&s, "").trim().to_string();
+                s = re_abbr_one.replace(&s, "").trim().to_string();
+
+                // FIXME somehow the above sometimes leaves the closing paren and dot
+                s = s.trim_start_matches(')').trim().to_string();
+                s = s.trim_start_matches('.').trim().to_string();
+                s = s.trim_start_matches(';').trim().to_string();
+
+                // ~ā
+                s = re_suffix_a.replace(&s, "").to_string();
+                // (& m.)
+                s = s.trim_start_matches(r"(& m.)").trim().to_string();
+                s = s.trim_start_matches(r"(& f.)").trim().to_string();
+                s = s.trim_start_matches(r"(& n.)").trim().to_string();
+
+                // m(fn).
+                s = s.trim_start_matches("(& mfn.)").trim().to_string();
+                s = s.trim_start_matches("m(fn)").trim().to_string();
+                s = s.trim_start_matches('.').trim().to_string();
+
+                // m.a
+                s = s.trim_start_matches("m.a").trim().to_string();
+                // &
+                s = s.trim_start_matches('&').trim().to_string();
+                // fpp[.]
+                s = s.trim_start_matches("fpp[.]").trim().to_string();
+
+                n_iter += 1;
+
+                if s == summary {
+                    // stop if there was no change
+                    break;
+                } else if n_iter == max_iter {
+                    // or we hit max_iter
+                    info!("max_iter reached: {}", s);
+                    summary = s;
+                    break;
+                } else {
+                    // apply changes and loop again
+                    summary = s;
+                }
+            }
+
+            // cap the length of the final summary
+
+            if !summary.is_empty() {
+                let sum_length = 50;
+                if summary.char_indices().count() > sum_length {
+                    let (char_idx, _char) = summary
+                        .char_indices()
+                        .nth(sum_length)
+                        .ok_or("Bad char index")?;
+                    summary = summary[..char_idx].trim().to_string();
+                }
+
+                // FIXME empty summary gets this too somehow
+                // append ...
+                //summary.push_str(" ...");
+            }
+
+            dict_word.word_header.summary = summary;
+
+        }
+
+        Ok(())
     }
 }
 
