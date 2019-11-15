@@ -80,7 +80,7 @@ pub struct EbookMetadata {
     #[serde(default)]
     pub word_prefix: String,
     #[serde(default)]
-    pub use_velthuis: bool,
+    pub add_velthuis: bool,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
@@ -261,7 +261,7 @@ impl Ebook {
             new_word.word_header.inflections.push(new_word.word_header.transliteration.clone());
         }
 
-        if self.meta.use_velthuis {
+        if self.meta.add_velthuis {
             let s = pali::to_velthuis(&new_word.word_header.word);
             if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
                 new_word.word_header.inflections.push(s);
@@ -989,7 +989,7 @@ impl Ebook {
                 &word.word_header.grammar,
                 &word.word_header.phonetic,
                 &word.word_header.transliteration,
-                self.meta.use_velthuis);
+                self.meta.add_velthuis);
 
             text.push_str(&s);
 
@@ -1615,7 +1615,7 @@ impl Default for EbookMetadata {
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
             word_prefix: "".to_string(),
-            use_velthuis: false,
+            add_velthuis: false,
         }
     }
 }

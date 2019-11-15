@@ -9,7 +9,7 @@ cover_path = "default_cover.jpg"
 book_id = "NcpedDictionarySimsapa"
 created_date_human = ""
 created_date_opf = ""
-use_velthuis = false
+add_velthuis = false
 ```
 
 --- DICTIONARY WORD ENTRIES ---

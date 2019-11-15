@@ -25,7 +25,7 @@
 
       <definition type="h">
         <![CDATA[
-{{grammar_phonetic_transliteration word_header ../meta.use_velthuis ~}}
+{{grammar_phonetic_transliteration word_header ../meta.add_velthuis ~}}
 {{word_list "Also written as:" word_header.also_written_as ~}}
 {{markdown definition_md ~}}
 {{word_list "Synonyms:" word_header.synonyms ~}}

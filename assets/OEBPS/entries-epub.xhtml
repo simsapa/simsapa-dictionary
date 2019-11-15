@@ -6,7 +6,7 @@
 
 {{#each group.dict_words}}
 <h4>{{#if ../meta.word_prefix}}{{../meta.word_prefix}} {{/if}}{{word_header.word}}</h4>
-{{grammar_phonetic_transliteration word_header ../meta.use_velthuis ~}}
+{{grammar_phonetic_transliteration word_header ../meta.add_velthuis ~}}
 {{#if word_header.dict_label ~}}
 <p>[{{word_header.dict_label}}]</p>
 {{/if ~}}

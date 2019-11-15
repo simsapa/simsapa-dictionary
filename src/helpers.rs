@@ -71,10 +71,10 @@ pub fn format_grammar_phonetic_transliteration(
     grammar: &str,
     phonetic: &str,
     transliteration: &str,
-    use_velthuis: bool)
+    add_velthuis: bool)
     -> String
 {
-    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !use_velthuis {
+    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !add_velthuis {
         return "".to_string();
     }
 
@@ -93,7 +93,7 @@ pub fn format_grammar_phonetic_transliteration(
     };
 
     let tr = if transliteration.is_empty() {
-        if use_velthuis {
+        if add_velthuis {
             // dark ocean blue
             format!(" | <span style=\"color: #0B4A72;\">{}</span>", pali::to_velthuis(&word))
         } else {
@@ -122,9 +122,9 @@ pub fn grammar_phonetic_transliteration(
     let phonetic = word_header.get("phonetic").unwrap().render();
     let transliteration = word_header.get("transliteration").unwrap().render();
 
-    let use_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
+    let add_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
 
-    out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, use_velthuis))?;
+    out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, add_velthuis))?;
     Ok(())
 }
 
