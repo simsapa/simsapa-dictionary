@@ -659,3 +659,125 @@ also_written_as = []
 kurumāna
 
 part. pr. mfn. (see *[kurute](/define/kurute)*)
+
+``` toml
+dict_label = "NCPED"
+word = "cittappamāthi"
+summary = ""
+grammar = ""
+phonetic = ""
+transliteration = ""
+inflections = ["cittappamathi"]
+synonyms = []
+antonyms = []
+see_also = []
+also_written_as = []
+```
+
+citta(p)pamāthi(n)
+
+mfn. troubling, harassing the thoughts.
+
+``` toml
+word = "anupanāhi"
+```
+
+anupanāhi(n)
+
+mfn. (also *anūpanāhi(n)*) not resentful; without rancor (see *[upanāhi(n)](/define/upanāhi(n))*).
+
+``` toml
+word = "anādhānagāhin"
+```
+
+anādhānagāhinanādhāna(g)gāhi(n)
+
+neg. mfn. (see *[ādhāna(g)gāhi(n)](/define/ādhāna(g)gāhi(n))*)
+
+``` toml
+word = "abbhu"
+```
+
+abbhu(ṃ)
+
+ind. an exclamation of horror or fright or aversion (see also *[abhu(ṃ)](/define/abhu(ṃ))*)
+
+``` toml
+word = "kāḷānusāri"
+```
+
+kāḷānusāri
+
+masculine (or *kāḷānusāri(n)*?) a fragrant root; a powder made from this root (see *[kāla](/define/kāla)*)
+
+``` toml
+word = "uggharanta"
+```
+
+uggharanta
+
+mfn. (or ugghara(t)) dripping; oozing.
+
+``` toml
+word = "uddhaṅ-gāmi"
+```
+
+uddhaṅ\-gāmi(n)
+
+mfn. (also *uddhagāmi(n)*) going upwards; going upstream (see *[uddhaṃ](/define/uddhaṃ)*)
+
+``` toml
+word = "abalabala"
+```
+
+mfn. very foolish, very feeble; babbling (?) (see also *[abaḷabaḷa](/define/abaḷabaḷa)*)
+
+``` toml
+word = "abaḷabaḷa"
+```
+
+mfn. very foolish, very feeble; babbling (?) (see also *[abalabala](/define/abalabala)*)
+
+``` toml
+word = "abbahana"
+```
+
+neuter (from abbahati) pulling out, drawing out (see also *[abbuhana](/define/abbuhana)* and *[abbūhana](/define/abbūhana)*)
+
+``` toml
+word = "abbahati"
+```
+
+pr. 3 sg. tears up or off; pulls out, draws out (see also *[abbuhati](/define/abbuhati)* and *[abbūhati](/define/abbūhati)*)
+
+``` toml
+word = "abbahi"
+```
+
+aor. 3 sg. (see *[abbahati](/define/abbahati)*)
+
+``` toml
+word = "abbahitvā"
+```
+
+absol. (see *[abbahati](/define/abbahati)*)
+
+``` toml
+word = "abbha"
+```
+
+abbha
+
+masculine n. \~ā, feminine a cloud; a thundercloud.
+
+``` toml
+word = "abbhamatta"
+```
+
+neuter (or mfn.) (also *abbhāmatta*) (of) the size of a cloud (see *[abbha](/define/abbha)*)
+
+``` toml
+word = "abbhamātta"
+```
+
+neuter (or mfn.) (also *abbhamatta*) (of) the size of a cloud (see *[abbha](/define/abbha)*)

@@ -25,7 +25,13 @@ pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
 pub struct Ebook {
     pub meta: EbookMetadata,
     pub output_format: OutputFormat,
+
     pub dict_words: BTreeMap<String, DictWord>,
+
+    /// Collects the list of valid word names which can be linked to.
+    #[serde(skip)]
+    pub valid_words: Vec<String>,
+
     pub entries_manifest: Vec<EntriesManifest>,
     pub asset_files_string: BTreeMap<String, String>,
     pub asset_files_byte: BTreeMap<String, Vec<u8>>,
@@ -215,6 +221,7 @@ impl Ebook {
             meta: EbookMetadata::default(),
             output_format,
             dict_words: BTreeMap::new(),
+            valid_words: Vec::new(),
             entries_manifest: Vec::new(),
             asset_files_string: afs,
             asset_files_byte: afb,
@@ -266,6 +273,10 @@ impl Ebook {
             if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
                 new_word.word_header.inflections.push(s);
             }
+        }
+
+        if !self.valid_words.contains(&new_word.word_header.word) {
+            self.valid_words.push(new_word.word_header.word.clone());
         }
 
         if self.dict_words.contains_key(&w_key) {
@@ -984,11 +995,7 @@ impl Ebook {
 
             // Also written as
             if !word.word_header.also_written_as.is_empty() {
-                let s: String = word.word_header.also_written_as.iter()
-                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
+                let s: String = word.word_header.also_written_as.join(", ");
                 text.push_str(&format!("<p>Also written as: {}</p>", &s));
             }
 
@@ -997,31 +1004,19 @@ impl Ebook {
 
             // Synonyms
             if !word.word_header.synonyms.is_empty() {
-                let s: String = word.word_header.synonyms.iter()
-                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
+                let s: String = word.word_header.synonyms.join(", ");
                 text.push_str(&format!("<p>Synonyms: {}</p>", &s));
             }
 
             // Antonyms
             if !word.word_header.antonyms.is_empty() {
-                let s: String = word.word_header.antonyms.iter()
-                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
+                let s: String = word.word_header.antonyms.join(", ");
                 text.push_str(&format!("<p>Antonyms: {}</p>", &s));
             }
 
             // See also
             if !word.word_header.see_also.is_empty() {
-                let s: String = word.word_header.see_also.iter()
-                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
+                let s: String = word.word_header.see_also.join(", ");
                 text.push_str(&format!("<p>See also: {}</p>", &s));
             }
 
@@ -1073,13 +1068,39 @@ impl Ebook {
         self.oebps_dir = None;
     }
 
+    pub fn process_tidy(&mut self) {
+        info!("process_tidy()");
+
+        // (see *[*kaṭhina*](/define/<i>kaṭhina</i>)*)
+        let re_italic_html = Regex::new(r"<i>([^<]+)</i>").unwrap();
+        // (see also *[kathīka (?)](/define/kathīka (?))*)
+        let re_define_question = Regex::new(r"\[[^\]]+\]\(/define/([^\(\) ]+) *\(\?\)\)").unwrap();
+        // (see also *[kubbati, ](/define/kubbati, )* and *[kurute](/define/kurute)*)
+        let re_define_comma = Regex::new(r"\[[^\]]+\]\(/define/([^\(\), ]+), *\)").unwrap();
+
+        for (_, dict_word) in self.dict_words.iter_mut() {
+            let mut s = dict_word.definition_md.clone();
+
+            s = re_italic_html.replace_all(&s, "$1").to_string();
+            s = re_define_question.replace_all(&s, "[$1](/define/$1)").to_string();
+            s = re_define_comma.replace_all(&s, "[$1](/define/$1),").to_string();
+
+            dict_word.definition_md = s;
+        }
+
+    }
+
     pub fn process_also_written_as(&mut self) {
         info!("process_also_written_as()");
+        // anūpa(n)āhi(n)
+        let re_first_word_parens_mid_end = Regex::new(r"^ *([^ \n]+)\((.)\)([^ \n]+)\((.)\)").unwrap();
+        // anūpa(n)āhin
+        let re_first_word_parens_mid = Regex::new(r"^ *([^ \n]+)\((.)\)([^ \n]+)").unwrap();
         // anūpanāhi(n)
-        // TODO anūpa(n)āhi(n)
-        let re_first_word = Regex::new(r"^ *([^ ]+)\((.)\)").unwrap();
+        let re_first_word_parens_end = Regex::new(r"^ *([^ \n]+)\((.)\)").unwrap();
         // (also written as *aruṇugga*)
-        let re_also_written = Regex::new(r"\(also written as \**([^ ]+)\**\)").unwrap();
+        let re_also_written_ital = Regex::new(r"\(also written as \*([^ ]+)\*\)").unwrap();
+        let re_also_written_plain = Regex::new(r"\(also written as *([^ ]+)\)").unwrap();
 
         for (_, dict_word) in self.dict_words.iter_mut() {
             //let word = dict_word.word_header.word.clone();
@@ -1087,19 +1108,44 @@ impl Ebook {
 
             // First word with parens indicating alternative form.
 
-            if let Some(caps) = re_first_word.captures(&s) {
-                let w = format!("{}{}", caps.get(1).unwrap().as_str(), caps.get(2).unwrap().as_str());
+            if let Some(caps) = re_first_word_parens_mid_end.captures(&s) {
+                let w = format!("{}{}{}{}",
+                    caps.get(1).unwrap().as_str(),
+                    caps.get(2).unwrap().as_str(),
+                    caps.get(3).unwrap().as_str(),
+                    caps.get(4).unwrap().as_str());
                 dict_word.word_header.also_written_as.push(w);
-                s = re_first_word.replace(&s, "").to_string().trim().to_string();
+                s = re_first_word_parens_mid_end.replace(&s, "").to_string().trim().to_string();
+            }
+
+            if let Some(caps) = re_first_word_parens_mid.captures(&s) {
+                let w = format!("{}{}{}",
+                    caps.get(1).unwrap().as_str(),
+                    caps.get(2).unwrap().as_str(),
+                    caps.get(3).unwrap().as_str());
+                dict_word.word_header.also_written_as.push(w);
+                s = re_first_word_parens_mid.replace(&s, "").to_string().trim().to_string();
+            }
+
+            if let Some(caps) = re_first_word_parens_end.captures(&s) {
+                let w = format!("{}{}",
+                    caps.get(1).unwrap().as_str(),
+                    caps.get(2).unwrap().as_str());
+                dict_word.word_header.also_written_as.push(w);
+                s = re_first_word_parens_end.replace(&s, "").to_string().trim().to_string();
             }
 
             // (also written as...)
 
-            for cap in re_also_written.captures_iter(&s) {
+            for cap in re_also_written_ital.captures_iter(&s) {
                 dict_word.word_header.also_written_as.push(cap[1].to_string());
             }
+            s = re_also_written_ital.replace_all(&s, "").to_string();
 
-            s = re_also_written.replace_all(&s, "").to_string();
+            for cap in re_also_written_plain.captures_iter(&s) {
+                dict_word.word_header.also_written_as.push(cap[1].to_string());
+            }
+            s = re_also_written_plain.replace_all(&s, "").to_string();
 
             dict_word.definition_md = s;
         }
@@ -1145,7 +1191,7 @@ impl Ebook {
         )
             .unwrap();
         let re_abbr_four = Regex::new(r"^[0-9 ]*\(*(caus|part|pass|pron)\.*\)*\.*\b").unwrap();
-        let re_abbr_more = Regex::new(r"^[0-9 ]*\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|neuter|plural|singular|trans)\.*\)*\.*\b").unwrap();
+        let re_abbr_more = Regex::new(r"^[0-9 ]*\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|metaph|neuter|plural|singular|trans)\.*\)*\.*\b").unwrap();
 
         // ~ā
         let re_suffix_a = Regex::new(r"^\\*~*[aā],* +").unwrap();
@@ -1224,9 +1270,13 @@ impl Ebook {
     pub fn process_see_also_from_definition(&mut self) {
         info!("process_see_also_from_definition()");
 
-        // [abbha(t)](/define/abbha(t))
+        // [ab(b)ha(t)](/define/ab(b)ha(t))
+        let re_define_parens_mid_end = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\((.)\)([^\(\)]+)\((.)\)\)").unwrap();
+        // [ab(b)hat](/define/ab(b)hat)
+        let re_define_parens_mid = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\((.)\)([^\(\)]+)\)").unwrap();
         // [abhu(ṃ)](/define/abhu(ṃ))
-        // FIXME (n) (t)
+        let re_define_parens_end = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\((.)\)\)").unwrap();
+        // [abhuṃ](/define/abhuṃ)
         let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
         // We're going to temporarily replace links as [[abbha]]
         let re_bracket_links = Regex::new(r"\[\[([^]]+)\]\]").unwrap();
@@ -1266,11 +1316,29 @@ impl Ebook {
 
             // Collect /define links from the text and add to see_also list.
 
+            for link in re_define_parens_mid_end.captures_iter(&def) {
+                let word = format!("{}{}{}{}", link[2].to_string(), link[3].to_string(), link[4].to_string(), link[5].to_string());
+                w.word_header.see_also.push(word);
+            }
+
+            for link in re_define_parens_mid.captures_iter(&def) {
+                let word = format!("{}{}{}", link[2].to_string(), link[3].to_string(), link[4].to_string());
+                w.word_header.see_also.push(word);
+            }
+
+            for link in re_define_parens_end.captures_iter(&def) {
+                let word = format!("{}{}", link[2].to_string(), link[3].to_string());
+                w.word_header.see_also.push(word);
+            }
+
             for link in re_define.captures_iter(&def) {
                 w.word_header.see_also.push(link[2].to_string());
             }
 
             // [wordlabel](/define/wordlink) -> [[wordlink]]
+            def = re_define_parens_mid_end.replace_all(&def, "[[$2$3$4$5]]").to_string();
+            def = re_define_parens_mid.replace_all(&def, "[[$2$3$4]]").to_string();
+            def = re_define_parens_end.replace_all(&def, "[[$2$3]]").to_string();
             def = re_define.replace_all(&def, "[[$2]]").to_string();
             // Remove 'See also' from the text.
             def = re_see_also.replace_all(&def, "").to_string();
@@ -1307,7 +1375,7 @@ impl Ebook {
             )
                 .unwrap();
             let re_abbr_four = Regex::new(r"^\(*(caus|part|pass|pron)\.*\)*\.*\b").unwrap();
-            let re_abbr_more = Regex::new(r"^\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|neuter|plural|singular|trans)\.*\)*\.*\b").unwrap();
+            let re_abbr_more = Regex::new(r"^\(*(absol|abstr|accus|compar|desid|feminine|impers|instr|masculine|metaph|neuter|plural|singular|trans)\.*\)*\.*\b").unwrap();
 
             // ~ā
             let re_suffix_a = Regex::new(r"^\\*~*[aā],* +").unwrap();
@@ -1477,6 +1545,49 @@ impl Ebook {
         }
 
         Ok(())
+    }
+
+    pub fn word_to_link(valid_words: &[String], output_format: OutputFormat, w: &str) -> String {
+        if valid_words.contains(&w.to_string()) {
+            match output_format {
+                OutputFormat::Epub | OutputFormat::Mobi => {
+                    // TODO contruct <a href=""> link
+                    w.to_string()
+                }
+
+                OutputFormat::BabylonGls | OutputFormat::StardictXml => {
+                    format!("<a href=\"bword://{}\">{}</a>", w, w)
+                }
+            }
+        } else {
+            //info!("not found: {}", w);
+            w.to_string()
+        }
+    }
+
+    /// Turn word lists into links for valid words.
+    ///
+    /// Run this before rendering, when no more words are added to `see_also` and other lists.
+    pub fn process_links(&mut self) {
+        info!("process_links()");
+
+        for (_key, dict_word) in self.dict_words.iter_mut() {
+            for w in dict_word.word_header.synonyms.iter_mut() {
+                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+            }
+
+            for w in dict_word.word_header.antonyms.iter_mut() {
+                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+            }
+
+            for w in dict_word.word_header.see_also.iter_mut() {
+                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+            }
+
+            for w in dict_word.word_header.also_written_as.iter_mut() {
+                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+            }
+        }
     }
 }
 

@@ -93,11 +93,14 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_also_written_as();
-            ebook.process_strip_repeat_word_title();
-            ebook.process_grammar_note();
-            ebook.process_see_also_from_definition();
-            ok_or_exit(app_params.used_first_arg, ebook.process_summary());
+            if !app_params.dont_process {
+                ebook.process_tidy();
+                ebook.process_also_written_as();
+                ebook.process_strip_repeat_word_title();
+                ebook.process_grammar_note();
+                ebook.process_see_also_from_definition();
+                ok_or_exit(app_params.used_first_arg, ebook.process_summary());
+            }
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -151,10 +154,14 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_links();
+
+            // If title was given on CLI, override
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();
             }
 
+            // If dict_label was given on CLI, override
             if let Some(ref dict_label) = app_params.dict_label {
                 for (_key, word) in ebook.dict_words.iter_mut() {
                     word.word_header.dict_label = dict_label.clone();
@@ -196,6 +203,8 @@ fn main() {
             }
 
             info!("Added words: {}", ebook.len());
+
+            ebook.process_links();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
             for (_, w) in ebook.dict_words.iter_mut() {
@@ -244,6 +253,8 @@ fn main() {
             }
 
             info!("Added words: {}", ebook.len());
+
+            ebook.process_links();
 
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();

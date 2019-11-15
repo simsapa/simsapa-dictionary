@@ -28,6 +28,7 @@ pub struct AppStartParams {
     pub dict_label: Option<String>,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
+    pub dont_process: bool,
     pub run_command: RunCommand,
     pub show_logs: bool,
     pub zip_with: ZipWith,
@@ -80,6 +81,7 @@ impl Default for AppStartParams {
             mobi_compression: 0,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
+            dont_process: false,
             run_command: RunCommand::NoOp,
             show_logs: false,
             zip_with,
@@ -367,6 +369,8 @@ fn process_to_babylon(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
+    params.output_format = OutputFormat::BabylonGls;
+
     if !sub_matches.is_present("source_path")
         && !sub_matches.is_present("source_paths_list")
     {
@@ -467,6 +471,8 @@ fn process_to_stardict(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
+    params.output_format = OutputFormat::StardictXml;
+
     if !sub_matches.is_present("source_path")
         && !sub_matches.is_present("source_paths_list")
     {
@@ -589,6 +595,10 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .parse::<String>()
         {
             params.dict_label = Some(x);
+        }
+
+        if sub_matches.is_present("dont_process") {
+            params.dont_process = true;
         }
 
         params.run_command = RunCommand::SuttaCentralJsonToMarkdown;

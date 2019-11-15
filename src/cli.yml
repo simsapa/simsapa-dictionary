@@ -369,6 +369,12 @@ subcommands:
             required: true
             takes_value: true
 
+        - dont_process:
+            help: "Don't process the definition into attributes."
+            long: dont_process
+            required: false
+            takes_value: false
+
   - nyanatiloka_to_markdown:
       about: "Process Ven. Nyanatiloka's Buddhist Dictionary and write a Markdown file with TOML headers."
 

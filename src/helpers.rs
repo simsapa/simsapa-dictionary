@@ -51,7 +51,7 @@ pub fn word_list(
     let items_content = if let Some(items) = items.as_array() {
         if !items.is_empty() {
             items.iter()
-                .map(|i| format!("<a href=\"bword://{}\">{}</a>", i.render(), i.render()))
+                .map(|i| i.render())
                 .collect::<Vec<String>>()
                 .join(", ")
         } else {

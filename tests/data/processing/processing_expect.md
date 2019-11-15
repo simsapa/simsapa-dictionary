@@ -1,4 +1,212 @@
 ``` toml
+dict_label = ""
+word = "abalabala"
+summary = ""
+grammar = "mfn."
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = ["abaḷabaḷa"]
+also_written_as = []
+```
+
+very foolish, very feeble; babbling (?)
+
+``` toml
+dict_label = ""
+word = "abaḷabaḷa"
+summary = ""
+grammar = "mfn."
+phonetic = ""
+transliteration = ""
+inflections = ["abalabala"]
+synonyms = []
+antonyms = []
+see_also = ["abalabala"]
+also_written_as = []
+```
+
+very foolish, very feeble; babbling (?)
+
+``` toml
+dict_label = ""
+word = "abbahana"
+summary = ""
+grammar = "neuter"
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = ["abbuhana", "abbūhana"]
+also_written_as = []
+```
+
+(from abbahati) pulling out, drawing out
+
+``` toml
+dict_label = ""
+word = "abbahati"
+summary = ""
+grammar = "pr. 3 sg."
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = ["abbuhati", "abbūhati"]
+also_written_as = []
+```
+
+tears up or off; pulls out, draws out
+
+``` toml
+dict_label = ""
+word = "abbahi"
+summary = ""
+grammar = "aor. 3 sg."
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = ["abbahati"]
+also_written_as = []
+```
+
+
+
+``` toml
+dict_label = ""
+word = "abbahitvā"
+summary = ""
+grammar = "absol."
+phonetic = ""
+transliteration = ""
+inflections = ["abbahitva"]
+synonyms = []
+antonyms = []
+see_also = ["abbahati"]
+also_written_as = []
+```
+
+
+
+``` toml
+dict_label = ""
+word = "abbha"
+summary = ""
+grammar = "masculine n. \\~ā, feminine a"
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = []
+also_written_as = []
+```
+
+cloud; a thundercloud.
+
+``` toml
+dict_label = ""
+word = "abbhamatta"
+summary = ""
+grammar = "neuter"
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = ["abbhāmatta", "abbha"]
+also_written_as = []
+```
+
+(or mfn.) (of) the size of a cloud
+
+``` toml
+dict_label = ""
+word = "abbhamātta"
+summary = ""
+grammar = "neuter"
+phonetic = ""
+transliteration = ""
+inflections = ["abbhamatta"]
+synonyms = []
+antonyms = []
+see_also = ["abbhamatta", "abbha"]
+also_written_as = []
+```
+
+(or mfn.) (of) the size of a cloud
+
+``` toml
+dict_label = ""
+word = "abbhu"
+summary = ""
+grammar = "ind."
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = ["abhuṃ"]
+also_written_as = ["abbhuṃ"]
+```
+
+an exclamation of horror or fright or aversion
+
+``` toml
+dict_label = ""
+word = "anupanāhi"
+summary = ""
+grammar = "mfn."
+phonetic = ""
+transliteration = ""
+inflections = ["anupanahi"]
+synonyms = []
+antonyms = []
+see_also = ["upanāhin"]
+also_written_as = ["anupanāhin"]
+```
+
+(also *anūpanāhi(n)*) not resentful; without rancor.
+
+``` toml
+dict_label = ""
+word = "anādhānagāhin"
+summary = ""
+grammar = "neg. mfn."
+phonetic = ""
+transliteration = ""
+inflections = ["anadhanagahin"]
+synonyms = []
+antonyms = []
+see_also = ["ādhānaggāhin"]
+also_written_as = ["anādhānagāhinanādhānaggāhin"]
+```
+
+
+
+``` toml
+dict_label = "NCPED"
+word = "cittappamāthi"
+summary = ""
+grammar = "mfn."
+phonetic = ""
+transliteration = ""
+inflections = ["cittappamathi"]
+synonyms = []
+antonyms = []
+see_also = []
+also_written_as = ["cittappamāthin"]
+```
+
+troubling, harassing the thoughts.
+
+``` toml
 dict_label = "NCPED"
 word = "kupita"
 summary = ""
@@ -127,6 +335,54 @@ also_written_as = []
 ```
 
 
+
+``` toml
+dict_label = ""
+word = "kāḷānusāri"
+summary = ""
+grammar = "masculine"
+phonetic = ""
+transliteration = ""
+inflections = ["kalanusari"]
+synonyms = []
+antonyms = []
+see_also = ["kāla"]
+also_written_as = []
+```
+
+(or *kāḷānusāri(n)*?) a fragrant root; a powder made from this root
+
+``` toml
+dict_label = ""
+word = "uddhaṅ-gāmi"
+summary = ""
+grammar = "mfn."
+phonetic = ""
+transliteration = ""
+inflections = ["uddhan-gami"]
+synonyms = []
+antonyms = []
+see_also = ["uddhaṃ"]
+also_written_as = ["uddhaṅ\\-gāmin"]
+```
+
+(also *uddhagāmi(n)*) going upwards; going upstream
+
+``` toml
+dict_label = ""
+word = "uggharanta"
+summary = ""
+grammar = "mfn."
+phonetic = ""
+transliteration = ""
+inflections = []
+synonyms = []
+antonyms = []
+see_also = []
+also_written_as = []
+```
+
+(or ugghara(t)) dripping; oozing.
 
 ``` toml
 dict_label = "NCPED"
