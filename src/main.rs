@@ -154,6 +154,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_add_transliterations();
             ebook.process_links();
 
             // If title was given on CLI, override
@@ -204,6 +205,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_add_transliterations();
             ebook.process_links();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
@@ -254,6 +256,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_add_transliterations();
             ebook.process_links();
 
             if let Some(ref title) = app_params.title {

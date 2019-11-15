@@ -234,6 +234,33 @@ impl Ebook {
         }
     }
 
+    /// Add transliterations to help searching:
+    /// - given with the transliteration attribute
+    /// - velthuis
+    /// - ascii
+    pub fn process_add_transliterations(&mut self) {
+        for (_, dict_word) in self.dict_words.iter_mut() {
+
+            if !dict_word.word_header.transliteration.is_empty() {
+                dict_word.word_header.inflections.push(dict_word.word_header.transliteration.clone());
+            }
+
+            if self.meta.add_velthuis {
+                let s = pali::to_velthuis(&dict_word.word_header.word);
+                if !dict_word.word_header.inflections.contains(&s) && s != dict_word.word_header.word {
+                    dict_word.word_header.inflections.push(s);
+                }
+            }
+
+            {
+                let s = deunicode(&dict_word.word_header.word);
+                if !dict_word.word_header.inflections.contains(&s) && s != dict_word.word_header.word {
+                    dict_word.word_header.inflections.push(s);
+                }
+            }
+        }
+    }
+
     pub fn add_word(&mut self, new_word: DictWord) {
         let mut new_word = new_word;
 
@@ -251,29 +278,6 @@ impl Ebook {
             "{} {} {}",
             new_word.word_header.word, grammar, label
         );
-
-        // Add transliterations to help searching:
-        // - given with the transliteration attribute
-        // - velthuis
-        // - ascii
-
-        if !new_word.word_header.transliteration.is_empty() {
-            new_word.word_header.inflections.push(new_word.word_header.transliteration.clone());
-        }
-
-        if self.meta.add_velthuis {
-            let s = pali::to_velthuis(&new_word.word_header.word);
-            if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
-                new_word.word_header.inflections.push(s);
-            }
-        }
-
-        {
-            let s = deunicode(&new_word.word_header.word);
-            if !new_word.word_header.inflections.contains(&s) && s != new_word.word_header.word {
-                new_word.word_header.inflections.push(s);
-            }
-        }
 
         if !self.valid_words.contains(&new_word.word_header.word) {
             self.valid_words.push(new_word.word_header.word.clone());
