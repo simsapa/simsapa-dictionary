@@ -81,23 +81,27 @@ pub fn format_grammar_phonetic_transliteration(
     let g = if grammar.is_empty() {
         "".to_string()
     } else {
-        format!("<i style=\"color: green;\">{}</i>", grammar)
+        // grass green
+        format!("<i style=\"color: #448C19;\">{}</i>", grammar)
     };
 
     let ph = if phonetic.is_empty() {
         "".to_string()
     } else {
-        format!(" <span>[{}]</span>", phonetic)
+        // dark ocean blue
+        format!(" | <span style=\"color: #0B4A72;\">{}</span>", phonetic)
     };
 
     let tr = if transliteration.is_empty() {
         if use_velthuis {
-            format!(" <span>({})</span>", pali::to_velthuis(&word))
+            // dark ocean blue
+            format!(" | <span style=\"color: #0B4A72;\">{}</span>", pali::to_velthuis(&word))
         } else {
             "".to_string()
         }
     } else {
-        format!(" <span>({})</span>", transliteration)
+        // dark ocean blue
+        format!(" | <span style=\"color: #0B4A72;\">{}</span>", transliteration)
     };
 
     format!("<p>{}{}{}</p>", g, ph, tr)

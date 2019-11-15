@@ -982,10 +982,20 @@ impl Ebook {
 
             text.push_str(&s);
 
-            // definition
+            // Also written as
+            if !word.word_header.also_written_as.is_empty() {
+                let s: String = word.word_header.also_written_as.iter()
+                    .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                text.push_str(&format!("<p>Also written as: {}</p>", &s));
+            }
+
+            // Definition
             text.push_str(&helpers::md2html(&word.definition_md));
 
-            // synonyms
+            // Synonyms
             if !word.word_header.synonyms.is_empty() {
                 let s: String = word.word_header.synonyms.iter()
                     .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
@@ -995,7 +1005,7 @@ impl Ebook {
                 text.push_str(&format!("<p>Synonyms: {}</p>", &s));
             }
 
-            // antonyms
+            // Antonyms
             if !word.word_header.antonyms.is_empty() {
                 let s: String = word.word_header.antonyms.iter()
                     .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
@@ -1005,7 +1015,7 @@ impl Ebook {
                 text.push_str(&format!("<p>Antonyms: {}</p>", &s));
             }
 
-            // see also
+            // See also
             if !word.word_header.see_also.is_empty() {
                 let s: String = word.word_header.see_also.iter()
                     .map(|i| format!("<a href=\"bword://{}\">{}</a>", i, i))
