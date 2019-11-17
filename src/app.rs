@@ -29,6 +29,7 @@ pub struct AppStartParams {
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
     pub dont_process: bool,
+    pub dont_remove_see_also: bool,
     pub run_command: RunCommand,
     pub show_logs: bool,
     pub zip_with: ZipWith,
@@ -82,6 +83,7 @@ impl Default for AppStartParams {
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
             dont_process: false,
+            dont_remove_see_also: false,
             run_command: RunCommand::NoOp,
             show_logs: false,
             zip_with,
@@ -590,6 +592,14 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if let Ok(x) = sub_matches
+            .value_of("title")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.title = Some(x);
+        }
+
+        if let Ok(x) = sub_matches
             .value_of("dict_label")
             .unwrap()
             .parse::<String>()
@@ -598,6 +608,10 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if sub_matches.is_present("dont_process") {
+            params.dont_process = true;
+        }
+
+        if sub_matches.is_present("dont_remove_see_also") {
             params.dont_process = true;
         }
 
@@ -624,6 +638,14 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .parse::<String>()
         {
             params.output_path = Some(PathBuf::from(&x));
+        }
+
+        if let Ok(x) = sub_matches
+            .value_of("title")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.title = Some(x);
         }
 
         if let Ok(x) = sub_matches
@@ -690,7 +712,7 @@ pub fn process_suttacentral_json(
     for e in entries.iter() {
         let new_word = DictWord {
             word_header: DictWordHeader {
-                dict_label: dict_label.to_string(),
+                dict_label: (*dict_label).to_string(),
                 word: e.word.to_lowercase(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
@@ -763,7 +785,7 @@ pub fn process_nyanatiloka_entries(
     for e in entries.iter() {
         let new_word = DictWord {
             word_header: DictWordHeader {
-                dict_label: dict_label.to_string(),
+                dict_label: (*dict_label).to_string(),
                 word: e.word.to_lowercase(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
@@ -824,9 +846,9 @@ pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), 
         return Err(Box::new(ToolError::Exit(msg)));
     }
 
-    let a = parts
+    let a = (*parts
         .get(0)
-        .unwrap()
+        .unwrap())
         .to_string()
         .replace(DICTIONARY_METADATA_SEP, "")
         .replace("``` toml", "")
@@ -834,7 +856,7 @@ pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), 
 
     ebook.meta = parse_str_to_metadata(&a)?;
 
-    let a = parts.get(1).unwrap().to_string();
+    let a = (*parts.get(1).unwrap()).to_string();
     let entries: Vec<Result<DictWord, Box<dyn Error>>> = a
         .split("``` toml")
         .filter_map(|s| {

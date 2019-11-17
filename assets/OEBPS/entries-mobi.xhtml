@@ -7,7 +7,9 @@
 {{! Spaces and newlines in <idx:entry> are significant for dictionary entry search}}
 
 {{#each group.dict_words}}
-<idx:entry><idx:orth><h4>{{word_header.word}}</h4>{{grammar_phonetic_transliteration word_header ../meta.add_velthuis ~}}<p>{{#if word_header.dict_label}} <i>{{word_header.dict_label}}</i>{{/if}}{{#if word_header.summary}} <i>{{word_header.summary}}</i>{{/if}}{{#if word_header.inflections}}</p><idx:infl>{{#each word_header.inflections}} <idx:iform value="{{this}}"/>{{/each}}</idx:infl>{{/if}}</idx:orth></idx:entry>
+<idx:entry><idx:orth><h4>{{word_header.word}}</h4><p>{{#if word_header.dict_label}} <i>{{word_header.dict_label}}</i>{{/if}}{{#if word_header.summary}} <i>{{word_header.summary}}</i>{{/if}}{{#if word_header.inflections}}</p><idx:infl>{{#each word_header.inflections}} <idx:iform value="{{this}}"/>{{/each}}</idx:infl>{{/if}}</idx:orth></idx:entry>
+
+{{grammar_phonetic_transliteration word_header ../meta.add_velthuis ~}}
 
 {{word_list "Also written as:" word_header.also_written_as ~}}
 {{markdown definition_md}}

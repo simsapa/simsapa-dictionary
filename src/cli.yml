@@ -1,5 +1,5 @@
 name: "Simsapa Dictionary Tool"
-version: "0.1.0"
+version: "0.2.0-alpha.1"
 author: "https://simsapa.github.io/"
 about: "Generating dictionaries in various formats"
 
@@ -362,6 +362,13 @@ subcommands:
             required: true
             takes_value: true
 
+        - title:
+            help: "Use this title for the dictionary."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
         - dict_label:
             help: "The short id label (such as NCPED or PED) to use for this dictionary source."
             long: dict_label
@@ -372,6 +379,12 @@ subcommands:
         - dont_process:
             help: "Don't process the definition into attributes."
             long: dont_process
+            required: false
+            takes_value: false
+
+        - dont_remove_see_also:
+            help: "Don't remove the '(See also...)' type text when processing."
+            long: dont_remove_see_also
             required: false
             takes_value: false
 
@@ -391,6 +404,13 @@ subcommands:
             long: output_path
             value_name: PATH
             required: true
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary."
+            long: title
+            value_name: TITLE
+            required: false
             takes_value: true
 
         - dict_label:

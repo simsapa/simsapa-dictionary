@@ -14,7 +14,7 @@ use deunicode::deunicode;
 use crate::app::{AppStartParams, ZipWith};
 use crate::dict_word::DictWord;
 use crate::error::ToolError;
-use crate::helpers::{self, is_hidden, md2html};
+use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
 use crate::letter_groups::{LetterGroups, LetterGroup};
 use crate::pali;
 
@@ -691,7 +691,7 @@ impl Ebook {
         for filename in ["container.xml", "com.apple.ibooks.display-options.xml"].iter() {
             let file_content = self
                 .asset_files_byte
-                .get(&filename.to_string())
+                .get(&(*filename).to_string())
                 .ok_or("missing get key")?;
             let mut file = File::create(dir.join(filename))?;
             file.write_all(file_content)?;
@@ -987,6 +987,10 @@ impl Ebook {
 
             let mut text = String::new();
 
+            if !word.word_header.dict_label.is_empty() {
+                text.push_str(&format!("<p>[{}]</p>", &word.word_header.dict_label));
+            }
+
             // grammar, phonetic, transliteration
             let s = helpers::format_grammar_phonetic_transliteration(
                 &word.word_header.word,
@@ -1178,7 +1182,10 @@ impl Ebook {
             // The simplest case, the whole word
             // - abhijanat, abhikamin
             // Don't match parens variations abhikami(n), which would leave only (n)
+            // abhijanat
             s = s.trim_start_matches(&format!("{}\n", word)).trim().to_string();
+            // Abhijanat
+            s = s.trim_start_matches(&format!("{}\n", uppercase_first_letter(&word))).trim().to_string();
 
             dict_word.definition_md = s;
         }
@@ -1271,7 +1278,7 @@ impl Ebook {
         }
     }
 
-    pub fn process_see_also_from_definition(&mut self) {
+    pub fn process_see_also_from_definition(&mut self, dont_remove_see_also: bool) {
         info!("process_see_also_from_definition()");
 
         // [ab(b)ha(t)](/define/ab(b)ha(t))
@@ -1345,11 +1352,44 @@ impl Ebook {
             def = re_define_parens_end.replace_all(&def, "[[$2$3]]").to_string();
             def = re_define.replace_all(&def, "[[$2]]").to_string();
             // Remove 'See also' from the text.
-            def = re_see_also.replace_all(&def, "").to_string();
+            if !dont_remove_see_also {
+                def = re_see_also.replace_all(&def, "").to_string();
+            }
             // [[wordlink]] -> [wordlink](/define/wordlink)
             def = re_bracket_links.replace_all(&def, "[$1](/define/$1)").to_string();
 
             w.definition_md = def;
+        }
+    }
+
+    pub fn process_define_links(&mut self) {
+        // [abhuṃ](/define/abhuṃ)
+        let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
+
+        for (_, dict_word) in self.dict_words.iter_mut() {
+            let def = dict_word.definition_md.clone();
+            for cap in re_define.captures_iter(&def) {
+                let link = cap[0].to_string();
+                let word = cap[2].to_string();
+
+                if self.valid_words.contains(&word) {
+                    // If it is a valid word entry, replace to bword:// for Stardict and Babylon.
+                    match self.output_format {
+                        OutputFormat::StardictXml | OutputFormat::BabylonGls => {
+                            let mut s = dict_word.definition_md.clone();
+                            s = s.replace(&link, &format!("[{}](bword://{})", word, word)).to_string();
+                            dict_word.definition_md = s;
+                        }
+                        _ => {}
+                    }
+                } else {
+                    // If it is not a valid word entry, we will replace it with text.
+                    let mut s = dict_word.definition_md.clone();
+                    s = s.replace(&link, &format!("*{}*", word)).to_string();
+                    dict_word.definition_md = s;
+                }
+
+            }
         }
     }
 
@@ -1615,7 +1655,7 @@ impl Default for EbookMetadata {
             source: "https://simsapa.github.io".to_string(),
             cover_path: "default_cover.jpg".to_string(),
             book_id: "SimsapaPaliDictionary".to_string(),
-            version: "0.1.0".to_string(),
+            version: "0.2.0-alpha.1".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
             word_prefix: "".to_string(),
