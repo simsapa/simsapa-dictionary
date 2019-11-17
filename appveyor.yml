@@ -1,4 +1,4 @@
-version: "0.1.0.{branch}.{build}"
+version: "0.2.0-alpha.1.{branch}.{build}"
 
 image: Visual Studio 2019
 

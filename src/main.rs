@@ -34,6 +34,7 @@ pub mod letter_groups;
 pub mod pali;
 
 use std::process::exit;
+use regex::Regex;
 
 use app::RunCommand;
 use ebook::Ebook;
@@ -82,7 +83,7 @@ fn main() {
                 .output_path
                 .expect("output_path is missing.");
 
-            let mut ebook = Ebook::new(app_params.ebook_format, &p);
+            let mut ebook = Ebook::new(app_params.output_format, &p);
 
             app::process_suttacentral_json(
                 &app_params.json_path,
@@ -90,11 +91,28 @@ fn main() {
                 &mut ebook,
             );
 
-            for (_key, word) in ebook.dict_words.iter_mut() {
-                ok_or_exit(app_params.used_first_arg, word.clean_summary());
+            info!("Added words: {}", ebook.len());
+
+            if !app_params.dont_process {
+                ebook.process_tidy();
+                ebook.process_also_written_as();
+                ebook.process_strip_repeat_word_title();
+                ebook.process_grammar_note();
+                ebook.process_see_also_from_definition(app_params.dont_remove_see_also);
+                ok_or_exit(app_params.used_first_arg, ebook.process_summary());
             }
 
-            info!("Added words: {}", ebook.len());
+            // If title was given on CLI, override
+            if let Some(ref title) = app_params.title {
+                ebook.meta.title = title.clone();
+            }
+
+            // If dict_label was given on CLI, override
+            if let Some(ref dict_label) = app_params.dict_label {
+                for (_key, word) in ebook.dict_words.iter_mut() {
+                    word.word_header.dict_label = dict_label.clone();
+                }
+            }
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -104,7 +122,7 @@ fn main() {
                 .output_path
                 .expect("output_path is missing.");
 
-            let mut ebook = Ebook::new(app_params.ebook_format, &p);
+            let mut ebook = Ebook::new(app_params.output_format, &p);
 
             app::process_nyanatiloka_entries(
                 &app_params.nyanatiloka_root,
@@ -112,11 +130,21 @@ fn main() {
                 &mut ebook,
             );
 
-            for (_key, word) in ebook.dict_words.iter_mut() {
-                ok_or_exit(app_params.used_first_arg, word.clean_summary());
-            }
+            ok_or_exit(app_params.used_first_arg, ebook.process_summary());
 
             info!("Added words: {}", ebook.len());
+
+            // If title was given on CLI, override
+            if let Some(ref title) = app_params.title {
+                ebook.meta.title = title.clone();
+            }
+
+            // If dict_label was given on CLI, override
+            if let Some(ref dict_label) = app_params.dict_label {
+                for (_key, word) in ebook.dict_words.iter_mut() {
+                    word.word_header.dict_label = dict_label.clone();
+                }
+            }
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -124,7 +152,7 @@ fn main() {
         RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+            let mut ebook = Ebook::new(app_params.output_format, &output_path);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -150,10 +178,16 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_add_transliterations();
+            ebook.process_links();
+            ebook.process_define_links();
+
+            // If title was given on CLI, override
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();
             }
 
+            // If dict_label was given on CLI, override
             if let Some(ref dict_label) = app_params.dict_label {
                 for (_key, word) in ebook.dict_words.iter_mut() {
                     word.word_header.dict_label = dict_label.clone();
@@ -170,7 +204,7 @@ fn main() {
         RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+            let mut ebook = Ebook::new(app_params.output_format, &output_path);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -196,6 +230,16 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.process_add_transliterations();
+            ebook.process_links();
+            ebook.process_define_links();
+
+            // Convert /define/word links with bword://word, as recognized by Stardict.
+            for (_, w) in ebook.dict_words.iter_mut() {
+                let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
+                w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
+            }
+
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();
             }
@@ -212,7 +256,7 @@ fn main() {
         RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
             let o = app_params.output_path.clone();
             let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.ebook_format, &output_path);
+            let mut ebook = Ebook::new(app_params.output_format, &output_path);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -237,6 +281,10 @@ fn main() {
             }
 
             info!("Added words: {}", ebook.len());
+
+            ebook.process_add_transliterations();
+            ebook.process_links();
+            ebook.process_define_links();
 
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();

@@ -764,7 +764,7 @@ dependencies = [
 
 [[package]]
 name = "simsapa_dictionary"
-version = "0.1.0"
+version = "0.2.0-alpha.1"
 dependencies = [
  "calamine 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.9 (registry+https://github.com/rust-lang/crates.io-index)",

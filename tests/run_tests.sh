@@ -68,7 +68,7 @@ cd "$TEST_TEMP"
 ./simsapa_dictionary markdown_to_ebook \
     --source_path "data/data with space/ncped with space.md" \
     --dict_label "" \
-    --ebook_format mobi \
+    --output_format mobi \
     --output_path "ncped here.mobi" \
     --mobi_compression 0 2>&1 | tee output.log
 
@@ -185,7 +185,7 @@ cd "$TEST_TEMP"
 
 ./simsapa_dictionary markdown_to_ebook \
     --source_path "data/data with space/ncped with space.md" \
-    --ebook_format epub
+    --output_format epub
 
 if [[ "$?" != "0" ]]; then
     echo "Test Failed."
@@ -238,7 +238,7 @@ cd "$TEST_TEMP"
 ./simsapa_dictionary xlsx_to_ebook \
     --source_path "data/data with space/ncped with space.xlsx" \
     --dict_label "" \
-    --ebook_format mobi \
+    --output_format mobi \
     --output_path "ncped here.mobi" \
     --mobi_compression 0 2>&1 | tee output.log
 

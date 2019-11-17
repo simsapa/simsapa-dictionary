@@ -5,19 +5,19 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use chrono::prelude::*;
-use regex::Regex;
 use walkdir::WalkDir;
+use regex::Regex;
 use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
 use crate::dict_word::{DictWord, DictWordHeader, DictWordXlsx};
 use crate::ebook::{
-    Ebook, EbookFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
+    Ebook, OutputFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
 };
 use crate::error::ToolError;
 use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
 
 pub struct AppStartParams {
-    pub ebook_format: EbookFormat,
+    pub output_format: OutputFormat,
     pub json_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
@@ -28,6 +28,8 @@ pub struct AppStartParams {
     pub dict_label: Option<String>,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
+    pub dont_process: bool,
+    pub dont_remove_see_also: bool,
     pub run_command: RunCommand,
     pub show_logs: bool,
     pub zip_with: ZipWith,
@@ -69,7 +71,7 @@ impl Default for AppStartParams {
         };
 
         AppStartParams {
-            ebook_format: EbookFormat::Epub,
+            output_format: OutputFormat::Epub,
             json_path: None,
             nyanatiloka_root: None,
             source_paths: None,
@@ -80,6 +82,8 @@ impl Default for AppStartParams {
             mobi_compression: 0,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
+            dont_process: false,
+            dont_remove_see_also: false,
             run_command: RunCommand::NoOp,
             show_logs: false,
             zip_with,
@@ -126,10 +130,10 @@ pub fn process_first_arg() -> Option<AppStartParams> {
 
     params.kindlegen_path = look_for_kindlegen();
 
-    params.ebook_format = if params.kindlegen_path.is_some() {
-        EbookFormat::Mobi
+    params.output_format = if params.kindlegen_path.is_some() {
+        OutputFormat::Mobi
     } else {
-        EbookFormat::Epub
+        OutputFormat::Epub
     };
 
     let filename = source_path.file_name().unwrap();
@@ -199,19 +203,19 @@ fn process_to_ebook(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
-    if sub_matches.is_present("ebook_format") {
+    if sub_matches.is_present("output_format") {
         if let Ok(x) = sub_matches
-            .value_of("ebook_format")
+            .value_of("output_format")
                 .unwrap()
                 .parse::<String>()
         {
             let s = x.trim().to_lowercase();
             if s == "epub" {
-                params.ebook_format = EbookFormat::Epub;
+                params.output_format = OutputFormat::Epub;
             } else if s == "mobi" {
-                params.ebook_format = EbookFormat::Mobi;
+                params.output_format = OutputFormat::Mobi;
             } else {
-                params.ebook_format = EbookFormat::Epub;
+                params.output_format = OutputFormat::Epub;
             }
         }
     }
@@ -292,14 +296,19 @@ fn process_to_ebook(
             let p = ensure_parent(a);
             let filename = p.file_name().unwrap();
             let dir = p.parent().unwrap();
-            match params.ebook_format {
-                EbookFormat::Epub => {
+            match params.output_format {
+                OutputFormat::Epub => {
                     let p = dir.join(PathBuf::from(filename).with_extension("epub"));
                     params.output_path = Some(ensure_parent(&p));
                 }
-                EbookFormat::Mobi => {
+                OutputFormat::Mobi => {
                     let p = dir.join(PathBuf::from(filename).with_extension("mobi"));
                     params.output_path = Some(ensure_parent(&p));
+                }
+
+                _ => {
+                    let msg = "🔥 Only Epub or Mobi makes sense here.".to_string();
+                    return Err(Box::new(ToolError::Exit(msg)));
                 }
             }
         }
@@ -362,6 +371,8 @@ fn process_to_babylon(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
+    params.output_format = OutputFormat::BabylonGls;
+
     if !sub_matches.is_present("source_path")
         && !sub_matches.is_present("source_paths_list")
     {
@@ -462,6 +473,8 @@ fn process_to_stardict(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
+    params.output_format = OutputFormat::StardictXml;
+
     if !sub_matches.is_present("source_path")
         && !sub_matches.is_present("source_paths_list")
     {
@@ -579,11 +592,27 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         if let Ok(x) = sub_matches
+            .value_of("title")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.title = Some(x);
+        }
+
+        if let Ok(x) = sub_matches
             .value_of("dict_label")
             .unwrap()
             .parse::<String>()
         {
             params.dict_label = Some(x);
+        }
+
+        if sub_matches.is_present("dont_process") {
+            params.dont_process = true;
+        }
+
+        if sub_matches.is_present("dont_remove_see_also") {
+            params.dont_process = true;
         }
 
         params.run_command = RunCommand::SuttaCentralJsonToMarkdown;
@@ -609,6 +638,14 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .parse::<String>()
         {
             params.output_path = Some(PathBuf::from(&x));
+        }
+
+        if let Ok(x) = sub_matches
+            .value_of("title")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.title = Some(x);
         }
 
         if let Ok(x) = sub_matches
@@ -675,7 +712,7 @@ pub fn process_suttacentral_json(
     for e in entries.iter() {
         let new_word = DictWord {
             word_header: DictWordHeader {
-                dict_label: dict_label.to_string(),
+                dict_label: (*dict_label).to_string(),
                 word: e.word.to_lowercase(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
@@ -685,8 +722,9 @@ pub fn process_suttacentral_json(
                 synonyms: Vec::new(),
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
+                also_written_as: Vec::new(),
             },
-            definition_md: html_to_markdown(&e.text),
+            definition_md: html_to_markdown(&e.text).to_string(),
         };
 
         ebook.add_word(new_word)
@@ -747,7 +785,7 @@ pub fn process_nyanatiloka_entries(
     for e in entries.iter() {
         let new_word = DictWord {
             word_header: DictWordHeader {
-                dict_label: dict_label.to_string(),
+                dict_label: (*dict_label).to_string(),
                 word: e.word.to_lowercase(),
                 summary: "".to_string(),
                 grammar: "".to_string(),
@@ -757,6 +795,7 @@ pub fn process_nyanatiloka_entries(
                 synonyms: Vec::new(),
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
+                also_written_as: Vec::new(),
             },
             definition_md: html_to_markdown(&e.text),
         };
@@ -776,7 +815,7 @@ pub fn process_markdown_list(
     Ok(())
 }
 
-fn parse_str_to_metadata(s: &str, ebook_format: EbookFormat) -> Result<EbookMetadata, Box<dyn Error>> {
+fn parse_str_to_metadata(s: &str) -> Result<EbookMetadata, Box<dyn Error>> {
     let mut meta: EbookMetadata = match toml::from_str(s) {
         Ok(x) => x,
         Err(e) => {
@@ -789,17 +828,6 @@ fn parse_str_to_metadata(s: &str, ebook_format: EbookFormat) -> Result<EbookMeta
     };
     meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
     meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-
-    match ebook_format {
-        EbookFormat::Epub => {
-            meta.is_epub = true;
-            meta.is_mobi = false;
-        }
-        EbookFormat::Mobi => {
-            meta.is_epub = false;
-            meta.is_mobi = true;
-        }
-    }
 
     Ok(meta)
 }
@@ -818,17 +846,17 @@ pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), 
         return Err(Box::new(ToolError::Exit(msg)));
     }
 
-    let a = parts
+    let a = (*parts
         .get(0)
-        .unwrap()
+        .unwrap())
         .to_string()
         .replace(DICTIONARY_METADATA_SEP, "")
         .replace("``` toml", "")
         .replace("```", "");
 
-    ebook.meta = parse_str_to_metadata(&a, ebook.ebook_format)?;
+    ebook.meta = parse_str_to_metadata(&a)?;
 
-    let a = parts.get(1).unwrap().to_string();
+    let a = (*parts.get(1).unwrap()).to_string();
     let entries: Vec<Result<DictWord, Box<dyn Error>>> = a
         .split("``` toml")
         .filter_map(|s| {
@@ -911,17 +939,6 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
                 let mut meta: EbookMetadata = x?;
                 meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
                 meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-
-                match ebook.ebook_format {
-                    EbookFormat::Epub => {
-                        meta.is_epub = true;
-                        meta.is_mobi = false;
-                    }
-                    EbookFormat::Mobi => {
-                        meta.is_epub = false;
-                        meta.is_mobi = true;
-                    }
-                }
 
                 ebook.meta = meta;
             },

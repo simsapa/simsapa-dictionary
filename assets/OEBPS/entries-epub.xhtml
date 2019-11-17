@@ -6,32 +6,15 @@
 
 {{#each group.dict_words}}
 <h4>{{#if ../meta.word_prefix}}{{../meta.word_prefix}} {{/if}}{{word_header.word}}</h4>
-{{grammar_phonetic_transliteration word_header ../meta.use_velthuis ~}}
 {{#if word_header.dict_label ~}}
 <p>[{{word_header.dict_label}}]</p>
 {{/if ~}}
-{{#if word_header.summary ~}}
-<p>{{word_header.summary}}</p>
-{{/if ~}}
+{{grammar_phonetic_transliteration word_header ../meta.add_velthuis ~}}
 
+{{word_list "Also written as:" word_header.also_written_as ~}}
 {{markdown definition_md}}
-
-{{#if word_header.synonyms}}
-<p>Synonyms:</p>
-<ul>
-{{#each word_header.synonyms}}
-<li>{{this}}</li>
-{{/each}}
-</ul>
-{{/if}}
-
-{{#if word_header.antonyms}}
-<p>Antonyms:</p>
-<ul>
-{{#each word_header.antonyms}}
-<li>{{this}}</li>
-{{/each}}
-</ul>
-{{/if}}
+{{word_list "Synonyms:" word_header.synonyms ~}}
+{{word_list "Antonyms:" word_header.antonyms ~}}
+{{word_list "See also:" word_header.see_also ~}}
 
 {{/each}}

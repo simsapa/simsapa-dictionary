@@ -9,9 +9,7 @@ cover_path = "circle_cover.jpg"
 book_id = "NcpedDictionarySimsapa"
 created_date_human = ""
 created_date_opf = ""
-use_velthuis = false
-is_epub = true
-is_mobi = false
+add_velthuis = false
 ```
 
 --- DICTIONARY WORD ENTRIES ---

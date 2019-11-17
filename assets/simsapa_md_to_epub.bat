@@ -11,7 +11,7 @@ SET DEST_FILE=%SRC_NAME%.epub
 simsapa_dictionary.exe markdown_to_ebook ^
     --source_path "%~1" ^
     --dict_label "" ^
-    --ebook_format epub ^
+    --output_format epub ^
     --output_path "%DEST_FILE%"
 
 Exit /b

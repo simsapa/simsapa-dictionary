@@ -5,7 +5,6 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use handlebars::{Context, Handlebars, Helper, HelperResult, JsonRender, Output, RenderContext};
-use regex::Regex;
 use walkdir::DirEntry;
 
 use comrak::{markdown_to_html, ComrakOptions};
@@ -52,7 +51,7 @@ pub fn word_list(
     let items_content = if let Some(items) = items.as_array() {
         if !items.is_empty() {
             items.iter()
-                .map(|i| format!("<a href=\"bword://{}\">{}</a>", i.render(), i.render()))
+                .map(|i| i.render())
                 .collect::<Vec<String>>()
                 .join(", ")
         } else {
@@ -72,33 +71,37 @@ pub fn format_grammar_phonetic_transliteration(
     grammar: &str,
     phonetic: &str,
     transliteration: &str,
-    use_velthuis: bool)
+    add_velthuis: bool)
     -> String
 {
-    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !use_velthuis {
+    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !add_velthuis {
         return "".to_string();
     }
 
     let g = if grammar.is_empty() {
         "".to_string()
     } else {
-        format!("<i style=\"color: green;\">{}</i>", grammar)
+        // grass green
+        format!("<i style=\"color: #448C19;\">{}</i>", grammar)
     };
 
     let ph = if phonetic.is_empty() {
         "".to_string()
     } else {
-        format!(" <span>[{}]</span>", phonetic)
+        // dark ocean blue
+        format!(" | <span style=\"color: #0B4A72;\">{}</span>", phonetic)
     };
 
     let tr = if transliteration.is_empty() {
-        if use_velthuis {
-            format!(" <span>({})</span>", pali::to_velthuis(&word))
+        if add_velthuis {
+            // dark ocean blue
+            format!(" | <span style=\"color: #0B4A72;\">{}</span>", pali::to_velthuis(&word))
         } else {
             "".to_string()
         }
     } else {
-        format!(" <span>({})</span>", transliteration)
+        // dark ocean blue
+        format!(" | <span style=\"color: #0B4A72;\">{}</span>", transliteration)
     };
 
     format!("<p>{}{}{}</p>", g, ph, tr)
@@ -119,21 +122,16 @@ pub fn grammar_phonetic_transliteration(
     let phonetic = word_header.get("phonetic").unwrap().render();
     let transliteration = word_header.get("transliteration").unwrap().render();
 
-    let use_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
+    let add_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
 
-    out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, use_velthuis))?;
+    out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, add_velthuis))?;
     Ok(())
 }
 
 pub fn md2html(markdown: &str) -> String {
     let mut opts = ComrakOptions::default();
     opts.smart = true;
-
-    // Remove links until we can resolve them to entry file locations.
-    let re = Regex::new(r"\[([^\]]*)\]\([^\)]*\)").unwrap();
-    let res = re.replace_all(markdown, "$1").to_string();
-
-    markdown_to_html(&res, &opts).trim().to_string()
+    markdown_to_html(markdown, &opts).trim().to_string()
 }
 
 pub fn is_hidden(entry: &DirEntry) -> bool {
@@ -168,5 +166,14 @@ pub fn ok_or_exit<T>(wait: bool, res: Result<T, Box<dyn Error>>) -> T {
             }
             exit(2);
         }
+    }
+}
+
+/// https://stackoverflow.com/questions/38406793/why-is-capitalizing-the-first-letter-of-a-string-so-convoluted-in-rust
+pub fn uppercase_first_letter(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
     }
 }

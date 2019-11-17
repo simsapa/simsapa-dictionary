@@ -1,5 +1,5 @@
 name: "Simsapa Dictionary Tool"
-version: "0.1.0"
+version: "0.2.0-alpha.1"
 author: "https://simsapa.github.io/"
 about: "Generating dictionaries in various formats"
 
@@ -16,9 +16,9 @@ subcommands:
       about: "Process a Markdown file and generate an EPUB or MOBI dictionary."
 
       args:
-        - ebook_format:
+        - output_format:
             help: "Either EPUB or MOBI."
-            long: ebook_format
+            long: output_format
             value_name: FORMAT
             required: true
             takes_value: true
@@ -104,9 +104,9 @@ subcommands:
       about: "Process a XLSX (MS Excel Spreadsheet) file and generate an EPUB or MOBI dictionary."
 
       args:
-        - ebook_format:
+        - output_format:
             help: "Either EPUB or MOBI."
-            long: ebook_format
+            long: output_format
             value_name: FORMAT
             required: true
             takes_value: true
@@ -362,12 +362,31 @@ subcommands:
             required: true
             takes_value: true
 
+        - title:
+            help: "Use this title for the dictionary."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
         - dict_label:
             help: "The short id label (such as NCPED or PED) to use for this dictionary source."
             long: dict_label
             value_name: LABEL
             required: true
             takes_value: true
+
+        - dont_process:
+            help: "Don't process the definition into attributes."
+            long: dont_process
+            required: false
+            takes_value: false
+
+        - dont_remove_see_also:
+            help: "Don't remove the '(See also...)' type text when processing."
+            long: dont_remove_see_also
+            required: false
+            takes_value: false
 
   - nyanatiloka_to_markdown:
       about: "Process Ven. Nyanatiloka's Buddhist Dictionary and write a Markdown file with TOML headers."
@@ -385,6 +404,13 @@ subcommands:
             long: output_path
             value_name: PATH
             required: true
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary."
+            long: title
+            value_name: TITLE
+            required: false
             takes_value: true
 
         - dict_label:

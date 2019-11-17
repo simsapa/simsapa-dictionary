@@ -11,7 +11,7 @@ SET DEST_FILE=%SRC_NAME%.mobi
 simsapa_dictionary.exe markdown_to_ebook ^
     --source_path "%~1" ^
     --dict_label "" ^
-    --ebook_format mobi ^
+    --output_format mobi ^
     --output_path "%DEST_FILE%" ^
     --mobi_compression 0 ^
     --kindlegen_path kindlegen.exe
