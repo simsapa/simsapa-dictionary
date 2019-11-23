@@ -24,6 +24,7 @@ pub struct AppStartParams {
     pub output_path: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
+    pub reuse_metadata: bool,
     pub title: Option<String>,
     pub dict_label: Option<String>,
     pub dont_run_kindlegen: bool,
@@ -77,6 +78,7 @@ impl Default for AppStartParams {
             source_paths: None,
             output_path: None,
             kindlegen_path: None,
+            reuse_metadata: false,
             title: None,
             dict_label: None,
             mobi_compression: 0,
@@ -570,6 +572,7 @@ fn process_to_stardict(
 
 #[allow(clippy::cognitive_complexity)]
 pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box<dyn Error>> {
+    info!("process_cli_args()");
     let mut params = AppStartParams::default();
 
     if let Some(sub_matches) = matches.subcommand_matches("suttacentral_json_to_markdown") {
@@ -591,12 +594,14 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             params.output_path = Some(PathBuf::from(&x));
         }
 
-        if let Ok(x) = sub_matches
-            .value_of("title")
-            .unwrap()
-            .parse::<String>()
-        {
-            params.title = Some(x);
+        if sub_matches.is_present("title") {
+            if let Ok(x) = sub_matches
+                .value_of("title")
+                .unwrap()
+                .parse::<String>()
+            {
+                params.title = Some(x);
+            }
         }
 
         if let Ok(x) = sub_matches
@@ -605,6 +610,10 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .parse::<String>()
         {
             params.dict_label = Some(x);
+        }
+
+        if sub_matches.is_present("reuse_metadata") {
+            params.reuse_metadata = true;
         }
 
         if sub_matches.is_present("dont_process") {
@@ -640,12 +649,14 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             params.output_path = Some(PathBuf::from(&x));
         }
 
-        if let Ok(x) = sub_matches
-            .value_of("title")
-            .unwrap()
-            .parse::<String>()
-        {
-            params.title = Some(x);
+        if sub_matches.is_present("title") {
+            if let Ok(x) = sub_matches
+                .value_of("title")
+                .unwrap()
+                .parse::<String>()
+            {
+                params.title = Some(x);
+            }
         }
 
         if let Ok(x) = sub_matches
@@ -654,6 +665,10 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
             .parse::<String>()
         {
             params.dict_label = Some(x);
+        }
+
+        if sub_matches.is_present("reuse_metadata") {
+            params.reuse_metadata = true;
         }
 
         params.run_command = RunCommand::NyanatilokaToMarkdown;
@@ -815,7 +830,32 @@ pub fn process_markdown_list(
     Ok(())
 }
 
-fn parse_str_to_metadata(s: &str) -> Result<EbookMetadata, Box<dyn Error>> {
+pub fn split_metadata_and_entries(path: &PathBuf) -> Result<(String, String), Box<dyn Error>> {
+    let s = fs::read_to_string(path).unwrap();
+
+    // Split the Dictionary header and the DictWord entries.
+    let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
+
+    if parts.len() != 2 {
+        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries."
+            .to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    }
+
+    let meta_txt = (*parts
+        .get(0)
+        .unwrap())
+        .to_string()
+        .replace(DICTIONARY_METADATA_SEP, "")
+        .replace("``` toml", "")
+        .replace("```", "");
+
+    let entries_txt = (*parts.get(1).unwrap()).to_string();
+
+    Ok((meta_txt, entries_txt))
+}
+
+pub fn parse_str_to_metadata(s: &str) -> Result<EbookMetadata, Box<dyn Error>> {
     let mut meta: EbookMetadata = match toml::from_str(s) {
         Ok(x) => x,
         Err(e) => {
@@ -835,29 +875,11 @@ fn parse_str_to_metadata(s: &str) -> Result<EbookMetadata, Box<dyn Error>> {
 pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
     info! {"=== Begin processing {:?} ===", source_path};
 
-    let s = fs::read_to_string(source_path).unwrap();
+    let (meta_txt, entries_txt) = split_metadata_and_entries(&source_path)?;
 
-    // Split the Dictionary header and the DictWord entries.
-    let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
+    ebook.meta = parse_str_to_metadata(&meta_txt)?;
 
-    if parts.len() != 2 {
-        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries."
-            .to_string();
-        return Err(Box::new(ToolError::Exit(msg)));
-    }
-
-    let a = (*parts
-        .get(0)
-        .unwrap())
-        .to_string()
-        .replace(DICTIONARY_METADATA_SEP, "")
-        .replace("``` toml", "")
-        .replace("```", "");
-
-    ebook.meta = parse_str_to_metadata(&a)?;
-
-    let a = (*parts.get(1).unwrap()).to_string();
-    let entries: Vec<Result<DictWord, Box<dyn Error>>> = a
+    let entries: Vec<Result<DictWord, Box<dyn Error>>> = entries_txt
         .split("``` toml")
         .filter_map(|s| {
             let a = s.trim();

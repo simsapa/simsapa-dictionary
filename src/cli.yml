@@ -362,6 +362,12 @@ subcommands:
             required: true
             takes_value: true
 
+        - reuse_metadata:
+            help: "If the output file already exists, read and use its metadata attributes."
+            long: reuse_metadata
+            required: false
+            takes_value: false
+
         - title:
             help: "Use this title for the dictionary."
             long: title
@@ -405,6 +411,12 @@ subcommands:
             value_name: PATH
             required: true
             takes_value: true
+
+        - reuse_metadata:
+            help: "If the output file already exists, read and use its metadata attributes."
+            long: reuse_metadata
+            required: false
+            takes_value: false
 
         - title:
             help: "Use this title for the dictionary."

@@ -85,6 +85,13 @@ fn main() {
 
             let mut ebook = Ebook::new(app_params.output_format, &p);
 
+            if app_params.reuse_metadata {
+                ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
+            }
+
+            ebook.meta.created_date_human = "".to_string();
+            ebook.meta.created_date_opf = "".to_string();
+
             app::process_suttacentral_json(
                 &app_params.json_path,
                 &app_params.dict_label,
@@ -124,12 +131,20 @@ fn main() {
 
             let mut ebook = Ebook::new(app_params.output_format, &p);
 
+            if app_params.reuse_metadata {
+                ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
+            }
+
+            ebook.meta.created_date_human = "".to_string();
+            ebook.meta.created_date_opf = "".to_string();
+
             app::process_nyanatiloka_entries(
                 &app_params.nyanatiloka_root,
                 &app_params.dict_label,
                 &mut ebook,
             );
 
+            ebook.process_tidy();
             ok_or_exit(app_params.used_first_arg, ebook.process_summary());
 
             info!("Added words: {}", ebook.len());

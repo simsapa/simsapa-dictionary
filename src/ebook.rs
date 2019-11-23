@@ -11,7 +11,7 @@ use walkdir::WalkDir;
 use regex::Regex;
 use deunicode::deunicode;
 
-use crate::app::{AppStartParams, ZipWith};
+use crate::app::{self, AppStartParams, ZipWith};
 use crate::dict_word::DictWord;
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
@@ -232,6 +232,12 @@ impl Ebook {
             oebps_dir: None,
             templates: h,
         }
+    }
+
+    pub fn reuse_metadata(&mut self) -> Result<(), Box<dyn Error>> {
+        let (meta_txt, _) = app::split_metadata_and_entries(&self.output_path)?;
+        self.meta = app::parse_str_to_metadata(&meta_txt)?;
+        Ok(())
     }
 
     /// Add transliterations to help searching:
@@ -1081,17 +1087,33 @@ impl Ebook {
 
         // (see *[*kaṭhina*](/define/<i>kaṭhina</i>)*)
         let re_italic_html = Regex::new(r"<i>([^<]+)</i>").unwrap();
+        // (see *[*kaṭhina*](/define/<strong>kaṭhina</strong>)*)
+        let re_strong_html = Regex::new(r"<strong>([^<]+)</strong>").unwrap();
         // (see also *[kathīka (?)](/define/kathīka (?))*)
         let re_define_question = Regex::new(r"\[[^\]]+\]\(/define/([^\(\) ]+) *\(\?\)\)").unwrap();
         // (see also *[kubbati, ](/define/kubbati, )* and *[kurute](/define/kurute)*)
         let re_define_comma = Regex::new(r"\[[^\]]+\]\(/define/([^\(\), ]+), *\)").unwrap();
 
+        // Strip remaining internal links, i.e. which are not /define or outgoing http links.
+        let re_strip_internal = Regex::new(r"\[(?P<label>[^\]]+)\]\((?P<define>/define/|http)?[^\)]+\)").unwrap();
+
         for (_, dict_word) in self.dict_words.iter_mut() {
             let mut s = dict_word.definition_md.clone();
 
+            // strip empty links
+            s = s.replace("[]()", "");
+
             s = re_italic_html.replace_all(&s, "$1").to_string();
+            s = re_strong_html.replace_all(&s, "$1").to_string();
             s = re_define_question.replace_all(&s, "[$1](/define/$1)").to_string();
             s = re_define_comma.replace_all(&s, "[$1](/define/$1),").to_string();
+
+            for cap in re_strip_internal.captures_iter(&s.clone()) {
+                let link = cap[0].to_string();
+                if cap.name("define").is_none() {
+                    s = s.replace(&link, &cap["label"]);
+                }
+            }
 
             dict_word.definition_md = s;
         }
@@ -1649,13 +1671,13 @@ impl Default for EbookMetadata {
     fn default() -> Self {
         EbookMetadata {
             title: "Dictionary".to_string(),
-            description: "Pali - English".to_string(),
-            creator: "Simsapa Dhamma Reader".to_string(),
-            email: "person@example.com".to_string(),
-            source: "https://simsapa.github.io".to_string(),
+            description: "".to_string(),
+            creator: "".to_string(),
+            email: "".to_string(),
+            source: "".to_string(),
             cover_path: "default_cover.jpg".to_string(),
-            book_id: "SimsapaPaliDictionary".to_string(),
-            version: "0.2.0-alpha.1".to_string(),
+            book_id: "SimsapaDictionary".to_string(),
+            version: "0.1.0".to_string(),
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
             word_prefix: "".to_string(),
