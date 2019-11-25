@@ -5,6 +5,7 @@ use crate::pali;
 
 pub struct LetterGroups {
     pub groups: Groups,
+    pub words_to_url: BTreeMap<String, String>,
 }
 
 type Groups = BTreeMap<usize, LetterGroup>;
@@ -17,13 +18,23 @@ pub struct LetterGroup {
     pub dict_words: Vec<DictWord>,
 }
 
+impl Default for LetterGroups {
+    fn default() -> LetterGroups {
+        LetterGroups {
+            groups: BTreeMap::new(),
+            words_to_url: BTreeMap::new(),
+        }
+    }
+}
+
 impl LetterGroups {
     pub fn new_from_dict_words(dict_words: &[DictWord]) -> LetterGroups {
         let mut groups: Groups = BTreeMap::new();
+        let mut words_to_url: BTreeMap<String, String> = BTreeMap::new();
 
         for i in dict_words.iter() {
             let w = i.word_header.word.clone();
-            let key = pali::romanized_pali_letter_index(&w);
+            let letter_index = pali::romanized_pali_letter_index(&w);
             let first_letter = match pali::first_letter(&w) {
                 Some(x) => x,
                 None => {
@@ -33,18 +44,27 @@ impl LetterGroups {
             };
 
             groups
-                .entry(key)
+                .entry(letter_index)
                 .or_insert(LetterGroup {
                     title: "".to_string(),
-                    group_letter: first_letter,
-                    letter_index: key,
+                    group_letter: first_letter.clone(),
+                    letter_index: letter_index,
                     dict_words: Vec::new(),
                 })
                 .dict_words
                 .push(i.clone());
+
+            words_to_url
+                .entry(w.clone())
+                .or_insert_with(||
+                    format!("entries-{:02}.xhtml#{}", letter_index, i.word_header.url_id));
+
         }
 
-        LetterGroups { groups }
+        LetterGroups {
+            groups,
+            words_to_url,
+        }
     }
 
     pub fn len(&self) -> usize {

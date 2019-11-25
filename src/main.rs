@@ -193,9 +193,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_add_transliterations();
-            ebook.process_links();
-            ebook.process_define_links();
+            ebook.process_text();
 
             // If title was given on CLI, override
             if let Some(ref title) = app_params.title {
@@ -245,9 +243,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_add_transliterations();
-            ebook.process_links();
-            ebook.process_define_links();
+            ebook.process_text();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
             for (_, w) in ebook.dict_words.iter_mut() {
@@ -297,9 +293,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_add_transliterations();
-            ebook.process_links();
-            ebook.process_define_links();
+            ebook.process_text();
 
             if let Some(ref title) = app_params.title {
                 ebook.meta.title = title.clone();

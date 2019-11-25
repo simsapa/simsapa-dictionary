@@ -32,6 +32,9 @@ pub struct Ebook {
     #[serde(skip)]
     pub valid_words: Vec<String>,
 
+    #[serde(skip)]
+    pub words_to_url: BTreeMap<String, String>,
+
     pub entries_manifest: Vec<EntriesManifest>,
     pub asset_files_string: BTreeMap<String, String>,
     pub asset_files_byte: BTreeMap<String, Vec<u8>>,
@@ -222,6 +225,7 @@ impl Ebook {
             output_format,
             dict_words: BTreeMap::new(),
             valid_words: Vec::new(),
+            words_to_url: BTreeMap::new(),
             entries_manifest: Vec::new(),
             asset_files_string: afs,
             asset_files_byte: afb,
@@ -284,6 +288,10 @@ impl Ebook {
             "{} {} {}",
             new_word.word_header.word, grammar, label
         );
+
+        if new_word.word_header.url_id.is_empty() {
+            new_word.word_header.url_id = DictWord::gen_url_id(&new_word.word_header.word);
+        }
 
         if !self.valid_words.contains(&new_word.word_header.word) {
             self.valid_words.push(new_word.word_header.word.clone());
@@ -420,9 +428,9 @@ impl Ebook {
         info!("write_entries()");
 
         let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
-        let mut groups = LetterGroups::new_from_dict_words(&w);
+        let mut letter_groups = LetterGroups::new_from_dict_words(&w);
 
-        info!("Writing {} letter groups ...", groups.len());
+        info!("Writing {} letter groups ...", letter_groups.len());
 
         let template_name = match self.output_format {
             OutputFormat::Epub => "entries-epub.xhtml",
@@ -433,7 +441,8 @@ impl Ebook {
             }
         };
 
-        for (order_idx, group) in groups.groups.values_mut().enumerate() {
+        for (order_idx, group) in letter_groups.groups.values_mut().enumerate() {
+            info!("{}...", order_idx + 1);
             if order_idx == 0 {
                 group.title = self.meta.title.clone();
             }
@@ -456,12 +465,12 @@ impl Ebook {
             d.insert("content_html".to_string(), content_html);
             let file_content = self.templates.render("content-page.xhtml", &d)?;
 
-            // The file names will be identified by index number, not the group letter.
-            // entries-00.xhtml, entries-01.xhtml and so on.
+            // The file names are not sequential (00, 01, 02 ...), they are identified by the index
+            // number of the Pali letter from pali::romanized_pali_letter_index().
 
-            let group_file_name = format!("entries-{:02}.xhtml", order_idx);
+            let group_file_name = format!("entries-{:02}.xhtml", group.letter_index);
             self.entries_manifest.push(EntriesManifest {
-                id: format!("item_entries_{:02}", order_idx),
+                id: format!("item_entries_{:02}", group.letter_index),
                 href: group_file_name.clone(),
             });
 
@@ -1082,6 +1091,13 @@ impl Ebook {
         self.oebps_dir = None;
     }
 
+    pub fn process_text(&mut self) {
+        self.process_add_transliterations();
+        self.process_links();
+        self.process_define_links();
+        self.process_ampersand();
+    }
+
     pub fn process_tidy(&mut self) {
         info!("process_tidy()");
 
@@ -1319,11 +1335,11 @@ impl Ebook {
 
         // words with and without italics (stars) have to be covered
         // word must be min. 3 chars long
-        // (also *anūpanāhi(n)*)
+        // The (n) (t) etc. variations are parsed in process_also_written_as()
         // (also *abhisāpeti*)
+        // (also *anūpanāhi(n)*)
         // (see *[upanāhi(n)](/define/upanāhi(n))*)
         // (see *[upaparikkha(t)](/define/upaparikkha(t))*)
-        // FIXME (n) (t) (\([a-z]\)?)
 
         let re_also_one_plain = Regex::new(r"\(also +([^\*\(\),]{3,})\)").unwrap();
         let re_also_one_italics = Regex::new(r"\(also +\*([^\*\(\),]{3,})\*\)").unwrap();
@@ -1412,6 +1428,14 @@ impl Ebook {
                 }
 
             }
+        }
+    }
+
+    pub fn process_ampersand(&mut self) {
+        for (_, dict_word) in self.dict_words.iter_mut() {
+            dict_word.definition_md = dict_word.definition_md.replace('&', "&amp;");
+            dict_word.word_header.summary = dict_word.word_header.summary.replace('&', "&amp;");
+            dict_word.word_header.grammar = dict_word.word_header.grammar.replace('&', "&amp;");
         }
     }
 
@@ -1613,21 +1637,32 @@ impl Ebook {
         Ok(())
     }
 
-    pub fn word_to_link(valid_words: &[String], output_format: OutputFormat, w: &str) -> String {
-        if valid_words.contains(&w.to_string()) {
-            match output_format {
-                OutputFormat::Epub | OutputFormat::Mobi => {
-                    // TODO contruct <a href=""> link
+    pub fn word_to_link(
+        valid_words: &[String],
+        words_to_url: &BTreeMap<String, String>,
+        output_format: OutputFormat,
+        w: &str)
+        -> String
+    {
+        match output_format {
+            OutputFormat::Epub | OutputFormat::Mobi => {
+                match words_to_url.get(w) {
+                    Some(url) => format!("<a href=\"{}\">{}</a>", url, w),
+                    None => {
+                        //info!("not found: {}", w);
+                        w.to_string()
+                    },
+                }
+            },
+
+            OutputFormat::BabylonGls | OutputFormat::StardictXml => {
+                if valid_words.contains(&w.to_string()) {
+                    format!("<a href=\"bword://{}\">{}</a>", w, w)
+                } else {
+                    //info!("not found: {}", w);
                     w.to_string()
                 }
-
-                OutputFormat::BabylonGls | OutputFormat::StardictXml => {
-                    format!("<a href=\"bword://{}\">{}</a>", w, w)
-                }
             }
-        } else {
-            //info!("not found: {}", w);
-            w.to_string()
         }
     }
 
@@ -1637,21 +1672,25 @@ impl Ebook {
     pub fn process_links(&mut self) {
         info!("process_links()");
 
+        let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
+        let letter_groups = LetterGroups::new_from_dict_words(&w);
+        let words_to_url = letter_groups.words_to_url;
+
         for (_key, dict_word) in self.dict_words.iter_mut() {
             for w in dict_word.word_header.synonyms.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
             }
 
             for w in dict_word.word_header.antonyms.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
             }
 
             for w in dict_word.word_header.see_also.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
             }
 
             for w in dict_word.word_header.also_written_as.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, self.output_format, w);
+                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
             }
         }
     }

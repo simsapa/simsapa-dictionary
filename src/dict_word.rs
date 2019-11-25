@@ -60,6 +60,8 @@ pub struct DictWordHeader {
     pub word: String,
 
     #[serde(default)]
+    pub url_id: String,
+    #[serde(default)]
     pub summary: String,
     #[serde(default)]
     pub grammar: String,
@@ -111,7 +113,7 @@ impl DictWord {
 
         Ok(DictWord {
             word_header,
-            definition_md: parts.get(1).unwrap().to_string(),
+            definition_md: (*parts.get(1).unwrap()).to_string(),
         })
     }
 
@@ -124,11 +126,16 @@ impl DictWord {
         }
     }
 
+    pub fn gen_url_id(s: &str) -> String {
+        s.to_lowercase().replace(' ', "-")
+    }
+
     pub fn from_xlsx(w: &DictWordXlsx) -> DictWord {
         DictWord {
             word_header: DictWordHeader {
                 dict_label: w.dict_label.clone(),
                 word: w.word.clone(),
+                url_id: DictWord::gen_url_id(&w.word),
                 summary: w.summary.clone(),
                 grammar: w.grammar.clone(),
                 phonetic: w.phonetic.clone(),
@@ -158,6 +165,7 @@ impl Default for DictWordHeader {
         DictWordHeader {
             dict_label: "".to_string(),
             word: "word".to_string(),
+            url_id: "word".to_string(),
             summary: "".to_string(),
             grammar: "".to_string(),
             phonetic: "".to_string(),
