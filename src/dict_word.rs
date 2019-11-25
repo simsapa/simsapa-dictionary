@@ -151,6 +151,26 @@ impl DictWord {
     }
 }
 
+impl DictWordXlsx {
+    pub fn from_dict_word(w: &DictWord) -> DictWordXlsx {
+        let h = w.word_header.clone();
+        DictWordXlsx {
+            dict_label: h.dict_label.clone(),
+            word: h.word.clone(),
+            summary: h.summary.clone(),
+            grammar: h.grammar.clone(),
+            phonetic: h.phonetic.clone(),
+            transliteration: h.transliteration.clone(),
+            inflections: h.inflections.join(", "),
+            synonyms: h.synonyms.join(", "),
+            antonyms: h.antonyms.join(", "),
+            see_also: h.see_also.join(", "),
+            also_written_as: h.also_written_as.join(", "),
+            definition_md: w.definition_md.clone().trim().to_string(),
+        }
+    }
+}
+
 impl Default for DictWord {
     fn default() -> Self {
         DictWord {

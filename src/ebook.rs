@@ -12,7 +12,7 @@ use regex::Regex;
 use deunicode::deunicode;
 
 use crate::app::{self, AppStartParams, ZipWith};
-use crate::dict_word::DictWord;
+use crate::dict_word::{DictWord, DictWordXlsx};
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
 use crate::letter_groups::{LetterGroups, LetterGroup};
@@ -1080,6 +1080,40 @@ impl Ebook {
 
     pub fn create_stardict(&mut self) -> Result<(), Box<dyn Error>> {
         self.write_stardict_xml()?;
+        Ok(())
+    }
+
+    pub fn create_json(&mut self) -> Result<(), Box<dyn Error>> {
+        info!("create_json()");
+
+        // Write Entries as DictWordXlsx.
+
+        {
+            let entries_xlsx = &self.dict_words
+                .values()
+                .cloned()
+                .map(|i| DictWordXlsx::from_dict_word(&i))
+                .collect::<Vec<DictWordXlsx>>();
+            let content = serde_json::to_string(&entries_xlsx)?;
+
+            let mut file = File::create(&self.output_path)?;
+            file.write_all(content.as_bytes())?;
+        }
+
+        // Write Metadata.
+
+        {
+            let content = serde_json::to_string(&self.meta)?;
+
+            let a = PathBuf::from(self.output_path.file_name().unwrap());
+            let mut b = a.file_stem().unwrap().to_str().unwrap().to_string();
+            b.push_str("_metadata.json");
+            let path = self.output_path.with_file_name(b);
+
+            let mut file = File::create(&path)?;
+            file.write_all(content.as_bytes())?;
+        }
+
         Ok(())
     }
 

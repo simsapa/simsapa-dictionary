@@ -48,6 +48,7 @@ pub enum RunCommand {
     XlsxToBabylon,
     MarkdownToStardict,
     XlsxToStardict,
+    MarkdownToJson,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -672,6 +673,32 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
         }
 
         params.run_command = RunCommand::NyanatilokaToMarkdown;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_json") {
+
+        if let Ok(x) = sub_matches
+            .value_of("source_path")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+
+        if let Ok(x) = sub_matches
+            .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+        {
+            params.output_path = Some(PathBuf::from(&x));
+        }
+
+        params.run_command = RunCommand::MarkdownToJson;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;

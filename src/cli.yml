@@ -344,6 +344,24 @@ subcommands:
             required: false
             takes_value: true
 
+  - markdown_to_json:
+      about: "Read a Markdown file and serialized it to JSON."
+
+      args:
+        - source_path:
+            help: "Path to the Markdown file."
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The entries JSON file to write. Metadata JSON will be written to the same folder with '_metadata' postfix."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
   - suttacentral_json_to_markdown:
       about: "Process a dictionary JSON file from SuttaCentral and write a Markdown file with TOML headers."
 
