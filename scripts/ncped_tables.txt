@@ -1,0 +1,8 @@
+namesheet "Word entries";
+table { "dict_label"; "word"; "summary"; "grammar"; "phonetic"; "transliteration"; "inflections"; "synonyms"; "antonyms"; "see_also"; "also_written_as"; "definition_md"; }
+load "ncped.json";
+newsheet;
+namesheet "Metadata";
+table { "title"; "description"; "creator"; "email"; "source"; "cover_path"; "book_id"; "version"; "created_date_human"; "created_date_opf"; "word_prefix"; "add_velthuis"; }
+load "ncped_metadata.json";
+write "ncped.xlsx";

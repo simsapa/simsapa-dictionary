@@ -80,6 +80,7 @@ fn main() {
 
         RunCommand::SuttaCentralJsonToMarkdown => {
             let p = &app_params
+                .clone()
                 .output_path
                 .expect("output_path is missing.");
 
@@ -109,23 +110,14 @@ fn main() {
                 ok_or_exit(app_params.used_first_arg, ebook.process_summary());
             }
 
-            // If title was given on CLI, override
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            // If dict_label was given on CLI, override
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
         RunCommand::NyanatilokaToMarkdown => {
             let p = &app_params
+                .clone()
                 .output_path
                 .expect("output_path is missing.");
 
@@ -149,17 +141,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            // If title was given on CLI, override
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            // If dict_label was given on CLI, override
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -195,17 +177,7 @@ fn main() {
 
             ebook.process_text();
 
-            // If title was given on CLI, override
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            // If dict_label was given on CLI, override
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
 
@@ -251,15 +223,7 @@ fn main() {
                 w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
             }
 
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
         }
@@ -295,15 +259,7 @@ fn main() {
 
             ebook.process_text();
 
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_stardict());
         }

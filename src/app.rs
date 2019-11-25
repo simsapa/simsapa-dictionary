@@ -16,6 +16,7 @@ use crate::ebook::{
 use crate::error::ToolError;
 use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
 
+#[derive(Clone)]
 pub struct AppStartParams {
     pub output_format: OutputFormat,
     pub json_path: Option<PathBuf>,
@@ -27,6 +28,7 @@ pub struct AppStartParams {
     pub reuse_metadata: bool,
     pub title: Option<String>,
     pub dict_label: Option<String>,
+    pub word_prefix: Option<String>,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
     pub dont_process: bool,
@@ -82,6 +84,7 @@ impl Default for AppStartParams {
             reuse_metadata: false,
             title: None,
             dict_label: None,
+            word_prefix: None,
             mobi_compression: 0,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
@@ -259,6 +262,16 @@ fn process_to_ebook(
                 .parse::<String>()
         {
             params.dict_label = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("word_prefix") {
+        if let Ok(x) = sub_matches
+            .value_of("word_prefix")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.word_prefix = Some(x);
         }
     }
 

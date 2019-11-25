@@ -271,6 +271,22 @@ impl Ebook {
         }
     }
 
+    pub fn use_cli_overrides(&mut self, app_params: &AppStartParams) {
+        if let Some(ref title) = app_params.title {
+            self.meta.title = title.clone();
+        }
+
+        if let Some(ref prefix) = app_params.word_prefix {
+            self.meta.word_prefix = prefix.clone();
+        }
+
+        if let Some(ref dict_label) = app_params.dict_label {
+            for (_key, word) in self.dict_words.iter_mut() {
+                word.word_header.dict_label = dict_label.clone();
+            }
+        }
+    }
+
     pub fn add_word(&mut self, new_word: DictWord) {
         let mut new_word = new_word;
 

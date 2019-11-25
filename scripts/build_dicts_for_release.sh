@@ -31,6 +31,7 @@ for i in dhammika dppn ncped nyana pts; do
     cargo run -- markdown_to_ebook \
         --source_path "$SRC_DIR/$i.md" \
         --dict_label "" \
+        --word_prefix "*" \
         --output_format epub \
         --output_path "$OUT_DIR/$i.epub"
 
@@ -69,6 +70,7 @@ cargo run -- markdown_to_ebook \
 cargo run -- markdown_to_ebook \
     --title "Combined Pali - English Dictionary" \
     --source_paths_list ./scripts/combined_dict_md_paths.txt \
+    --word_prefix "*" \
     --output_format epub \
     --output_path "$OUT_DIR/$name.epub"
 

@@ -53,6 +53,13 @@ subcommands:
             required: false
             takes_value: true
 
+        - word_prefix:
+            help: "Add a prefix the the word title headings."
+            long: word_prefix
+            value_name: PREFIX
+            required: false
+            takes_value: true
+
         - output_path:
             help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path
