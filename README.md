@@ -7,8 +7,6 @@
     - [Feedback, corrections, bug reports](#feedback-corrections-bug-reports)
     - [Example dictionary](#example-dictionary)
     - [CLI Options](#cli-options)
-        - [help](#help)
-        - [markdown_to_ebook](#markdowntoebook)
     - [Sources](#sources)
 
 <!-- markdown-toc end -->
@@ -122,72 +120,10 @@ ndped-example.md
 
 ## CLI Options
 
-### help
+Use the `help` command to discover the command line options, or see [src/cli.yml](src/cli.yml).
 
 ```
 ./simsapa_dictionary help
-```
-
-```
-Simsapa Dictionary Tool 0.1.0
-https://simsapa.github.io/
-Generating Pali language dictionaries in MOBI and EPUB format.
-
-USAGE:
-    simsapa_dictionary [FLAGS] [SUBCOMMAND]
-
-FLAGS:
-    -h, --help         Prints help information
-        --show_logs    Print log messages in the terminal.
-    -V, --version      Prints version information
-
-SUBCOMMANDS:
-    help                             Prints this message or the help of the given subcommand(s)
-    markdown_to_ebook                Process a Markdown file and generate an EPUB or MOBI dictionary.
-    nyanatiloka_to_markdown          Process Ven. Nyanatiloka's Buddhist Dictionary and write a Markdown file with
-                                     TOML headers.
-    suttacentral_json_to_markdown    Process a dictionary JSON file from SuttaCentral and write a Markdown file with
-                                     TOML headers.
-```
-
-### markdown_to_ebook
-
-```
-./simsapa_dictionary help markdown_to_ebook
-```
-
-```
-Process a Markdown file and generate an EPUB or MOBI dictionary.
-
-USAGE:
-    simsapa_dictionary markdown_to_ebook [FLAGS] [OPTIONS] --output_format <FORMAT>
-
-FLAGS:
-        --dont_remove_generated_files    Turns off the removal of the generated OPF, HTML, etc. files used to create the
-                                         MOBI. Useful for debugging.
-        --dont_run_kindlegen             Turns off running KindleGen, and no MOBI file will be generated. Useful for
-                                         debugging.
-    -h, --help                           Prints help information
-    -V, --version                        Prints version information
-        --zip_with_cli                   Use the cli zip tool to create the Epub.
-        --zip_with_lib                   Use the embedded zip library to create the Epub.
-
-OPTIONS:
-        --dict_label <LABEL>            Use this dict_label property, instead of the one defined in the Markdown file.
-        --output_format <FORMAT>        Either EPUB or MOBI. [default: EPUB]  [possible values: EPUB, Epub, epub, MOBI,
-                                        Mobi, mobi]
-        --kindlegen_path <PATH>         The KindleGen tool must be available either (a) in the current folder with this
-                                        tool, (b) in the system PATH, (c) declared with this option.
-        --source_path <PATH>            A single Markdown file to read dictionary entries from. Either this or
-                                        'source_paths_list' must be used.
-        --source_paths_list <PATH>      A file with a list of Markdown file paths, one per line. Either this or
-                                        'source_path' must be used.
-        --mobi_compression <INT>        Compression level, 0-2, as used by KindleGen. 0: no compression, 1: standard DOC
-                                        compression, 2: Kindle huffdic compression. [default: 0]  [possible values: 0,
-                                        1, 2]
-        --output_path <PATH>            The EPUB or MOBI file to write. Defaults to the same file name and folder as the
-                                        first Markdown source.
-        --title <TITLE>                 Use this title for the ebook, instead of the one defined in the Markdown file.
 ```
 
 ## Sources
