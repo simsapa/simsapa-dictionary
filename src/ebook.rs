@@ -648,7 +648,7 @@ impl Ebook {
     pub fn copy_static(&self) -> Result<(), Box<dyn Error>> {
         info!("copy_static()");
 
-        let dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
+        let oebps_dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
         let base = self.build_base_dir.as_ref().ok_or("missing build_base_dir")?;
 
         // cover image
@@ -659,14 +659,14 @@ impl Ebook {
             let p = base.parent().unwrap().join(PathBuf::from(filename.clone()));
             if p.exists() {
                 // If the file is found, copy that.
-                fs::copy(&p, dir.join(filename))?;
+                fs::copy(&p, oebps_dir.join(filename))?;
             } else {
                 // If not found, try looking it up in the embedded assets.
                 let file_content = self
                     .asset_files_byte
                     .get(&filename.to_string())
                     .ok_or("missing get key")?;
-                let mut file = File::create(dir.join(filename))?;
+                let mut file = File::create(oebps_dir.join(filename))?;
                 file.write_all(file_content)?;
             }
         }
@@ -678,7 +678,7 @@ impl Ebook {
                 .asset_files_byte
                 .get(&filename.to_string())
                 .ok_or("missing get key")?;
-            let mut file = File::create(dir.join(filename))?;
+            let mut file = File::create(oebps_dir.join(filename))?;
             file.write_all(file_content)?;
         }
 

@@ -94,8 +94,13 @@ pub fn format_grammar_phonetic_transliteration(
 
     let tr = if transliteration.is_empty() {
         if add_velthuis {
-            // dark ocean blue
-            format!(" | <span style=\"color: #0B4A72;\">{}</span>", pali::to_velthuis(&word))
+            let velthuis = pali::to_velthuis(&word);
+            if word != velthuis {
+                // dark ocean blue
+                format!(" | <span style=\"color: #0B4A72;\">{}</span>", velthuis)
+            } else {
+                "".to_string()
+            }
         } else {
             "".to_string()
         }
