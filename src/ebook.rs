@@ -42,6 +42,10 @@ pub struct Ebook {
     #[serde(skip)]
     pub output_path: PathBuf,
 
+    /// The folder of the first source input file.
+    #[serde(skip)]
+    pub source_dir: PathBuf,
+
     /// Build base dir is 'ebook-build' in the folder of the source input file.
     #[serde(skip)]
     pub build_base_dir: Option<PathBuf>,
@@ -107,7 +111,7 @@ pub struct LetterGroupTemplateData {
 }
 
 impl Ebook {
-    pub fn new(output_format: OutputFormat, output_path: &PathBuf) -> Self {
+    pub fn new(output_format: OutputFormat, source_dir: &PathBuf, output_path: &PathBuf) -> Self {
         // asset_files_string
         let mut afs: BTreeMap<String, String> = BTreeMap::new();
         // asset_files_byte
@@ -116,6 +120,7 @@ impl Ebook {
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
+        h.register_helper("cover_media_type", Box::new(helpers::cover_media_type));
         h.register_helper("word_list", Box::new(helpers::word_list));
         h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
 
@@ -230,6 +235,7 @@ impl Ebook {
             asset_files_string: afs,
             asset_files_byte: afb,
             output_path: output_path.to_path_buf(),
+            source_dir: source_dir.to_path_buf(),
             build_base_dir: None,
             mimetype_path: None,
             meta_inf_dir: None,
@@ -649,14 +655,13 @@ impl Ebook {
         info!("copy_static()");
 
         let oebps_dir = self.oebps_dir.as_ref().ok_or("missing oebps_dir")?;
-        let base = self.build_base_dir.as_ref().ok_or("missing build_base_dir")?;
 
         // cover image
         {
-            let filename = self.meta.cover_path.clone();
-            // Cover path is relative to the folder of the source input file, which is the parent
-            // of the build base dir.
-            let p = base.parent().unwrap().join(PathBuf::from(filename.clone()));
+            // Cover path is relative to the folder of the source input file.
+            let rel_cover = PathBuf::from(self.meta.cover_path.clone());
+            let filename = PathBuf::from(rel_cover.file_name().unwrap());
+            let p = self.source_dir.join(rel_cover);
             if p.exists() {
                 // If the file is found, copy that.
                 fs::copy(&p, oebps_dir.join(filename))?;
@@ -664,7 +669,7 @@ impl Ebook {
                 // If not found, try looking it up in the embedded assets.
                 let file_content = self
                     .asset_files_byte
-                    .get(&filename.to_string())
+                    .get(filename.to_str().unwrap())
                     .ok_or("missing get key")?;
                 let mut file = File::create(oebps_dir.join(filename))?;
                 file.write_all(file_content)?;
@@ -714,6 +719,14 @@ impl Ebook {
     pub fn write_oebps_files(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_oebps_files()");
 
+        self.copy_static()?;
+
+        // The cover path is used without folder.
+        self.meta.cover_path = PathBuf::from(self.meta.cover_path.clone())
+            .file_name().unwrap()
+            .to_str().unwrap()
+            .to_string();
+
         if let OutputFormat::Epub = self.output_format {
             self.write_cover()?;
         }
@@ -726,8 +739,6 @@ impl Ebook {
         self.write_titlepage()?;
         self.write_about()?;
         self.write_copyright()?;
-
-        self.copy_static()?;
 
         Ok(())
     }
@@ -1740,7 +1751,7 @@ fn reg_tmpl(h: &mut Handlebars, k: &str, afs: &BTreeMap<String, String>) {
 
 impl Default for Ebook {
     fn default() -> Self {
-        Ebook::new(OutputFormat::Epub, &PathBuf::from("ebook.epub"))
+        Ebook::new(OutputFormat::Epub, &PathBuf::from("."), &PathBuf::from("ebook.epub"))
     }
 }
 

@@ -37,6 +37,23 @@ pub fn to_velthuis(
     Ok(())
 }
 
+pub fn cover_media_type(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let path = h.param(0).unwrap().value().render();
+    let media_type = if path.ends_with(".png") {
+        "image/png"
+    } else {
+        "image/jpeg"
+    };
+    out.write(media_type)?;
+    Ok(())
+}
+
 pub fn word_list(
     h: &Helper,
     _: &Handlebars,
