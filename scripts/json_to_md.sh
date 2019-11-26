@@ -8,12 +8,14 @@ OUT_DIR="../simsapa-dictionary-data"
 # === Dhammika ===
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "Dhammika Pali - English Dictionary" \
 	--dict_label Dhammika \
 	--json_path "$SC_ROOT/dhammika.json" \
 	--output_path "$OUT_DIR/dhammika.md"
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "Dhammika Pali - English Dictionary" \
 	--dict_label Dhammika \
 	--dont_process \
@@ -23,12 +25,14 @@ cargo run -- suttacentral_json_to_markdown \
 # === DPPN ===
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "Dictionary of Pali Proper Names (DPPN)" \
 	--dict_label DPPN \
 	--json_path "$SC_ROOT/dppn.json" \
 	--output_path "$OUT_DIR/dppn.md"
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "Dictionary of Pali Proper Names (DPPN)" \
 	--dict_label DPPN \
 	--dont_process \
@@ -38,12 +42,14 @@ cargo run -- suttacentral_json_to_markdown \
 # === NCPED ===
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "New Concise Pali - English Dictionary (NCPED)" \
 	--dict_label NCPED \
 	--json_path "$SC_ROOT/ncped.json" \
 	--output_path "$OUT_DIR/ncped.md"
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "New Concise Pali - English Dictionary (NCPED)" \
 	--dict_label NCPED \
 	--dont_process \
@@ -53,6 +59,7 @@ cargo run -- suttacentral_json_to_markdown \
 # === PTS ===
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "Pali Text Society Pali - English Dictionary (PTS)" \
 	--dict_label PTS \
 	--dont_remove_see_also \
@@ -60,6 +67,7 @@ cargo run -- suttacentral_json_to_markdown \
 	--output_path "$OUT_DIR/pts.md"
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
 	--title "Pali Text Society Pali - English Dictionary (PTS)" \
 	--dict_label PTS \
 	--dont_process \

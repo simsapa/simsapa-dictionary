@@ -6,7 +6,9 @@ SC_ROOT="$HOME/src/suttacentral-2019-11-15/sc-data/dictionaries/en"
 OUT_DIR="../simsapa-dictionary-data"
 
 cargo run -- suttacentral_json_to_markdown \
+	--reuse_metadata \
+	--title "New Concise Pali - English Dictionary (NCPED)" \
+	--dict_label NCPED \
 	--json_path "$SC_ROOT/ncped.json" \
-	--output_path "$OUT_DIR/ncped.md" \
-	--dict_label NCPED
+	--output_path "$OUT_DIR/ncped.md"
 

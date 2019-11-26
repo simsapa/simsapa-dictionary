@@ -60,6 +60,8 @@ pub struct DictWordHeader {
     pub word: String,
 
     #[serde(default)]
+    pub url_id: String,
+    #[serde(default)]
     pub summary: String,
     #[serde(default)]
     pub grammar: String,
@@ -111,7 +113,7 @@ impl DictWord {
 
         Ok(DictWord {
             word_header,
-            definition_md: parts.get(1).unwrap().to_string(),
+            definition_md: (*parts.get(1).unwrap()).to_string(),
         })
     }
 
@@ -124,11 +126,35 @@ impl DictWord {
         }
     }
 
+    pub fn gen_url_id(word: &str, dict_label: &str) -> String {
+        let a = if word.is_empty() {
+            "untitled".to_string()
+        } else {
+            word.to_string()
+        };
+
+        let b = if dict_label.is_empty() {
+            "unlabeled".to_string()
+        } else {
+            dict_label.to_string()
+        };
+
+        let id = format!("{}-{}", a, b);
+        id.to_lowercase().replace('.', "-").replace(' ', "-")
+    }
+
+    pub fn set_url_id(&mut self) {
+        self.word_header.url_id = DictWord::gen_url_id(
+            &self.word_header.word,
+            &self.word_header.dict_label);
+    }
+
     pub fn from_xlsx(w: &DictWordXlsx) -> DictWord {
         DictWord {
             word_header: DictWordHeader {
                 dict_label: w.dict_label.clone(),
                 word: w.word.clone(),
+                url_id: DictWord::gen_url_id(&w.word, &w.dict_label),
                 summary: w.summary.clone(),
                 grammar: w.grammar.clone(),
                 phonetic: w.phonetic.clone(),
@@ -140,6 +166,26 @@ impl DictWord {
                 also_written_as: DictWord::parse_csv_list(&w.also_written_as),
             },
             definition_md: w.definition_md.clone(),
+        }
+    }
+}
+
+impl DictWordXlsx {
+    pub fn from_dict_word(w: &DictWord) -> DictWordXlsx {
+        let h = w.word_header.clone();
+        DictWordXlsx {
+            dict_label: h.dict_label.clone(),
+            word: h.word.clone(),
+            summary: h.summary.clone(),
+            grammar: h.grammar.clone(),
+            phonetic: h.phonetic.clone(),
+            transliteration: h.transliteration.clone(),
+            inflections: h.inflections.join(", "),
+            synonyms: h.synonyms.join(", "),
+            antonyms: h.antonyms.join(", "),
+            see_also: h.see_also.join(", "),
+            also_written_as: h.also_written_as.join(", "),
+            definition_md: w.definition_md.clone().trim().to_string(),
         }
     }
 }
@@ -158,6 +204,7 @@ impl Default for DictWordHeader {
         DictWordHeader {
             dict_label: "".to_string(),
             word: "word".to_string(),
+            url_id: "word".to_string(),
             summary: "".to_string(),
             grammar: "".to_string(),
             phonetic: "".to_string(),

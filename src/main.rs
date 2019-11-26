@@ -34,9 +34,10 @@ pub mod letter_groups;
 pub mod pali;
 
 use std::process::exit;
+use std::path::PathBuf;
 use regex::Regex;
 
-use app::RunCommand;
+use app::{AppStartParams, RunCommand};
 use ebook::Ebook;
 use helpers::ok_or_exit;
 
@@ -79,11 +80,15 @@ fn main() {
         }
 
         RunCommand::SuttaCentralJsonToMarkdown => {
-            let p = &app_params
-                .output_path
-                .expect("output_path is missing.");
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
 
-            let mut ebook = Ebook::new(app_params.output_format, &p);
+            if app_params.reuse_metadata {
+                ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
+            }
+
+            ebook.meta.created_date_human = "".to_string();
+            ebook.meta.created_date_opf = "".to_string();
 
             app::process_suttacentral_json(
                 &app_params.json_path,
@@ -102,27 +107,21 @@ fn main() {
                 ok_or_exit(app_params.used_first_arg, ebook.process_summary());
             }
 
-            // If title was given on CLI, override
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            // If dict_label was given on CLI, override
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
         RunCommand::NyanatilokaToMarkdown => {
-            let p = &app_params
-                .output_path
-                .expect("output_path is missing.");
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
 
-            let mut ebook = Ebook::new(app_params.output_format, &p);
+            if app_params.reuse_metadata {
+                ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
+            }
+
+            ebook.meta.created_date_human = "".to_string();
+            ebook.meta.created_date_opf = "".to_string();
 
             app::process_nyanatiloka_entries(
                 &app_params.nyanatiloka_root,
@@ -130,29 +129,19 @@ fn main() {
                 &mut ebook,
             );
 
+            ebook.process_tidy();
             ok_or_exit(app_params.used_first_arg, ebook.process_summary());
 
             info!("Added words: {}", ebook.len());
 
-            // If title was given on CLI, override
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            // If dict_label was given on CLI, override
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
         RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
-            let o = app_params.output_path.clone();
-            let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.output_format, &output_path);
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -178,21 +167,9 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_add_transliterations();
-            ebook.process_links();
-            ebook.process_define_links();
+            ebook.process_text();
 
-            // If title was given on CLI, override
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            // If dict_label was given on CLI, override
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
 
@@ -202,9 +179,8 @@ fn main() {
         }
 
         RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
-            let o = app_params.output_path.clone();
-            let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.output_format, &output_path);
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -230,9 +206,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_add_transliterations();
-            ebook.process_links();
-            ebook.process_define_links();
+            ebook.process_text();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
             for (_, w) in ebook.dict_words.iter_mut() {
@@ -240,23 +214,14 @@ fn main() {
                 w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
             }
 
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
         }
 
         RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
-            let o = app_params.output_path.clone();
-            let output_path = o.expect("output_path is missing.");
-            let mut ebook = Ebook::new(app_params.output_format, &output_path);
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -282,23 +247,38 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_add_transliterations();
-            ebook.process_links();
-            ebook.process_define_links();
+            ebook.process_text();
 
-            if let Some(ref title) = app_params.title {
-                ebook.meta.title = title.clone();
-            }
-
-            if let Some(ref dict_label) = app_params.dict_label {
-                for (_key, word) in ebook.dict_words.iter_mut() {
-                    word.word_header.dict_label = dict_label.clone();
-                }
-            }
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_stardict());
+        }
+
+        RunCommand::MarkdownToJson => {
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_markdown_list(source_paths, &mut ebook),
+            );
+
+            info!("Added words: {}", ebook.len());
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_json());
         }
     }
 
     info!("Finished.");
+}
+
+fn get_input_output(app_params: &AppStartParams) -> (PathBuf, PathBuf) {
+    let i = app_params.clone().source_paths.expect("source_paths is missing");
+    let i_p = PathBuf::from(i.get(0).unwrap().parent().unwrap());
+    let o_p = app_params.clone().output_path.expect("output_path is missing.");
+    (i_p, o_p)
 }
