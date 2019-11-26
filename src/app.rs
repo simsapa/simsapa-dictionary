@@ -769,7 +769,7 @@ pub fn process_suttacentral_json(
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, &dict_label, ""),
+                url_id: DictWord::gen_url_id(&e.word, &dict_label),
                 summary: "".to_string(),
                 grammar: "".to_string(),
                 phonetic: "".to_string(),
@@ -843,7 +843,7 @@ pub fn process_nyanatiloka_entries(
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, &dict_label, ""),
+                url_id: DictWord::gen_url_id(&e.word, &dict_label),
                 summary: "".to_string(),
                 grammar: "".to_string(),
                 phonetic: "".to_string(),

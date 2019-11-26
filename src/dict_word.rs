@@ -126,7 +126,7 @@ impl DictWord {
         }
     }
 
-    pub fn gen_url_id(word: &str, dict_label: &str, grammar: &str) -> String {
+    pub fn gen_url_id(word: &str, dict_label: &str) -> String {
         let a = if word.is_empty() {
             "untitled".to_string()
         } else {
@@ -139,22 +139,14 @@ impl DictWord {
             dict_label.to_string()
         };
 
-        let c = if grammar.is_empty() {
-            "uncategorized".to_string()
-        } else {
-            grammar.to_string()
-        };
-
-        let id = format!("{}-{}-{}", a, b, c);
-        id.to_lowercase().replace(' ', "-")
+        let id = format!("{}-{}", a, b);
+        id.to_lowercase().replace('.', "-").replace(' ', "-")
     }
 
     pub fn set_url_id(&mut self) {
         self.word_header.url_id = DictWord::gen_url_id(
             &self.word_header.word,
-            &self.word_header.dict_label,
-            &self.word_header.grammar
-        );
+            &self.word_header.dict_label);
     }
 
     pub fn from_xlsx(w: &DictWordXlsx) -> DictWord {
@@ -162,7 +154,7 @@ impl DictWord {
             word_header: DictWordHeader {
                 dict_label: w.dict_label.clone(),
                 word: w.word.clone(),
-                url_id: DictWord::gen_url_id(&w.word, &w.dict_label, &w.grammar),
+                url_id: DictWord::gen_url_id(&w.word, &w.dict_label),
                 summary: w.summary.clone(),
                 grammar: w.grammar.clone(),
                 phonetic: w.phonetic.clone(),
