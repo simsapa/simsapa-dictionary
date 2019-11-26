@@ -4,5 +4,5 @@ load "ncped.json";
 newsheet;
 namesheet "Metadata";
 table { "title"; "description"; "creator"; "email"; "source"; "cover_path"; "book_id"; "version"; "created_date_human"; "created_date_opf"; "word_prefix"; "add_velthuis"; }
-load "ncped_metadata.json";
+load "ncped-metadata.json";
 write "ncped.xlsx";

@@ -290,46 +290,26 @@ impl Ebook {
     pub fn add_word(&mut self, new_word: DictWord) {
         let mut new_word = new_word;
 
-        let label = if new_word.word_header.dict_label.is_empty() {
-            "unlabeled".to_string()
-        } else {
-            new_word.word_header.dict_label.clone()
-        };
-        let grammar = if new_word.word_header.grammar.is_empty() {
-            "uncategorized".to_string()
-        } else {
-            new_word.word_header.grammar.clone()
-        };
-        let w_key = format!(
-            "{} {} {}",
-            new_word.word_header.word, grammar, label
-        );
-
-        if new_word.word_header.url_id.is_empty() {
-            new_word.word_header.url_id = DictWord::gen_url_id(&new_word.word_header.word);
-        }
+        new_word.set_url_id();
 
         if !self.valid_words.contains(&new_word.word_header.word) {
             self.valid_words.push(new_word.word_header.word.clone());
         }
 
-        if self.dict_words.contains_key(&w_key) {
+        while self.dict_words.contains_key(&new_word.word_header.url_id) {
             warn!(
-                "Double word: '{}'. Entries should be unique for word within one dictionary.",
-                &w_key
+                "Double word: '{}'. Entries should be unique for url_id.",
+                &new_word.word_header.url_id
             );
 
-            new_word.word_header.word = format!("{} FIXME: double", new_word.word_header.word);
-            let double_key = format!("{} double", &w_key);
-            self.dict_words.insert(double_key, new_word);
-        } else {
-            let w = self.dict_words.insert(w_key.clone(), new_word);
-            if w.is_some() {
-                error!(
-                    "Unhandled double word '{}', new value replacing the old.",
-                    w_key
-                );
-            }
+            new_word.word_header.word = format!("{} FIXME double", new_word.word_header.word);
+            new_word.set_url_id();
+        }
+
+        let id = new_word.word_header.url_id.clone();
+        let w = self.dict_words.insert(new_word.word_header.url_id.clone(), new_word);
+        if w.is_some() {
+            error!("Unhandled double word '{}', new value replacing the old.", id);
         }
     }
 
@@ -1123,7 +1103,7 @@ impl Ebook {
 
             let a = PathBuf::from(self.output_path.file_name().unwrap());
             let mut b = a.file_stem().unwrap().to_str().unwrap().to_string();
-            b.push_str("_metadata.json");
+            b.push_str("-metadata.json");
             let path = self.output_path.with_file_name(b);
 
             let mut file = File::create(&path)?;
@@ -1451,32 +1431,40 @@ impl Ebook {
     }
 
     pub fn process_define_links(&mut self) {
+        info!("process_define_links()");
         // [abhuṃ](/define/abhuṃ)
-        let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
+        let re_define = Regex::new(r"\[[^0-9\.\]\(\)]+\]\(/define/(?P<define>[^\(\)]+)\)").unwrap();
+
+        let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
+        let letter_groups = LetterGroups::new_from_dict_words(&w);
+        let words_to_url = letter_groups.words_to_url;
 
         for (_, dict_word) in self.dict_words.iter_mut() {
             let def = dict_word.definition_md.clone();
             for cap in re_define.captures_iter(&def) {
                 let link = cap[0].to_string();
-                let word = cap[2].to_string();
+                let word = cap["define"].to_string();
 
-                if self.valid_words.contains(&word) {
-                    // If it is a valid word entry, replace to bword:// for Stardict and Babylon.
-                    match self.output_format {
-                        OutputFormat::StardictXml | OutputFormat::BabylonGls => {
-                            let mut s = dict_word.definition_md.clone();
-                            s = s.replace(&link, &format!("[{}](bword://{})", word, word)).to_string();
-                            dict_word.definition_md = s;
+                let new_link = match self.output_format {
+                    OutputFormat::Epub | OutputFormat::Mobi => {
+                        match words_to_url.get(&word) {
+                            Some(url) => format!("[{}]({})", word, url),
+                            None => format!("*{}*", word),
                         }
-                        _ => {}
-                    }
-                } else {
-                    // If it is not a valid word entry, we will replace it with text.
-                    let mut s = dict_word.definition_md.clone();
-                    s = s.replace(&link, &format!("*{}*", word)).to_string();
-                    dict_word.definition_md = s;
-                }
+                    },
 
+                    OutputFormat::StardictXml | OutputFormat::BabylonGls => {
+                        // If it is a valid word entry, replace to bword:// for Stardict and Babylon.
+                        if self.valid_words.contains(&word) {
+                            format!("[{}](bword://{})", word, word)
+                        } else {
+                            // If it is not a valid word entry, we will replace it with text.
+                            format!("*{}*", word)
+                        }
+                    }
+                };
+
+                dict_word.definition_md = dict_word.definition_md.replace(&link, &new_link).to_string();
             }
         }
     }
