@@ -10,7 +10,7 @@ use simsapa_dictionary::ebook::{Ebook, OutputFormat};
 
 #[test]
 fn processing_from_definition() {
-    let mut ebook = Ebook::new(OutputFormat::Epub, &PathBuf::from("ebook.epub"));
+    let mut ebook = Ebook::new(OutputFormat::Epub, &PathBuf::from("."), &PathBuf::from("ebook.epub"));
 
     let sources: Vec<PathBuf> = vec![PathBuf::from("./tests/data/processing/processing.md")];
 
@@ -19,7 +19,7 @@ fn processing_from_definition() {
     ebook.process_also_written_as();
     ebook.process_strip_repeat_word_title();
     ebook.process_grammar_note();
-    ebook.process_see_also_from_definition();
+    ebook.process_see_also_from_definition(false);
 
     let res = ebook.entries_as_markdown();
     //let mut file = File::create(&PathBuf::from("./tests/data/processing/processing_expect.md")).unwrap();

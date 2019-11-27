@@ -19,6 +19,8 @@ a ā b bh c ch d dh ḍ ḍh e f g gh h i ī j jh k kh l ḷ m ṃ / ṁ n ṅ �
 //
 // Including ISO Basic Latin, to allow for English entries from Nyanatiloka
 
+//                                                             10                    20                   30                     40
+//                                     0 1 2 3  4 5  6 7  8 9  0 1 2 3  4 5 6 7 8  9 0  1 2 3 4 5 6 7 8 9 0 1  2 3 4 5 6  7 8  9 0 1 2 3 4 5
 const ROMANIZED_PALI_ALPHABET: &str = "a ā b bh c ch d dh ḍ ḍh e f g gh h i ī j jh k kh l ḷ m ṃ n ṅ ṇ ñ o p ph q r s t th ṭ ṭh u ū v w x y z";
 
 const RPA_DOUBLES_FIRST: &str = "bh ch dh ḍh gh jh kh ph th ṭh a ā b c d ḍ e f g h i ī j k l ḷ m ṃ n ṅ ṇ ñ o p q r s t ṭ u ū v w x y z";
@@ -31,9 +33,13 @@ pub fn romanized_pali_letter_index(word: &str) -> usize {
     let word_clean = word.trim().to_lowercase();
 
     match first_letter(&word_clean) {
-        Some(letter) => match alphabet.binary_search(&letter) {
-            Ok(x) => x,
-            Err(_) => alphabet.len(),
+        Some(letter) => {
+            for (idx, l) in alphabet.iter().enumerate() {
+                if letter == *l {
+                    return idx;
+                }
+            }
+            alphabet.len()
         },
         None => alphabet.len(),
     }
@@ -77,4 +83,49 @@ pub fn to_velthuis(word: &str) -> String {
         .replace('Ḍ', ".D")
         .replace('Ṅ', "\"N")
         .replace('Ḷ', ".L")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct WordIndex {
+        word: String,
+        index: usize,
+    }
+
+    struct WordLetter {
+        word: String,
+        letter: String,
+    }
+
+    #[test]
+    fn test_first_letter() {
+
+        let words = vec![
+            WordLetter { word: "anicca".to_string(), letter: "a".to_string() },
+            WordLetter { word: "āloka".to_string(), letter: "ā".to_string() }
+        ];
+
+        for w in words.iter() {
+            assert_eq!(first_letter(&w.word).unwrap(), w.letter);
+        }
+    }
+
+    #[test]
+    fn pali_index() {
+
+        let words = vec![
+            WordIndex { word: "anicca".to_string(), index: 0 },
+            WordIndex { word: "āloka".to_string(), index: 1 },
+            WordIndex { word: "bhūta".to_string(), index: 3 },
+            WordIndex { word: "khādaka".to_string(), index: 20 },
+            WordIndex { word: "nivaraṇa".to_string(), index: 25 },
+            WordIndex { word: "thālipāka".to_string(), index: 36 },
+        ];
+
+        for w in words.iter() {
+            assert_eq!(romanized_pali_letter_index(&w.word), w.index);
+        }
+    }
 }
