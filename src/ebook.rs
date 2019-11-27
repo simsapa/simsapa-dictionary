@@ -1444,7 +1444,7 @@ impl Ebook {
     pub fn process_define_links(&mut self) {
         info!("process_define_links()");
         // [abhuṃ](/define/abhuṃ)
-        let re_define = Regex::new(r"\[[^0-9\.\]\(\)]+\]\(/define/(?P<define>[^\(\)]+)\)").unwrap();
+        let re_define = Regex::new(r"\[[^0-9\]\(\)]+\]\(/define/(?P<define>[^\(\)]+)\)").unwrap();
 
         let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
         let letter_groups = LetterGroups::new_from_dict_words(&w);
@@ -1728,18 +1728,22 @@ impl Ebook {
         for (_key, dict_word) in self.dict_words.iter_mut() {
             for w in dict_word.word_header.synonyms.iter_mut() {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.antonyms.iter_mut() {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.see_also.iter_mut() {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.also_written_as.iter_mut() {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = w.replace('&', "&amp;");
             }
         }
     }
