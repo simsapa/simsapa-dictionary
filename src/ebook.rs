@@ -670,7 +670,7 @@ impl Ebook {
                 let file_content = self
                     .asset_files_byte
                     .get(filename.to_str().unwrap())
-                    .ok_or("missing get key")?;
+                    .ok_or_else(|| format!("cover_path not found: {}", self.meta.cover_path))?;
                 let mut file = File::create(oebps_dir.join(filename))?;
                 file.write_all(file_content)?;
             }
@@ -682,7 +682,7 @@ impl Ebook {
             let file_content = self
                 .asset_files_byte
                 .get(&filename.to_string())
-                .ok_or("missing get key")?;
+                .ok_or("style.css not found")?;
             let mut file = File::create(oebps_dir.join(filename))?;
             file.write_all(file_content)?;
         }

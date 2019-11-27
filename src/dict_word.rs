@@ -49,6 +49,7 @@ pub struct DictWordXlsx {
     #[serde(default)]
     pub also_written_as: String,
 
+    #[serde(default)]
     pub definition_md: String,
 }
 
