@@ -4,6 +4,9 @@
 **Table of Contents**
 
 - [Simsapa Dictionary Tool](#simsapa-dictionary-tool)
+    - [Application Screenshots](#application-screenshots)
+        - [GoldenDict](#goldendict)
+        - [Kindle Paperwhite](#kindle-paperwhite)
     - [Feedback, corrections, bug reports](#feedback-corrections-bug-reports)
     - [Example dictionary](#example-dictionary)
     - [CLI Options](#cli-options)
@@ -11,9 +14,9 @@
 
 <!-- markdown-toc end -->
 
-This tool generates EPUB and MOBI dictionary files.
+This tool generates EPUB, MOBI, Stardict and Babylon dictionary files.
 
-See the [Releases](https://github.com/simsapa/simsapa-dictionary/releases) page for downloads.
+**Download Pali - English dictionaries**:  See the [Releases](https://github.com/simsapa/simsapa-dictionary/releases) page.
 
 It includes a set of Pali - English dictionaries, and this tool for Linux, Mac and Windows.
 
@@ -22,6 +25,26 @@ The dictionary source texts are in the [simsapa-dictionary-data](https://github.
 You can download the source text, edit and generate updated EPUB and MOBI files using this tool.
 
 To generate MOBI files, also download [Kindlegen](https://www.amazon.com/gp/feature.html?docId=1000765211) from Amazon (free download).
+
+## Application Screenshots
+
+### GoldenDict
+
+![GoldenDict full text search](docs/goldendict_fulltext_chaya.jpg)
+
+Use the `stardict` ZIP files, extract them and add the folder to the dictionary list in GoldenDict.
+
+Version 1.5 includes `Search menu > Full text search`, useful for English to Pali searches.
+
+For Windows and OSX, download v1.5 from the [Early Access Builds](https://sourceforge.net/projects/goldendict/files/early%20access%20builds/).
+
+Read mode on the [wiki pages](https://github.com/goldendict/goldendict/wiki).
+
+On Linux, install `goldendict` from your package manager.
+
+### Kindle Paperwhite
+
+![Kindle Paperwhite](docs/kindle_paperwhite.jpg)
 
 ## Feedback, corrections, bug reports
 
