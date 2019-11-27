@@ -26,13 +26,13 @@ You can download the source text, edit and generate updated EPUB and MOBI files 
 
 To generate MOBI files, also download [Kindlegen](https://www.amazon.com/gp/feature.html?docId=1000765211) from Amazon (free download).
 
-## Application Screenshots
+## Applications
 
-### GoldenDict
+### GoldenDict (Win, Mac OS/X, Linux desktop)
 
 ![GoldenDict full text search](docs/goldendict_fulltext_chaya.jpg)
 
-Use the `stardict` ZIP files, extract them and add the folder to the dictionary list in GoldenDict.
+Use the `*-stardict.zip` files, extract them and add the folder to the dictionary list in GoldenDict.
 
 Version 1.5 includes `Search menu > Full text search`, useful for English to Pali searches.
 
@@ -46,9 +46,35 @@ On Linux, install `goldendict` from your package manager.
 
 ![Kindle Paperwhite](docs/kindle_paperwhite.jpg)
 
+Use one of the `*.mobi` files and copy them to your Kindle. It will appear in the *Dictionaries* category.
+
+### Epub readers
+
+The `*.epub` files can be used with ebook readers which read the Epub format.
+
+- iBooks on iOS
+- [Calibre](https://calibre-ebook.com/) on desktop
+
+### Android
+
+Search for applications which can open or import `StarDict` format dictionaries.
+
+You might have to copy-paste the link of a `*-stardict.zip` file from the
+Releases page, or download it and extract it to a folder where the dictionary
+application can find it.
+
+Such apps include:
+
+- [Dict Box - Universal Offline Dictionary](https://play.google.com/store/apps/details?id=com.grandsons.dictsharp)
+- [GoldenDict (free)](https://play.google.com/store/apps/details?id=mobi.goldendict.android.free)
+
 ## Feedback, corrections, bug reports
 
 Both the tool and the dictionary content has some rough edges.
+
+The dictionary entries can be edited using the files at
+[simsapa-dictionary-data](https://github.com/simsapa/simsapa-dictionary-data),
+and the dictionary formats re-generated with this tool.
 
 Dictionary corrections or bug reports about the tool are welcome. Open an Issue
 here or see my email in the [Cargo.toml](Cargo.toml).
