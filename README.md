@@ -4,9 +4,11 @@
 **Table of Contents**
 
 - [Simsapa Dictionary Tool](#simsapa-dictionary-tool)
-    - [Application Screenshots](#application-screenshots)
-        - [GoldenDict](#goldendict)
+    - [Applications](#applications)
+        - [GoldenDict (Win, Mac OS/X, Linux desktop)](#goldendict-win-mac-osx-linux-desktop)
         - [Kindle Paperwhite](#kindle-paperwhite)
+        - [Epub readers](#epub-readers)
+        - [Android](#android)
     - [Feedback, corrections, bug reports](#feedback-corrections-bug-reports)
     - [Example dictionary](#example-dictionary)
     - [CLI Options](#cli-options)
