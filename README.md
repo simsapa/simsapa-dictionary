@@ -4,23 +4,106 @@
 **Table of Contents**
 
 - [Simsapa Dictionary Tool](#simsapa-dictionary-tool)
+    - [What is this for?](#what-is-this-for)
+    - [Desktop setup with GoldenDict](#desktop-setup-with-goldendict)
+        - [Install GoldenDict](#install-goldendict)
+        - [Download the dictionary](#download-the-dictionary)
+        - [Add to GoldenDict](#add-to-goldendict)
+    - [Converting to other dictionary formats](#converting-to-other-dictionary-formats)
+    - [simsapa_dictionary tool](#simsapadictionary-tool)
+    - [Dictionary texts](#dictionary-texts)
+        - [Sources](#sources)
     - [Applications](#applications)
-        - [GoldenDict (Win, Mac OS/X, Linux desktop)](#goldendict-win-mac-osx-linux-desktop)
+        - [GoldenDict (Win, Mac OSX, Linux desktop)](#goldendict-win-mac-osx-linux-desktop)
         - [Kindle Paperwhite](#kindle-paperwhite)
         - [Epub readers](#epub-readers)
         - [Android](#android)
-    - [Feedback, corrections, bug reports](#feedback-corrections-bug-reports)
-    - [Example dictionary](#example-dictionary)
+    - [Online Pali dictionaries](#online-pali-dictionaries)
+    - [Example dictionary file](#example-dictionary-file)
     - [CLI Options](#cli-options)
-    - [Sources](#sources)
+    - [Feedback, corrections, bug reports](#feedback-corrections-bug-reports)
 
 <!-- markdown-toc end -->
 
-This tool generates EPUB, MOBI, Stardict and Babylon dictionary files.
+## What is this for?
+
+This tool generates EPUB, MOBI, Stardict (.zip) and Babylon (.gls) dictionary files.
+
+I hope it is useful for:
+
+- looking Pali words more easily on different devices
+- with fulltext search (looking for English words in Pali)
+- in an offline context
+
+The main result are the downloadable files:
 
 **Download Pali - English dictionaries**:  See the [Releases](https://github.com/simsapa/simsapa-dictionary/releases) page.
 
-It includes a set of Pali - English dictionaries, and this tool for Linux, Mac and Windows.
+You are going to need a dictionary application for your desktop or mobile
+device, then download and use a suitable format to open it.
+
+For example the StarDict format is widely supported, search for `dictionary app
+stardict format for Windows / Mac / Android` or similar to find an app which
+works for you.
+
+Download one of the formats and open it with the dictionary app.
+
+## Desktop setup with GoldenDict
+
+Specific steps to use this with GoldenDict.
+
+### Install GoldenDict
+
+Note that the [goldendict.org](http://www.goldendict.org/) website only has an old version (1.0.1) for Windows.
+
+Download the more recent v1.5 version:
+
+- [Early Access Builds for Windows](https://github.com/goldendict/goldendict/wiki/Early-Access-Builds-for-Windows)
+- [Early Access Builds for Mac OS X](https://github.com/goldendict/goldendict/wiki/Early-Access-Builds-for-Mac-OS-X)
+- [Early Access Builds for Linux Portable](https://github.com/goldendict/goldendict/wiki/Early-Access-Builds-for-Linux-Portable)
+
+On Linux distributions, you can also install the `goldendict` package from your package manager.
+
+### Download the dictionary
+
+Download one of the StarDict `.zip` files from the [Releases](https://github.com/simsapa/simsapa-dictionary/releases) page.
+
+Extract the `.zip` to a folder, if will contain four files, such as:
+
+```
+combined-dictionary-stardict/
+  combined-dictionary.dict.dz
+  combined-dictionary.idx
+  combined-dictionary.ifo
+  combined-dictionary.syn
+```
+
+### Add to GoldenDict
+
+- Open GoldenDict.
+- Select the `Edit > Dictionaries` menu. It usually opens with the `Sources > Files` tab open.
+- Click the `Add...` button, and select the folder where you extracted the `.zip`.
+- Click `OK`. The menu will close.
+- Use the top input field to search for words.
+- Use the `Search > Full-text Search` menu to search in the word definition texts (such as looking for English to Pali).
+
+Add more dictionaries in other languages if you wish. Search for example `portuguese stardict dictionary`.
+
+## Converting to other dictionary formats
+
+The [pyglossary](https://github.com/ilius/pyglossary) tool can convert to a wide range of dictionary formats.
+
+You can use the StarDict files as input format.
+
+## simsapa_dictionary tool
+
+The binary executables (`simsapa_dictionary.exe`, `_linux`, `_osx`) are command line applications.
+
+If you simply double click to run it, it will do nothing. If you run it in a terminal, it will display some usage notes.
+
+It is a conversion utility, which can be used in small shell scripts to create or update dictionary files.
+
+## Dictionary texts
 
 The dictionary source texts are in the [simsapa-dictionary-data](https://github.com/simsapa/simsapa-dictionary-data) repo.
 
@@ -28,9 +111,14 @@ You can download the source text, edit and generate updated EPUB and MOBI files 
 
 To generate MOBI files, also download [Kindlegen](https://www.amazon.com/gp/feature.html?docId=1000765211) from Amazon (free download).
 
+### Sources
+
+- JSON format dictionaries published at [suttacentral/sc-data](https://github.com/suttacentral/sc-data)
+- [Nyanatiloka: Buddhist Dictionary](https://what-buddha-said.net/library/Buddhist.Dictionary/index_dict.n2.htm) published by [what-buddha-said.net](https://what-buddha-said.net/)
+
 ## Applications
 
-### GoldenDict (Win, Mac OS/X, Linux desktop)
+### GoldenDict (Win, Mac OSX, Linux desktop)
 
 ![GoldenDict full text search](docs/goldendict_fulltext_chaya.jpg)
 
@@ -70,18 +158,14 @@ Such apps include:
 - [Dict Box - Universal Offline Dictionary](https://play.google.com/store/apps/details?id=com.grandsons.dictsharp)
 - [GoldenDict (free)](https://play.google.com/store/apps/details?id=mobi.goldendict.android.free)
 
-## Feedback, corrections, bug reports
+## Online Pali dictionaries
 
-Both the tool and the dictionary content has some rough edges.
+- SuttaCentral dictionary lookup: https://suttacentral.net/define/kusala
+- http://dictionary.sutta.org/
+- http://www.buddha-vacana.org/toolbox/dico.html
+- [English-Pali Dictionary (budsas.org)](https://www.budsas.org/ebud/dict-ep/index.htm)
 
-The dictionary entries can be edited using the files at
-[simsapa-dictionary-data](https://github.com/simsapa/simsapa-dictionary-data),
-and the dictionary formats re-generated with this tool.
-
-Dictionary corrections or bug reports about the tool are welcome. Open an Issue
-here or see my email in the [Cargo.toml](Cargo.toml).
-
-## Example dictionary
+## Example dictionary file
 
 See an example dictionary content below. It starts with metadata describing the
 dictionary, followed by the word entries. Each word entry starts with a
@@ -177,10 +261,14 @@ Use the `help` command to discover the command line options, or see [src/cli.yml
 ./simsapa_dictionary help
 ```
 
-## Sources
+## Feedback, corrections, bug reports
 
-The dictionary texts at [simsapa-dictionary-data](https://github.com/simsapa/simsapa-dictionary-data) were created using:
+Both the tool and the dictionary content has some rough edges.
 
-- JSON format dictionaries published at [suttacentral/sc-data](https://github.com/suttacentral/sc-data)
-- [Nyanatiloka: Buddhist Dictionary](https://what-buddha-said.net/library/Buddhist.Dictionary/index_dict.n2.htm) published by [what-buddha-said.net](https://what-buddha-said.net/)
+The dictionary entries can be edited using the files at
+[simsapa-dictionary-data](https://github.com/simsapa/simsapa-dictionary-data),
+and the dictionary formats re-generated with this tool.
+
+Dictionary corrections or bug reports about the tool are welcome. Open an Issue
+here or see my email in the [Cargo.toml](Cargo.toml).
 
