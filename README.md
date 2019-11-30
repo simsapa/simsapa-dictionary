@@ -161,6 +161,7 @@ Such apps include:
 ## Online Pali dictionaries
 
 - SuttaCentral dictionary lookup: https://suttacentral.net/define/kusala
+- [Critical Pali Dictionary](https://cpd.uni-koeln.de/search.php)
 - http://dictionary.sutta.org/
 - http://www.buddha-vacana.org/toolbox/dico.html
 - [English-Pali Dictionary (budsas.org)](https://www.budsas.org/ebud/dict-ep/index.htm)
