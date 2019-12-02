@@ -5,7 +5,7 @@
 <h2>{{group.group_letter}}</h2>
 
 {{#each group.dict_words}}
-<h4 id="{{word_header.url_id}}">{{#if ../meta.word_prefix}}{{../meta.word_prefix}} {{/if}}{{word_header.word}}</h4>
+<h4 id="{{word_header.url_id}}">{{word_title word_header.word ../meta}}</h4>
 {{#if word_header.dict_label ~}}
 <p>[{{word_header.dict_label}}]</p>
 {{/if ~}}

@@ -53,12 +53,25 @@ subcommands:
             required: false
             takes_value: true
 
+        - cover_path:
+            help: "Use this cover_path property, instead of the one defined in the Markdown file."
+            long: cover_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - word_prefix:
-            help: "Add a prefix the the word title headings."
+            help: "Add a prefix to the word title headings."
             long: word_prefix
             value_name: PREFIX
             required: false
             takes_value: true
+
+        - word_prefix_velthuis:
+            help: "Add Velthuis transliteration as a prefix to the word title headings."
+            long: word_prefix_velthuis
+            required: false
+            takes_value: false
 
         - output_path:
             help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first Markdown source."

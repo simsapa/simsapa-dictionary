@@ -28,7 +28,9 @@ pub struct AppStartParams {
     pub reuse_metadata: bool,
     pub title: Option<String>,
     pub dict_label: Option<String>,
+    pub cover_path: Option<String>,
     pub word_prefix: Option<String>,
+    pub word_prefix_velthuis: bool,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
     pub dont_process: bool,
@@ -84,7 +86,9 @@ impl Default for AppStartParams {
             reuse_metadata: false,
             title: None,
             dict_label: None,
+            cover_path: None,
             word_prefix: None,
+            word_prefix_velthuis: false,
             mobi_compression: 0,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
@@ -203,6 +207,7 @@ fn look_for_kindlegen() -> Option<PathBuf> {
     }
 }
 
+#[allow(clippy::cognitive_complexity)]
 fn process_to_ebook(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches,
@@ -265,6 +270,16 @@ fn process_to_ebook(
         }
     }
 
+    if sub_matches.is_present("cover_path") {
+        if let Ok(x) = sub_matches
+            .value_of("cover_path")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.cover_path = Some(x);
+        }
+    }
+
     if sub_matches.is_present("word_prefix") {
         if let Ok(x) = sub_matches
             .value_of("word_prefix")
@@ -273,6 +288,10 @@ fn process_to_ebook(
         {
             params.word_prefix = Some(x);
         }
+    }
+
+    if sub_matches.is_present("word_prefix_velthuis") {
+        params.word_prefix_velthuis = true;
     }
 
     if sub_matches.is_present("source_paths_list") {

@@ -87,6 +87,8 @@ pub struct EbookMetadata {
     #[serde(default)]
     pub word_prefix: String,
     #[serde(default)]
+    pub word_prefix_velthuis: bool,
+    #[serde(default)]
     pub add_velthuis: bool,
 }
 
@@ -120,6 +122,7 @@ impl Ebook {
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
+        h.register_helper("word_title", Box::new(helpers::word_title));
         h.register_helper("cover_media_type", Box::new(helpers::cover_media_type));
         h.register_helper("word_list", Box::new(helpers::word_list));
         h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
@@ -282,8 +285,16 @@ impl Ebook {
             self.meta.title = title.clone();
         }
 
+        if let Some(ref cover_path) = app_params.cover_path {
+            self.meta.cover_path = cover_path.clone();
+        }
+
         if let Some(ref prefix) = app_params.word_prefix {
             self.meta.word_prefix = prefix.clone();
+        }
+
+        if app_params.word_prefix_velthuis {
+            self.meta.word_prefix_velthuis = app_params.word_prefix_velthuis;
         }
 
         if let Some(ref dict_label) = app_params.dict_label {
@@ -1773,6 +1784,7 @@ impl Default for EbookMetadata {
             created_date_human: "".to_string(),
             created_date_opf: "".to_string(),
             word_prefix: "".to_string(),
+            word_prefix_velthuis: false,
             add_velthuis: false,
         }
     }

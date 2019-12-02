@@ -37,6 +37,37 @@ pub fn to_velthuis(
     Ok(())
 }
 
+pub fn word_title(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let word: String = h.param(0).unwrap().value().as_str().unwrap().to_string();
+    let meta = h.param(1).unwrap().value().as_object().unwrap();
+
+    let word_prefix: String = meta.get("word_prefix").unwrap().as_str().unwrap().to_string();
+    let word_prefix_velthuis: bool = meta.get("word_prefix_velthuis").unwrap().as_bool().unwrap();
+
+    let word_velthuis = pali::to_velthuis(&word);
+
+    let mut text = String::new();
+
+    if !word_prefix.is_empty() {
+        text.push_str(&format!("{} ", word_prefix));
+    }
+
+    if word_prefix_velthuis && word != word_velthuis {
+        text.push_str(&format!("{} - ", word_velthuis));
+    }
+
+    text.push_str(&word);
+
+    out.write(&text)?;
+    Ok(())
+}
+
 pub fn cover_media_type(
     h: &Helper,
     _: &Handlebars,
