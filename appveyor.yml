@@ -12,7 +12,7 @@ branches:
     - master
 
 environment:
-  TARGET: x86_64-pc-windows-msvc
+  TARGET: x86_64-pc-windows-gnu
   CRATE_NAME: simsapa_dictionary
   RUST_VERSION: stable
 
