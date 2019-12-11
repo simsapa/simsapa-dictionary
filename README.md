@@ -89,6 +89,96 @@ combined-dictionary-stardict/
 
 Add more dictionaries in other languages if you wish. Search for example `portuguese stardict dictionary`.
 
+## Creating StarDict format
+
+The StarDict format is created in two steps:
+
+- generate an `.xml` with `simsapa_dictionary`
+- use `stardict-text2bin` to generate the StarDict files (`.idx, .dict.gz, .syn, .ifo`)
+
+### Install
+
+This only works on Linux systems. Install the `stardict-tools` package which contains the above binary.
+
+```
+sudo apt-get install stardict-tools
+```
+
+The package doesn't install the binary to `/usr/local/bin`, so you will have to specify the full path when using it.
+
+On Ubuntu, the path is `/usr/lib/stardict-tools/stardict-text2bin`.
+
+### Create
+
+For example, say you have a dictionary file in MS Excel Spreadsheet, `dictionary.xlsx`.
+
+This has to have a `Word entries` and `Metadata` sheet (see the sample [ncped
+with space.xlsx](./tests/data/data with space/ncped with space.xlsx)).
+
+First run `simsapa_dictionary_linux` to generate the `.xml` (for more cli options, see [./src/cli.yml](./src/cli.yml)):
+
+```
+./simsapa_dictionary_linux xlsx_to_stardict_xml \
+    --source_path "./dictionary.xlsx" \
+    --output_path "./dictionary.xml"
+```
+
+Then, `stardict-text2bin` to generate the StarDict files:
+
+```
+/usr/lib/stardict-tools/stardict-text2bin dictionary.xml dictionary.ifo
+```
+
+This is going to create four files, `dictionary{.idx, .dict.gz, .syn, .ifo}`.
+
+You may wish to ZIP them if you are going to distribute it.
+
+### Create it using a shell script 
+
+Copy your `dictionary.xlsx` to a folder.
+
+Open [./assets/xlsx_to_stardict.sh](./assets/xlsx_to_stardict.sh), Right-click
+on the `[Raw]` button, select `Save as..`, save to the folder.
+
+Copy `simsapa_dictionary_linux` there as well.
+
+Remember to set execution rights for `xlsx_to_stardict.sh` and
+`simsapa_dictionary_linux`, either with `chmod +x` in the terminal, or the
+Rich-click > Permissions menu in the file manager.
+
+```
+dictionary/
+  dictionary.xlsx
+  simsapa_dictionary_linux
+  xlsx_to_stardict.sh
+```
+
+Open this folder in a terminal and run:
+
+```
+./xlsx_to_stardict.sh dictionary.xlsx
+```
+
+The script combines the above steps and creates `dictionary-stardict.zip`.
+
+### Logging
+
+To see progress log messages, add a `.env` file with `RUST_LOG=info` in the folder:
+
+```
+echo "RUST_LOG=info" > .env
+```
+
+This causes the tool to print messages such as:
+
+```
+Running simsapa_dictionary_linux ... [2019-12-11T13:55:30Z INFO  simsapa_dictionary] 🚀 Launched
+[2019-12-11T13:55:30Z INFO  simsapa_dictionary::app] process_first_arg()
+[2019-12-11T13:55:30Z INFO  simsapa_dictionary::app] process_cli_args()
+[2019-12-11T13:55:30Z INFO  simsapa_dictionary] Subcommand given: XlsxToStardict
+[2019-12-11T13:55:30Z INFO  simsapa_dictionary::app] === Begin processing XLSX "ncped.xlsx" ===
+```
+
 ## Converting to other dictionary formats
 
 The [pyglossary](https://github.com/ilius/pyglossary) tool can convert to a wide range of dictionary formats.
