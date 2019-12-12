@@ -98,6 +98,8 @@ pub enum OutputFormat {
     Mobi,
     BabylonGls,
     StardictXml,
+    C5Plain,
+    C5Html,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -124,8 +126,11 @@ impl Ebook {
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_title", Box::new(helpers::word_title));
         h.register_helper("cover_media_type", Box::new(helpers::cover_media_type));
+        h.register_helper("headword_plain", Box::new(helpers::headword_plain));
         h.register_helper("word_list", Box::new(helpers::word_list));
+        h.register_helper("word_list_plain", Box::new(helpers::word_list_plain));
         h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
+        h.register_helper("grammar_phonetic_transliteration_plain", Box::new(helpers::grammar_phonetic_transliteration_plain));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -203,6 +208,20 @@ impl Ebook {
         afs.insert(
             k.clone(),
             include_str!("../assets/stardict_textual.xml").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "c5_plain.txt".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/c5_plain.txt").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "c5_html.txt".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/c5_html.txt").to_string(),
         );
         reg_tmpl(&mut h, &k, &afs);
 
@@ -1101,6 +1120,46 @@ impl Ebook {
         Ok(())
     }
 
+    pub fn write_c5(&self) -> Result<(), Box<dyn Error>> {
+        info!("write_c5()");
+
+        let template = match self.output_format {
+            OutputFormat::C5Plain => "c5_plain.txt".to_string(),
+            OutputFormat::C5Html => "c5_html.txt".to_string(),
+            _ => {
+                let msg = "🔥 Only C5Plain or C5Html makes sense here.".to_string();
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        };
+
+        let mut content = match self.templates.render(&template, &self) {
+            Ok(x) => x,
+            Err(e) => {
+                error!("Can't render template {}, {:?}", template, e);
+                "FIXME: Template rendering error.".to_string()
+            }
+        };
+
+        if let OutputFormat::C5Plain = self.output_format {
+            content = content.replace("&amp;", "&");
+        }
+
+        // Remove double blanks from the output, empty attributes leave empty spaces when rendering
+        // the template.
+        let re_double_blanks = Regex::new(r"\n\n+").unwrap();
+        content = re_double_blanks.replace_all(&content, "\n\n").to_string();
+
+        let mut file = File::create(&self.output_path)?;
+        file.write_all(content.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn create_c5(&mut self) -> Result<(), Box<dyn Error>> {
+        self.write_c5()?;
+        Ok(())
+    }
+
     pub fn create_json(&mut self) -> Result<(), Box<dyn Error>> {
         info!("create_json()");
 
@@ -1484,6 +1543,23 @@ impl Ebook {
                             format!("*{}*", word)
                         }
                     }
+
+                    OutputFormat::C5Html => {
+                        if self.valid_words.contains(&word) {
+                            format!("[{}]({})", word, word)
+                        } else {
+                            format!("*{}*", word)
+                        }
+                    }
+
+                    OutputFormat::C5Plain => {
+                        if self.valid_words.contains(&word) {
+                            // curly braces are escaped as {{ and }}
+                            format!("{{{}}}", word)
+                        } else {
+                            format!("*{}*", word)
+                        }
+                    }
                 };
 
                 dict_word.definition_md = dict_word.definition_md.replace(&link, &new_link).to_string();
@@ -1721,6 +1797,24 @@ impl Ebook {
                 } else {
                     //info!("not found: {}", w);
                     w.to_string()
+                }
+            }
+
+            OutputFormat::C5Html => {
+                if valid_words.contains(&w.to_string()) {
+                    format!("<a href=\"{}\">{}</a>", w, w)
+                } else {
+                    //info!("not found: {}", w);
+                    w.to_string()
+                }
+            }
+
+            OutputFormat::C5Plain => {
+                if valid_words.contains(&w.to_string()) {
+                    // curly braces are escaped as {{ and }}
+                    format!("{{{}}}", w)
+                } else {
+                    format!("*{}*", w)
                 }
             }
         }

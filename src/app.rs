@@ -53,6 +53,8 @@ pub enum RunCommand {
     MarkdownToStardict,
     XlsxToStardict,
     MarkdownToJson,
+    MarkdownToC5,
+    XlsxToC5,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -603,111 +605,59 @@ fn process_to_stardict(
     Ok(())
 }
 
-#[allow(clippy::cognitive_complexity)]
-pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box<dyn Error>> {
-    info!("process_cli_args()");
-    let mut params = AppStartParams::default();
-
-    if let Some(sub_matches) = matches.subcommand_matches("suttacentral_json_to_markdown") {
-        if let Ok(x) = sub_matches.value_of("json_path").unwrap().parse::<String>() {
-            let path = PathBuf::from(&x);
-            if path.exists() {
-                params.json_path = Some(path);
-            } else {
-                let msg = format!("🔥 Path does not exist: {:?}", &path);
-                return Err(Box::new(ToolError::Exit(msg)));
-            }
-        }
-
-        if let Ok(x) = sub_matches
-            .value_of("output_path")
+fn process_markdown_to_json(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
             .unwrap()
             .parse::<String>()
-        {
-            params.output_path = Some(PathBuf::from(&x));
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
         }
+    }
 
-        if sub_matches.is_present("title") {
-            if let Ok(x) = sub_matches
-                .value_of("title")
-                .unwrap()
-                .parse::<String>()
-            {
-                params.title = Some(x);
-            }
-        }
-
-        if let Ok(x) = sub_matches
-            .value_of("dict_label")
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
             .unwrap()
             .parse::<String>()
-        {
-            params.dict_label = Some(x);
-        }
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
 
-        if sub_matches.is_present("reuse_metadata") {
-            params.reuse_metadata = true;
-        }
+    params.run_command = run_command;
 
-        if sub_matches.is_present("dont_process") {
-            params.dont_process = true;
-        }
+    Ok(())
+}
 
-        if sub_matches.is_present("dont_remove_see_also") {
-            params.dont_remove_see_also = true;
-        }
+fn process_to_c5(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if sub_matches.is_present("keep_entries_plaintext") {
+        params.output_format = OutputFormat::C5Plain;
+    } else {
+        params.output_format = OutputFormat::C5Html;
+    }
 
-        params.run_command = RunCommand::SuttaCentralJsonToMarkdown;
+    if !sub_matches.is_present("source_path")
+        && !sub_matches.is_present("source_paths_list")
+    {
+        let msg = "🔥 Either 'source_path' or 'source_paths_list' must be used.".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    }
 
-    } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
-        if let Ok(x) = sub_matches
-            .value_of("nyanatiloka_root")
-            .unwrap()
-            .parse::<String>()
-        {
-            let path = PathBuf::from(&x);
-            if path.is_dir() {
-                params.nyanatiloka_root = Some(path);
-            } else {
-                let msg = format!("🔥 Path does not exist: {:?}", &path);
-                return Err(Box::new(ToolError::Exit(msg)));
-            }
-        }
-
-        if let Ok(x) = sub_matches
-            .value_of("output_path")
-            .unwrap()
-            .parse::<String>()
-        {
-            params.output_path = Some(PathBuf::from(&x));
-        }
-
-        if sub_matches.is_present("title") {
-            if let Ok(x) = sub_matches
-                .value_of("title")
-                .unwrap()
-                .parse::<String>()
-            {
-                params.title = Some(x);
-            }
-        }
-
-        if let Ok(x) = sub_matches
-            .value_of("dict_label")
-            .unwrap()
-            .parse::<String>()
-        {
-            params.dict_label = Some(x);
-        }
-
-        if sub_matches.is_present("reuse_metadata") {
-            params.reuse_metadata = true;
-        }
-
-        params.run_command = RunCommand::NyanatilokaToMarkdown;
-
-    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_json") {
-
+    if sub_matches.is_present("source_path") {
         if let Ok(x) = sub_matches
             .value_of("source_path")
                 .unwrap()
@@ -721,16 +671,204 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
                 return Err(Box::new(ToolError::Exit(msg)));
             }
         }
+    }
 
+    if sub_matches.is_present("title") {
+        if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
+            params.title = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("dict_label") {
         if let Ok(x) = sub_matches
-            .value_of("output_path")
+            .value_of("dict_label")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.dict_label = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("source_paths_list") {
+        if let Ok(x) = sub_matches
+            .value_of("source_paths_list")
+                .unwrap()
+                .parse::<String>()
+        {
+            let list_path = PathBuf::from(&x);
+            let s = match fs::read_to_string(&list_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    let msg = format!("🔥 Can't read path. {:?}", e);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            };
+            let s = s.trim();
+
+            let paths: Vec<PathBuf> = s.split('\n').map(PathBuf::from).collect();
+            for path in paths.iter() {
+                if !path.exists() {
+                    let msg = format!("🔥 Path does not exist: {:?}", &path);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            }
+
+            params.source_paths = Some(paths);
+        }
+    }
+
+    let path = match sub_matches.value_of("output_path") {
+        Some(x) => ensure_parent(&PathBuf::from(&x)),
+
+        None => {
+            let s = params.source_paths.as_ref().unwrap();
+            let a = s.get(0).ok_or("can't use source_paths")?;
+            let p = ensure_parent(a);
+            let filename = p.file_name().unwrap();
+            let dir = p.parent().unwrap();
+
+            let p = dir.join(PathBuf::from(filename).with_extension("xml"));
+            ensure_parent(&p)
+        }
+    };
+
+    // Create the output filename with no spaces to avoid quoting problems when other tools pass on
+    // the filename.
+
+    let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
+    params.output_path = Some(path.with_file_name(filename));
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+fn process_suttacentral_json_to_markdown(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches.value_of("json_path").unwrap().parse::<String>() {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.json_path = Some(path);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
             .unwrap()
             .parse::<String>()
-        {
-            params.output_path = Some(PathBuf::from(&x));
-        }
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
 
-        params.run_command = RunCommand::MarkdownToJson;
+    if sub_matches.is_present("title") {
+        if let Ok(x) = sub_matches
+            .value_of("title")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.title = Some(x);
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("dict_label")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.dict_label = Some(x);
+    }
+
+    if sub_matches.is_present("reuse_metadata") {
+        params.reuse_metadata = true;
+    }
+
+    if sub_matches.is_present("dont_process") {
+        params.dont_process = true;
+    }
+
+    if sub_matches.is_present("dont_remove_see_also") {
+        params.dont_remove_see_also = true;
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+fn process_nyanatiloka_to_markdown(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("nyanatiloka_root")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.is_dir() {
+            params.nyanatiloka_root = Some(path);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    if sub_matches.is_present("title") {
+        if let Ok(x) = sub_matches
+            .value_of("title")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.title = Some(x);
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("dict_label")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.dict_label = Some(x);
+    }
+
+    if sub_matches.is_present("reuse_metadata") {
+        params.reuse_metadata = true;
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box<dyn Error>> {
+    info!("process_cli_args()");
+    let mut params = AppStartParams::default();
+
+    if let Some(sub_matches) = matches.subcommand_matches("suttacentral_json_to_markdown") {
+        process_suttacentral_json_to_markdown(&mut params, sub_matches, RunCommand::SuttaCentralJsonToMarkdown)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
+        process_nyanatiloka_to_markdown(&mut params, sub_matches, RunCommand::NyanatilokaToMarkdown)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_json") {
+        process_markdown_to_json(&mut params, sub_matches, RunCommand::MarkdownToJson)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;
@@ -749,6 +887,13 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_stardict_xml") {
         process_to_stardict(&mut params, sub_matches, RunCommand::XlsxToStardict)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_c5") {
+        process_to_c5(&mut params, sub_matches, RunCommand::MarkdownToC5)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_c5") {
+        process_to_c5(&mut params, sub_matches, RunCommand::XlsxToC5)?;
+
     }
 
     if matches.is_present("show_logs") {

@@ -364,6 +364,96 @@ subcommands:
             required: false
             takes_value: true
 
+  - markdown_to_c5:
+      about: "Process an Markdown file and generate a C5 text file for processing with 'dictfmt -c5'."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of Markdown file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single Markdown file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the ebook, instead of the one defined in the Markdown file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the Markdown file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The C5 format text file to write. Defaults to the same file name and folder as the first Markdown source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not HTML. Doesn't convert definition_md to HTML."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
+
+  - xlsx_to_c5:
+      about: "Process an XLSX file and generate a C5 text file for processing with 'dictfmt -c5'."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of XLSX file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single XLSX file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary, instead of the one defined in the XLSX file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the XLSX file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The C5 format text file to write. Defaults to the same file name and folder as the first XLSX source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not HTML. Doesn't convert definition_md to HTML."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
+
   - markdown_to_json:
       about: "Read a Markdown file and serialized it to JSON."
 
