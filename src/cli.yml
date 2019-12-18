@@ -73,6 +73,12 @@ subcommands:
             required: false
             takes_value: false
 
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
+
         - output_path:
             help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path
@@ -161,6 +167,12 @@ subcommands:
             required: false
             takes_value: true
 
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
+
         - output_path:
             help: "The EPUB or MOBI file to write. Defaults to the same file name and folder as the first XLSX source."
             long: output_path
@@ -240,6 +252,12 @@ subcommands:
             required: false
             takes_value: true
 
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
+
         - output_path:
             help: "The GLS file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path
@@ -278,6 +296,12 @@ subcommands:
             value_name: LABEL
             required: false
             takes_value: true
+
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
 
         - output_path:
             help: "The GLS file to write. Defaults to the same file name and folder as the first XLSX source."
@@ -318,6 +342,12 @@ subcommands:
             required: false
             takes_value: true
 
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
+
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path
@@ -357,6 +387,12 @@ subcommands:
             required: false
             takes_value: true
 
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
+
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first XLSX source."
             long: output_path
@@ -395,6 +431,12 @@ subcommands:
             value_name: LABEL
             required: false
             takes_value: true
+
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
 
         - output_path:
             help: "The C5 format text file to write. Defaults to the same file name and folder as the first Markdown source."
@@ -440,6 +482,12 @@ subcommands:
             value_name: LABEL
             required: false
             takes_value: true
+
+        - allow_raw_html:
+            help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
+            long: allow_raw_html
+            required: false
+            takes_value: false
 
         - output_path:
             help: "The C5 format text file to write. Defaults to the same file name and folder as the first XLSX source."
