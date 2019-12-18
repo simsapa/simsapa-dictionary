@@ -19,7 +19,8 @@ pub fn markdown_helper(
     out: &mut dyn Output,
 ) -> HelperResult {
     let param = h.param(0).unwrap();
-    let html = md2html(param.value().render().as_ref());
+    let allow_raw_html: bool = h.param(1).unwrap().value().as_bool().unwrap();
+    let html = md2html(param.value().render().as_ref(), allow_raw_html);
     out.write(&html)?;
     Ok(())
 }
@@ -307,9 +308,10 @@ pub fn grammar_phonetic_transliteration_plain(
     Ok(())
 }
 
-pub fn md2html(markdown: &str) -> String {
+pub fn md2html(markdown: &str, allow_raw_html: bool) -> String {
     let mut opts = ComrakOptions::default();
     opts.smart = true;
+    opts.unsafe_ = allow_raw_html;
     markdown_to_html(markdown, &opts).trim().to_string()
 }
 

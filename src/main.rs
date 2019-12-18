@@ -81,7 +81,7 @@ fn main() {
 
         RunCommand::SuttaCentralJsonToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             if app_params.reuse_metadata {
                 ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
@@ -114,7 +114,7 @@ fn main() {
 
         RunCommand::NyanatilokaToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             if app_params.reuse_metadata {
                 ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
@@ -141,7 +141,7 @@ fn main() {
 
         RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -180,7 +180,7 @@ fn main() {
 
         RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -221,7 +221,7 @@ fn main() {
 
         RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -256,7 +256,7 @@ fn main() {
 
         RunCommand::MarkdownToC5 | RunCommand::XlsxToC5 => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -291,7 +291,7 @@ fn main() {
 
         RunCommand::MarkdownToJson => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");

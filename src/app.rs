@@ -31,6 +31,7 @@ pub struct AppStartParams {
     pub cover_path: Option<String>,
     pub word_prefix: Option<String>,
     pub word_prefix_velthuis: bool,
+    pub allow_raw_html: bool,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
     pub dont_process: bool,
@@ -91,6 +92,7 @@ impl Default for AppStartParams {
             cover_path: None,
             word_prefix: None,
             word_prefix_velthuis: false,
+            allow_raw_html: false,
             mobi_compression: 0,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
@@ -385,6 +387,10 @@ fn process_to_ebook(
         }
     }
 
+    if sub_matches.is_present("allow_raw_html") {
+        params.allow_raw_html = true;
+    }
+
     if sub_matches.is_present("dont_remove_generated_files") {
         params.dont_remove_generated_files = true;
     }
@@ -499,6 +505,10 @@ fn process_to_babylon(
     let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
     params.output_path = Some(path.with_file_name(filename));
 
+    if sub_matches.is_present("allow_raw_html") {
+        params.allow_raw_html = true;
+    }
+
     params.run_command = run_command;
 
     Ok(())
@@ -599,6 +609,10 @@ fn process_to_stardict(
 
     let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
     params.output_path = Some(path.with_file_name(filename));
+
+    if sub_matches.is_present("allow_raw_html") {
+        params.allow_raw_html = true;
+    }
 
     params.run_command = run_command;
 
@@ -737,6 +751,10 @@ fn process_to_c5(
 
     let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
     params.output_path = Some(path.with_file_name(filename));
+
+    if sub_matches.is_present("allow_raw_html") {
+        params.allow_raw_html = true;
+    }
 
     params.run_command = run_command;
 

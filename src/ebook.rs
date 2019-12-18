@@ -90,6 +90,8 @@ pub struct EbookMetadata {
     pub word_prefix_velthuis: bool,
     #[serde(default)]
     pub add_velthuis: bool,
+    #[serde(default)]
+    pub allow_raw_html: bool,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
@@ -115,7 +117,7 @@ pub struct LetterGroupTemplateData {
 }
 
 impl Ebook {
-    pub fn new(output_format: OutputFormat, source_dir: &PathBuf, output_path: &PathBuf) -> Self {
+    pub fn new(output_format: OutputFormat, allow_raw_html: bool, source_dir: &PathBuf, output_path: &PathBuf) -> Self {
         // asset_files_string
         let mut afs: BTreeMap<String, String> = BTreeMap::new();
         // asset_files_byte
@@ -247,8 +249,11 @@ impl Ebook {
             include_bytes!("../assets/META-INF/com.apple.ibooks.display-options.xml").to_vec(),
         );
 
+        let mut meta = EbookMetadata::default();
+        meta.allow_raw_html = allow_raw_html;
+
         Ebook {
-            meta: EbookMetadata::default(),
+            meta,
             output_format,
             dict_words: BTreeMap::new(),
             valid_words: Vec::new(),
@@ -314,6 +319,10 @@ impl Ebook {
 
         if app_params.word_prefix_velthuis {
             self.meta.word_prefix_velthuis = app_params.word_prefix_velthuis;
+        }
+
+        if app_params.allow_raw_html {
+            self.meta.allow_raw_html = app_params.allow_raw_html;
         }
 
         if let Some(ref dict_label) = app_params.dict_label {
@@ -636,7 +645,7 @@ impl Ebook {
             }
         };
 
-        let content_html = md2html(&content_md);
+        let content_html = md2html(&content_md, self.meta.allow_raw_html);
 
         let mut d: BTreeMap<String, String> = BTreeMap::new();
         d.insert("page_title".to_string(), self.meta.title.clone());
@@ -665,7 +674,7 @@ impl Ebook {
             }
         };
 
-        let content_html = md2html(&content_md);
+        let content_html = md2html(&content_md, self.meta.allow_raw_html);
 
         let mut d: BTreeMap<String, String> = BTreeMap::new();
         d.insert("page_title".to_string(), self.meta.title.clone());
@@ -1060,7 +1069,7 @@ impl Ebook {
             }
 
             // Definition
-            text.push_str(&helpers::md2html(&word.definition_md));
+            text.push_str(&helpers::md2html(&word.definition_md, self.meta.allow_raw_html));
 
             // Synonyms
             if !word.word_header.synonyms.is_empty() {
@@ -1860,7 +1869,12 @@ fn reg_tmpl(h: &mut Handlebars, k: &str, afs: &BTreeMap<String, String>) {
 
 impl Default for Ebook {
     fn default() -> Self {
-        Ebook::new(OutputFormat::Epub, &PathBuf::from("."), &PathBuf::from("ebook.epub"))
+        Ebook::new(
+            OutputFormat::Epub,
+            false,
+            &PathBuf::from("."),
+            &PathBuf::from("ebook.epub"),
+        )
     }
 }
 
@@ -1880,6 +1894,7 @@ impl Default for EbookMetadata {
             word_prefix: "".to_string(),
             word_prefix_velthuis: false,
             add_velthuis: false,
+            allow_raw_html: false,
         }
     }
 }
