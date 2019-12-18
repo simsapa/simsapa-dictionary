@@ -254,6 +254,41 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.create_stardict());
         }
 
+        RunCommand::MarkdownToC5 | RunCommand::XlsxToC5 => {
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            match app_params.run_command {
+                RunCommand::MarkdownToC5 => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_markdown_list(source_paths, &mut ebook),
+                    );
+                }
+
+                RunCommand::XlsxToC5 => {
+                    ok_or_exit(
+                        app_params.used_first_arg,
+                        app::process_xlsx_list(source_paths, &mut ebook),
+                    );
+                }
+
+                _ => {}
+            }
+
+            info!("Added words: {}", ebook.len());
+
+            ebook.process_text();
+
+            ebook.use_cli_overrides(&app_params.clone());
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_c5());
+        }
+
         RunCommand::MarkdownToJson => {
             let (i_p, o_p) = get_input_output(&app_params);
             let mut ebook = Ebook::new(app_params.output_format, &i_p, &o_p);

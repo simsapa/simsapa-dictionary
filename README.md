@@ -149,7 +149,7 @@ Copy `simsapa_dictionary_linux` there as well.
 
 Remember to set execution rights for `xlsx_to_stardict.sh` and
 `simsapa_dictionary_linux`, either with `chmod +x` in the terminal, or the
-Rich-click > Permissions menu in the file manager.
+Right-click > Permissions menu in the file manager.
 
 ```
 dictionary/

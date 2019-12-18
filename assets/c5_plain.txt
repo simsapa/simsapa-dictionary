@@ -1,0 +1,30 @@
+@ {{meta.title}}
+@
+@ {{meta.description}}
+@
+@ {{meta.source}}
+@
+@ {{meta.creator}}
+@ {{meta.email}}
+@
+@ {{#if meta.version}}Version {{meta.version}}{{/if}}
+
+{{#each dict_words}}
+
+______
+
+{{headword_plain word_header.word word_header.inflections}}
+
+{{#if word_header.dict_label ~}}
+[{{word_header.dict_label}}]
+{{/if ~}}
+{{grammar_phonetic_transliteration_plain word_header ../meta.add_velthuis}}
+{{word_list_plain "Also written as:" word_header.also_written_as ~}}
+
+{{definition_md}}
+
+{{word_list_plain "Synonyms:" word_header.synonyms ~}}
+{{word_list_plain "Antonyms:" word_header.antonyms ~}}
+{{word_list_plain "See also:" word_header.see_also ~}}
+
+{{/each}}

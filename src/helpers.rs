@@ -68,6 +68,40 @@ pub fn word_title(
     Ok(())
 }
 
+pub fn headword_plain(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let word: String = h.param(0).unwrap().value().as_str().unwrap().to_string();
+    let inflections = h.param(1).unwrap().value();
+
+    let inflections_content = if let Some(items) = inflections.as_array() {
+        if !items.is_empty() {
+            items.iter()
+                .map(|i| i.render())
+                .collect::<Vec<String>>()
+                .join("; ")
+        } else {
+            "".to_string()
+        }
+    } else {
+        "".to_string()
+    };
+
+    let mut text = word;
+
+    if !inflections_content.is_empty() {
+        text.push_str("; ");
+        text.push_str(&inflections_content);
+    }
+
+    out.write(&text)?;
+    Ok(())
+}
+
 pub fn cover_media_type(
     h: &Helper,
     _: &Handlebars,
@@ -110,6 +144,35 @@ pub fn word_list(
     };
 
     let content = format!("<p>{} {}</p>", &prefix, &items_content);
+    out.write(&content)?;
+    Ok(())
+}
+
+pub fn word_list_plain(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let prefix = h.param(0).unwrap().value().render();
+    let items = h.param(1).unwrap().value();
+
+    let items_content = if let Some(items) = items.as_array() {
+        if !items.is_empty() {
+            items.iter()
+                .map(|i| i.render())
+                .collect::<Vec<String>>()
+                .join(", ")
+        } else {
+            return Ok(());
+        }
+    } else {
+        return Ok(());
+    };
+
+    let content = format!("{} {}", &prefix, &items_content);
     out.write(&content)?;
     Ok(())
 }
@@ -178,6 +241,69 @@ pub fn grammar_phonetic_transliteration(
     let add_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
 
     out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, add_velthuis))?;
+    Ok(())
+}
+
+pub fn format_grammar_phonetic_transliteration_plain(
+    word: &str,
+    grammar: &str,
+    phonetic: &str,
+    transliteration: &str,
+    add_velthuis: bool)
+    -> String
+{
+    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !add_velthuis {
+        return "".to_string();
+    }
+
+    let g = if grammar.is_empty() {
+        "".to_string()
+    } else {
+        format!("/{}/", grammar)
+    };
+
+    let ph = if phonetic.is_empty() {
+        "".to_string()
+    } else {
+        format!(" | {}", phonetic)
+    };
+
+    let tr = if transliteration.is_empty() {
+        if add_velthuis {
+            let velthuis = pali::to_velthuis(&word);
+            if word != velthuis {
+                format!(" | {}", velthuis)
+            } else {
+                "".to_string()
+            }
+        } else {
+            "".to_string()
+        }
+    } else {
+        format!(" | {}", transliteration)
+    };
+
+    format!("{}{}{}", g, ph, tr)
+}
+
+pub fn grammar_phonetic_transliteration_plain(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let word_header = h.param(0).unwrap().value();
+
+    let word = word_header.get("word").unwrap().render();
+    let grammar = word_header.get("grammar").unwrap().render();
+    let phonetic = word_header.get("phonetic").unwrap().render();
+    let transliteration = word_header.get("transliteration").unwrap().render();
+
+    let add_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
+
+    out.write(&format_grammar_phonetic_transliteration_plain(&word, &grammar, &phonetic, &transliteration, add_velthuis))?;
     Ok(())
 }
 
