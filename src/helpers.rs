@@ -214,7 +214,7 @@ pub fn word_list_tei(
     let items_content = if let Some(items) = items.as_array() {
         if !items.is_empty() {
             items.iter()
-                .map(|i| format!("<xr type=\"{}\">{}</xr>", type_attr, i.render()))
+                .map(|i| i.render())
                 .collect::<Vec<String>>()
                 .join(", ")
         } else {
@@ -224,7 +224,7 @@ pub fn word_list_tei(
         return Ok(());
     };
 
-    let content = format!("<p>{} {}</p>", &prefix, &items_content);
+    let content = format!("<xr type=\"{}\">{} {}</xr>", &type_attr, &prefix, &items_content);
     out.write(&content)?;
     Ok(())
 }

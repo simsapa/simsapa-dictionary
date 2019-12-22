@@ -68,17 +68,19 @@
           <pos>{{word_header.grammar}}</pos>
         </gramGrp>
         {{/if}}
-        <sense>
+        <cit>
           <quote>
             {{#if word_header.dict_label ~}}
             <p>[{{word_header.dict_label}}]</p>
             {{/if ~}}
             <p>{{grammar_phonetic_transliteration_plain word_header ../meta.add_velthuis}}</p>
           </quote>
+        </cit>
 {{word_list_tei "Also written as:" word_header.also_written_as "see" ~}}
+        <sense>
           <cit type="trans">
             <quote>
-{{definition_md}}
+              {{definition_md}}
             </quote>
           </cit>
 {{word_list_tei "Synonyms:" word_header.synonyms "syn" ~}}
