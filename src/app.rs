@@ -56,6 +56,8 @@ pub enum RunCommand {
     MarkdownToJson,
     MarkdownToC5,
     XlsxToC5,
+    MarkdownToTei,
+    XlsxToTei,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -761,6 +763,113 @@ fn process_to_c5(
     Ok(())
 }
 
+fn process_to_tei(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if sub_matches.is_present("keep_entries_plaintext") {
+        params.output_format = OutputFormat::TeiPlain;
+    } else {
+        params.output_format = OutputFormat::TeiFormatted;
+    }
+
+    if !sub_matches.is_present("source_path")
+        && !sub_matches.is_present("source_paths_list")
+    {
+        let msg = "🔥 Either 'source_path' or 'source_paths_list' must be used.".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    }
+
+    if sub_matches.is_present("source_path") {
+        if let Ok(x) = sub_matches
+            .value_of("source_path")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    if sub_matches.is_present("title") {
+        if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
+            params.title = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("dict_label") {
+        if let Ok(x) = sub_matches
+            .value_of("dict_label")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.dict_label = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("source_paths_list") {
+        if let Ok(x) = sub_matches
+            .value_of("source_paths_list")
+                .unwrap()
+                .parse::<String>()
+        {
+            let list_path = PathBuf::from(&x);
+            let s = match fs::read_to_string(&list_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    let msg = format!("🔥 Can't read path. {:?}", e);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            };
+            let s = s.trim();
+
+            let paths: Vec<PathBuf> = s.split('\n').map(PathBuf::from).collect();
+            for path in paths.iter() {
+                if !path.exists() {
+                    let msg = format!("🔥 Path does not exist: {:?}", &path);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            }
+
+            params.source_paths = Some(paths);
+        }
+    }
+
+    let path = match sub_matches.value_of("output_path") {
+        Some(x) => ensure_parent(&PathBuf::from(&x)),
+
+        None => {
+            let s = params.source_paths.as_ref().unwrap();
+            let a = s.get(0).ok_or("can't use source_paths")?;
+            let p = ensure_parent(a);
+            let filename = p.file_name().unwrap();
+            let dir = p.parent().unwrap();
+
+            let p = dir.join(PathBuf::from(filename).with_extension("xml"));
+            ensure_parent(&p)
+        }
+    };
+
+    // Create the output filename with no spaces to avoid quoting problems when other tools pass on
+    // the filename.
+
+    let filename = path.file_name().unwrap().to_str().unwrap().replace(' ', "-");
+    params.output_path = Some(path.with_file_name(filename));
+
+    // Not accepting --allow_raw_html for TEI.
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
 fn process_suttacentral_json_to_markdown(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches,
@@ -911,6 +1020,12 @@ pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box
 
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_c5") {
         process_to_c5(&mut params, sub_matches, RunCommand::XlsxToC5)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_tei") {
+        process_to_tei(&mut params, sub_matches, RunCommand::MarkdownToTei)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_tei") {
+        process_to_tei(&mut params, sub_matches, RunCommand::XlsxToTei)?;
 
     }
 

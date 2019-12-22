@@ -102,6 +102,8 @@ pub enum OutputFormat {
     StardictXml,
     C5Plain,
     C5Html,
+    TeiPlain,
+    TeiFormatted,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -125,12 +127,14 @@ impl Ebook {
         let mut h = Handlebars::new();
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
+        h.register_helper("countitems", Box::new(helpers::countitems));
         h.register_helper("to_velthuis", Box::new(helpers::to_velthuis));
         h.register_helper("word_title", Box::new(helpers::word_title));
         h.register_helper("cover_media_type", Box::new(helpers::cover_media_type));
         h.register_helper("headword_plain", Box::new(helpers::headword_plain));
         h.register_helper("word_list", Box::new(helpers::word_list));
         h.register_helper("word_list_plain", Box::new(helpers::word_list_plain));
+        h.register_helper("word_list_tei", Box::new(helpers::word_list_tei));
         h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
         h.register_helper("grammar_phonetic_transliteration_plain", Box::new(helpers::grammar_phonetic_transliteration_plain));
 
@@ -224,6 +228,20 @@ impl Ebook {
         afs.insert(
             k.clone(),
             include_str!("../assets/c5_html.txt").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "freedict-tei_plain.xml".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/freedict-tei_plain.xml").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "freedict-tei_formatted.xml".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/freedict-tei_formatted.xml").to_string(),
         );
         reg_tmpl(&mut h, &k, &afs);
 
@@ -1169,6 +1187,46 @@ impl Ebook {
         Ok(())
     }
 
+    pub fn write_tei(&self) -> Result<(), Box<dyn Error>> {
+        info!("write_tei()");
+
+        let template = match self.output_format {
+            OutputFormat::TeiPlain => "freedict-tei_plain.xml".to_string(),
+            OutputFormat::TeiFormatted => "freedict-tei_formatted.xml".to_string(),
+            _ => {
+                let msg = "🔥 Only TeiPlain or TeiFormatted makes sense here.".to_string();
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        };
+
+        let mut content = match self.templates.render(&template, &self) {
+            Ok(x) => x,
+            Err(e) => {
+                error!("Can't render template {}, {:?}", template, e);
+                "FIXME: Template rendering error.".to_string()
+            }
+        };
+
+        if let OutputFormat::TeiPlain = self.output_format {
+            content = content.replace("&amp;", "&");
+        }
+
+        // Remove double blanks from the output, empty attributes leave empty spaces when rendering
+        // the template.
+        let re_double_blanks = Regex::new(r"\n\n+").unwrap();
+        content = re_double_blanks.replace_all(&content, "\n\n").to_string();
+
+        let mut file = File::create(&self.output_path)?;
+        file.write_all(content.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn create_tei(&mut self) -> Result<(), Box<dyn Error>> {
+        self.write_tei()?;
+        Ok(())
+    }
+
     pub fn create_json(&mut self) -> Result<(), Box<dyn Error>> {
         info!("create_json()");
 
@@ -1553,7 +1611,7 @@ impl Ebook {
                         }
                     }
 
-                    OutputFormat::C5Html => {
+                    OutputFormat::C5Html | OutputFormat::TeiFormatted => {
                         if self.valid_words.contains(&word) {
                             format!("[{}]({})", word, word)
                         } else {
@@ -1561,7 +1619,7 @@ impl Ebook {
                         }
                     }
 
-                    OutputFormat::C5Plain => {
+                    OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                         if self.valid_words.contains(&word) {
                             // curly braces are escaped as {{ and }}
                             format!("{{{}}}", word)
@@ -1569,6 +1627,7 @@ impl Ebook {
                             format!("*{}*", word)
                         }
                     }
+
                 };
 
                 dict_word.definition_md = dict_word.definition_md.replace(&link, &new_link).to_string();
@@ -1818,7 +1877,20 @@ impl Ebook {
                 }
             }
 
-            OutputFormat::C5Plain => {
+            OutputFormat::TeiFormatted => {
+                match words_to_url.get(w) {
+                    Some(url) => {
+                        // entries-00.xhtml#abbhuṃ-ncped -> abbhuṃ-ncped
+                        let id = url[17..].to_string();
+                        format!("<ref target=\"{}\">{}</ref>", id, w)
+                    },
+                    None => {
+                        w.to_string()
+                    },
+                }
+            }
+
+            OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                 if valid_words.contains(&w.to_string()) {
                     // curly braces are escaped as {{ and }}
                     format!("{{{}}}", w)

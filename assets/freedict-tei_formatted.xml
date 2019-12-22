@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  <teiHeader>
+    <fileDesc>
+      <titleStmt>
+        <title>{{meta.title}}</title>
+        <respStmt>
+          <resp>Maintainer</resp>
+          <name>[up for grabs]</name>
+        </respStmt>
+      </titleStmt>
+      <editionStmt>
+        <edition>{{#if meta.version}}{{meta.version}}{{else}}0.1.0{{/if}}</edition>
+      </editionStmt>
+      <extent>{{countitems dict_words}} headwords</extent>
+      <publicationStmt>
+        <publisher>FreeDict</publisher>
+        <availability status="free">
+          <p>Copyright (C) 1999-2017 by various authors listed below.</p>
+          <p>
+            Available under the terms of the
+            <ref target="https://www.gnu.org/licenses/gpl-2.0.html">GNU General Public License ver. 2.0 and any later version</ref>.
+          </p>
+        </availability>
+        <pubPlace>
+          <ref target="http://freedict.org/">http://freedict.org/</ref>
+        </pubPlace>
+      </publicationStmt>
+      <notesStmt>
+        <note type="status">stable</note>
+      </notesStmt>
+      <sourceDesc>
+        <p>
+          Home:
+          <ref target="{{meta.source}}">{{meta.source}}</ref>
+        </p>
+      </sourceDesc>
+    </fileDesc>
+    <encodingDesc>
+      <projectDesc>
+        <p>
+          This dictionary comes to you through nice people making it available for free and for
+          good. It is part of the FreeDict project,
+          <ref target="http://freedict.org/">http://freedict.org/</ref>
+          . This project aims to make translating
+          dictionaries available for free. Your contributions are welcome!
+        </p>
+      </projectDesc>
+    </encodingDesc>
+    <revisionDesc>
+      <change when="{{meta.created_date_opf}}">
+        <name>{{meta.creator}}</name>
+        Created the TEI format file.
+      </change>
+    </revisionDesc>
+  </teiHeader>
+  <text>
+    <body>
+
+      {{#each dict_words ~}}
+      <entry xml:id="{{word_header.url_id}}">
+        <form>
+          <orth>{{word_header.word}}</orth>
+          {{#if word_header.phonetic}}<pron>{{word_header.phonetic}}</pron>{{/if}}
+        </form>
+        {{#if word_header.grammar ~}}
+        <gramGrp>
+          <pos>{{word_header.grammar}}</pos>
+        </gramGrp>
+        {{/if}}
+        <sense>
+          <quote>
+            {{#if word_header.dict_label ~}}
+            <p>[{{word_header.dict_label}}]</p>
+            {{/if ~}}
+            <p>{{grammar_phonetic_transliteration_plain word_header ../meta.add_velthuis}}</p>
+          </quote>
+{{word_list_tei "Also written as:" word_header.also_written_as "see" ~}}
+          <cit type="trans">
+            <quote>
+{{definition_md}}
+            </quote>
+          </cit>
+{{word_list_tei "Synonyms:" word_header.synonyms "syn" ~}}
+{{word_list_tei "Antonyms:" word_header.antonyms "cf" ~}}
+{{word_list_tei "See also:" word_header.see_also "see" ~}}
+        </sense>
+      </entry>
+      {{/each ~}}
+
+    </body>
+  </text>
+</TEI>

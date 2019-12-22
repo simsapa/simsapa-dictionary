@@ -502,6 +502,96 @@ subcommands:
             required: false
             takes_value: false
 
+  - markdown_to_tei:
+      about: "Process a Markdown file and generate a TEI XML format for Freedict."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of Markdown file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single Markdown file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the ebook, instead of the one defined in the Markdown file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the Markdown file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The TEX XML file to write. Defaults to the same file name and folder as the first Markdown source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not TEI XML. Doesn't convert definition_md to TEI XML."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
+
+  - xlsx_to_tei:
+      about: "Process an XLSX file and generate a TEI XML format for Freedict."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of XLSXfile paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single XLSXfile to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the ebook, instead of the one defined in the XLSX file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the XLSX file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The TEI XML file to write. Defaults to the same file name and folder as the first XLSX source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not TEI XML. Doesn't convert definition_md to TEI XML."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
+
   - markdown_to_json:
       about: "Read a Markdown file and serialized it to JSON."
 

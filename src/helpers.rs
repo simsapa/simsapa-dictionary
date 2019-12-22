@@ -25,6 +25,24 @@ pub fn markdown_helper(
     Ok(())
 }
 
+pub fn countitems(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+    let count = if let Some(items) = h.param(0).unwrap().value().as_array() {
+        items.len()
+    } else if let Some(words) = h.param(0).unwrap().value().as_object() {
+        words.len()
+    } else {
+        0
+    };
+    out.write(&format!("{}", count))?;
+    Ok(())
+}
+
 pub fn to_velthuis(
     h: &Helper,
     _: &Handlebars,
@@ -174,6 +192,39 @@ pub fn word_list_plain(
     };
 
     let content = format!("{} {}", &prefix, &items_content);
+    out.write(&content)?;
+    Ok(())
+}
+
+pub fn word_list_tei(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let prefix = h.param(0).unwrap().value().render();
+    let items = h.param(1).unwrap().value();
+    let type_attr = h.param(2).unwrap().value().render();
+
+    // <xr type="syn"><ref target="#pynrit">pynrit</ref></xr>
+
+    // The items are already converted to <ref> links at this point
+    let items_content = if let Some(items) = items.as_array() {
+        if !items.is_empty() {
+            items.iter()
+                .map(|i| format!("<xr type=\"{}\">{}</xr>", type_attr, i.render()))
+                .collect::<Vec<String>>()
+                .join(", ")
+        } else {
+            return Ok(());
+        }
+    } else {
+        return Ok(());
+    };
+
+    let content = format!("<p>{} {}</p>", &prefix, &items_content);
     out.write(&content)?;
     Ok(())
 }
