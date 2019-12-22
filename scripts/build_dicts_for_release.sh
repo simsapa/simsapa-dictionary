@@ -4,6 +4,7 @@ BUILD_INDIVIDUAL=1
 BUILD_COMBINED=1
 
 RUN_EPUBCHECK=0
+RUN_JING=0
 
 FORMAT_MOBI=1
 FORMAT_EPUB=1
@@ -11,6 +12,7 @@ FORMAT_BABYLON=1
 FORMAT_STARDICT=1
 FORMAT_XLSX=1
 FORMAT_DICT=1
+FORMAT_TEI=1
 
 SRC_DIR=../simsapa-dictionary-data
 OUT_DIR=../simsapa-dictionary_releases/new-release
@@ -28,6 +30,8 @@ KINDLEGEN_PATH="$HOME/lib/kindlegen/kindlegen"
 EPUBCHECK_PATH="$HOME/bin/epubcheck"
 
 STARDICT_TEXT2BIN="/usr/lib/stardict-tools/stardict-text2bin"
+
+FREEDICT_RNG="$PROJ_ROOT/assets/freedict-P5.rng"
 
 # === Individual ===
 
@@ -192,6 +196,18 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
             done
         fi
 
+        # === Freedict TEI ===
+
+        if [[ "$FORMAT_TEI" -eq 1 ]]; then
+
+            cd "$PROJ_ROOT"
+
+            cargo run -- markdown_to_tei \
+                --source_path "$SRC_DIR/$i.md" \
+                --output_path "$OUT_DIR/$i.tei"
+
+        fi
+
     done
 
 fi
@@ -328,6 +344,19 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
         done
     fi
 
+    # === Freedict TEI ===
+
+    if [[ "$FORMAT_TEI" -eq 1 ]]; then
+
+        cd "$PROJ_ROOT"
+
+        cargo run -- markdown_to_tei \
+            --title "Combined Pali - English Dictionary" \
+            --source_paths_list ./scripts/combined_dict_md_paths.txt \
+            --output_path "$OUT_DIR/$i.tei"
+
+    fi
+
 fi
 
 # === Epubcheck ===
@@ -342,4 +371,14 @@ if [[ "$RUN_EPUBCHECK" -eq 1 ]]; then
     done
 fi
 
+# === Jing ===
 
+if [[ "$RUN_JING" -eq 1 ]]; then
+    cd "$PROJ_ROOT"
+    cd "$OUT_DIR"
+
+    for i in ./*.tei; do
+        echo "=== jing $i ==="
+        jing "$FREEDICT_RNG" $i
+    done
+fi
