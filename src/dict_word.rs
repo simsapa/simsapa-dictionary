@@ -42,7 +42,7 @@ pub struct DictWordXlsx {
     pub grammar_object: String,
     /// general grammar comment
     #[serde(default)]
-    pub grammar: String,
+    pub grammar_comment: String,
 
     #[serde(default)]
     pub phonetic: String,
@@ -106,7 +106,7 @@ pub struct DictWordHeader {
     pub grammar_object: String,
     /// general grammar comment
     #[serde(default)]
-    pub grammar: String,
+    pub grammar_comment: String,
 
     #[serde(default)]
     pub phonetic: String,
@@ -276,13 +276,13 @@ impl DictWord {
                 url_id: DictWord::gen_url_id(&w.word, &w.dict_label, w.meaning_order),
                 summary: w.summary.clone(),
 
-                grammar: w.grammar.clone(),
                 grammar_case: w.grammar_case.clone(),
                 grammar_num: w.grammar_num.clone(),
                 grammar_gender: w.grammar_gender.clone(),
                 grammar_person: w.grammar_person.clone(),
                 grammar_voice: w.grammar_voice.clone(),
                 grammar_object: w.grammar_object.clone(),
+                grammar_comment: w.grammar_comment.clone(),
 
                 phonetic: w.phonetic.clone(),
                 transliteration: w.transliteration.clone(),
@@ -313,7 +313,7 @@ impl DictWordXlsx {
             grammar_person: h.grammar_person.clone(),
             grammar_voice: h.grammar_voice.clone(),
             grammar_object: h.grammar_object.clone(),
-            grammar: h.grammar.clone(),
+            grammar_comment: h.grammar_comment.clone(),
 
             phonetic: h.phonetic.clone(),
             transliteration: h.transliteration.clone(),
@@ -352,7 +352,7 @@ impl Default for DictWordHeader {
             grammar_person: "".to_string(),
             grammar_voice: "".to_string(),
             grammar_object: "".to_string(),
-            grammar: "".to_string(),
+            grammar_comment: "".to_string(),
 
             phonetic: "".to_string(),
             transliteration: "".to_string(),
@@ -377,7 +377,7 @@ impl DictWordRender {
             person: h.grammar_person,
             voice: h.grammar_voice,
             object: h.grammar_object,
-            comment: h.grammar,
+            comment: h.grammar_comment,
         };
 
         let meaning = DictWordMeaning {

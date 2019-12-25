@@ -1071,13 +1071,13 @@ pub fn process_suttacentral_json(
                 url_id: DictWord::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
 
-                grammar: "".to_string(),
                 grammar_case: "".to_string(),
                 grammar_num: "".to_string(),
                 grammar_gender: "".to_string(),
                 grammar_person: "".to_string(),
                 grammar_voice: "".to_string(),
                 grammar_object: "".to_string(),
+                grammar_comment: "".to_string(),
 
                 phonetic: "".to_string(),
                 transliteration: "".to_string(),
@@ -1155,13 +1155,13 @@ pub fn process_nyanatiloka_entries(
                 url_id: DictWord::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
 
-                grammar: "".to_string(),
                 grammar_case: "".to_string(),
                 grammar_num: "".to_string(),
                 grammar_gender: "".to_string(),
                 grammar_person: "".to_string(),
                 grammar_voice: "".to_string(),
                 grammar_object: "".to_string(),
+                grammar_comment: "".to_string(),
 
                 phonetic: "".to_string(),
                 transliteration: "".to_string(),

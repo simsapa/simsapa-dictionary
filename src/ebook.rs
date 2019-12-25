@@ -1499,7 +1499,7 @@ impl Ebook {
                 }
             }
 
-            dict_word.word_header.grammar = dict_word.definition_md
+            dict_word.word_header.grammar_comment = dict_word.definition_md
                 .trim_end_matches(&def)
                 .trim_end_matches(',')
                 .trim()
@@ -1653,7 +1653,7 @@ impl Ebook {
         for (_, dict_word) in self.dict_words_input.iter_mut() {
             dict_word.definition_md = dict_word.definition_md.replace('&', "&amp;");
             dict_word.word_header.summary = dict_word.word_header.summary.replace('&', "&amp;");
-            dict_word.word_header.grammar = dict_word.word_header.grammar.replace('&', "&amp;");
+            dict_word.word_header.grammar_comment = dict_word.word_header.grammar_comment.replace('&', "&amp;");
         }
     }
 

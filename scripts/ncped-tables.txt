@@ -1,5 +1,5 @@
 namesheet "Word entries";
-table { "dict_label"; "word"; "summary"; "grammar"; "phonetic"; "transliteration"; "inflections"; "synonyms"; "antonyms"; "see_also"; "also_written_as"; "definition_md"; }
+table { "word"; "dict_label"; "meaning_order"; "summary"; "grammar_case"; "grammar_num"; "grammar_gender"; "grammar_person"; "grammar_voice"; "grammar_object"; "grammar_comment"; "phonetic"; "transliteration"; "inflections"; "synonyms"; "antonyms"; "see_also"; "also_written_as"; "definition_md"; }
 load "ncped.json";
 newsheet;
 namesheet "Metadata";
