@@ -79,6 +79,12 @@
 
 {{definition_md}}
 
+{{#if examples}}
+Examples:
+
+{{examples}}
+{{/if}}
+
 {{word_list_plain "Synonyms:" word_header.synonyms ~}}
 {{word_list_plain "Antonyms:" word_header.antonyms ~}}
 {{word_list_plain "See also:" word_header.see_also ~}}

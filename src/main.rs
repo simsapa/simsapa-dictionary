@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate regex;
 extern crate walkdir;
 
@@ -209,7 +211,7 @@ fn main() {
             ebook.process_text();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
-            for (_, w) in ebook.dict_words.iter_mut() {
+            for (_, w) in ebook.dict_words_input.iter_mut() {
                 let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
                 w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
             }

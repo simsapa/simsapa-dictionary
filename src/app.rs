@@ -1065,10 +1065,20 @@ pub fn process_suttacentral_json(
         let new_word = DictWord {
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
+                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, "", &dict_label),
+                // ebook.add_word will increment meaning_order if needed
+                url_id: DictWord::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
+
                 grammar: "".to_string(),
+                grammar_case: "".to_string(),
+                grammar_num: "".to_string(),
+                grammar_gender: "".to_string(),
+                grammar_person: "".to_string(),
+                grammar_voice: "".to_string(),
+                grammar_object: "".to_string(),
+
                 phonetic: "".to_string(),
                 transliteration: "".to_string(),
                 inflections: Vec::new(),
@@ -1076,6 +1086,7 @@ pub fn process_suttacentral_json(
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
                 also_written_as: Vec::new(),
+                examples: "".to_string(),
             },
             definition_md: html_to_markdown(&e.text).to_string(),
         };
@@ -1139,10 +1150,19 @@ pub fn process_nyanatiloka_entries(
         let new_word = DictWord {
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
+                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, "", &dict_label),
+                url_id: DictWord::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
+
                 grammar: "".to_string(),
+                grammar_case: "".to_string(),
+                grammar_num: "".to_string(),
+                grammar_gender: "".to_string(),
+                grammar_person: "".to_string(),
+                grammar_voice: "".to_string(),
+                grammar_object: "".to_string(),
+
                 phonetic: "".to_string(),
                 transliteration: "".to_string(),
                 inflections: Vec::new(),
@@ -1150,6 +1170,7 @@ pub fn process_nyanatiloka_entries(
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
                 also_written_as: Vec::new(),
+                examples: "".to_string(),
             },
             definition_md: html_to_markdown(&e.text),
         };
