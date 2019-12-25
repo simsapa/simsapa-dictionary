@@ -1283,6 +1283,7 @@ impl Ebook {
     }
 
     pub fn process_text(&mut self) {
+        self.process_strip_html_for_plaintext();
         self.process_add_transliterations();
         self.process_links();
         self.process_define_links();
@@ -1589,6 +1590,23 @@ impl Ebook {
             def = re_bracket_links.replace_all(&def, "[$1](/define/$1)").to_string();
 
             w.definition_md = def;
+        }
+    }
+
+    pub fn process_strip_html_for_plaintext(&mut self) {
+        info!("process_strip_html_for_plaintext()");
+
+        // Have to match specific tags, sometimes text is wrapped in <...> in the definition as
+        // an editorial practice.
+        let re_html = Regex::new(r"</*(sup|em|strong|a|i|b) *>").unwrap();
+
+        match self.output_format {
+            OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+                for w in self.dict_words_input.values_mut() {
+                    w.definition_md = re_html.replace_all(&w.definition_md, "").to_string();
+                }
+            },
+            _ => {}
         }
     }
 

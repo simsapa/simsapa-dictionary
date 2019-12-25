@@ -48,7 +48,7 @@ impl LetterGroups {
                 .or_insert(LetterGroup {
                     title: "".to_string(),
                     group_letter: first_letter.clone(),
-                    letter_index: letter_index,
+                    letter_index,
                     dict_words: Vec::new(),
                 })
                 .dict_words
