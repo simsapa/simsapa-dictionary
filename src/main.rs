@@ -46,9 +46,18 @@ use helpers::ok_or_exit;
 #[allow(clippy::cognitive_complexity)]
 fn main() {
     std::env::set_var("RUST_LOG", "error");
+
     match kankyo::init() {
         Ok(_) => {}
         Err(e) => info!("Couldn't find a .env file: {:?}", e),
+    }
+
+    let mut args = std::env::args();
+    let _bin_path = args.next();
+    if let Some(a) = args.next() {
+        if a == "--show_logs" {
+            std::env::set_var("RUST_LOG", "info");
+        }
     }
 
     env_logger::init();
@@ -69,10 +78,6 @@ fn main() {
             }
         }
     };
-
-    if app_params.show_logs {
-        std::env::set_var("RUST_LOG", "simsapa_dictionary=info");
-    }
 
     info!("Subcommand given: {:?}", app_params.run_command);
 
