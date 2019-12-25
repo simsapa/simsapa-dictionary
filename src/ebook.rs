@@ -12,7 +12,7 @@ use regex::Regex;
 use deunicode::deunicode;
 
 use crate::app::{self, AppStartParams, ZipWith};
-use crate::dict_word::{DictWord, DictWordRender, DictWordXlsx};
+use crate::dict_word::{DictWordMarkdown, DictWordRender, DictWordXlsx};
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
 use crate::letter_groups::{LetterGroups, LetterGroup};
@@ -27,7 +27,7 @@ pub struct Ebook {
     pub output_format: OutputFormat,
 
     /// Words as serialized from the input formats, Markdown or XLSX. The map key is `word_header.url_id`.
-    pub dict_words_input: BTreeMap<String, DictWord>,
+    pub dict_words_input: BTreeMap<String, DictWordMarkdown>,
 
     /// Words as processed for rendering in the templates. The map key is `word_header.url_id`.
     pub dict_words_render: BTreeMap<String, DictWordRender>,
@@ -357,7 +357,7 @@ impl Ebook {
         }
     }
 
-    pub fn add_word(&mut self, new_word: DictWord) {
+    pub fn add_word(&mut self, new_word: DictWordMarkdown) {
         let mut new_word = new_word;
 
         if new_word.word_header.meaning_order == 0 {
@@ -381,7 +381,7 @@ impl Ebook {
         }
     }
 
-    pub fn get_word(&self, word: &str) -> Option<&DictWord> {
+    pub fn get_word(&self, word: &str) -> Option<&DictWordMarkdown> {
         self.dict_words_input.get(word)
     }
 
@@ -491,7 +491,7 @@ impl Ebook {
     pub fn write_entries(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_entries()");
 
-        let w: Vec<DictWord> = self.dict_words_input.values().cloned().collect();
+        let w: Vec<DictWordMarkdown> = self.dict_words_input.values().cloned().collect();
         let mut letter_groups = LetterGroups::new_from_dict_words(&w);
 
         info!("Writing {} letter groups ...", letter_groups.len());
@@ -1597,7 +1597,7 @@ impl Ebook {
         // [abhuṃ](/define/abhuṃ)
         let re_define = Regex::new(r"\[[^0-9\]\(\)]+\]\(/define/(?P<define>[^\(\)]+)\)").unwrap();
 
-        let w: Vec<DictWord> = self.dict_words_input.values().cloned().collect();
+        let w: Vec<DictWordMarkdown> = self.dict_words_input.values().cloned().collect();
         let letter_groups = LetterGroups::new_from_dict_words(&w);
         let words_to_url = letter_groups.words_to_url;
 
@@ -1662,7 +1662,7 @@ impl Ebook {
 
         // dict_words_input is sorted by key 'word-label-meaning_order'
         for dwi in self.dict_words_input.values() {
-            let dwr: DictWordRender = DictWordRender::from_dict_word(dwi);
+            let dwr: DictWordRender = DictWordRender::from_dict_word_markdown(dwi);
 
             // If the url_id already exist, append to the meanings.
             // Otherwise, insert as new.
@@ -1948,7 +1948,7 @@ impl Ebook {
     pub fn process_links(&mut self) {
         info!("process_links()");
 
-        let w: Vec<DictWord> = self.dict_words_input.values().cloned().collect();
+        let w: Vec<DictWordMarkdown> = self.dict_words_input.values().cloned().collect();
         let letter_groups = LetterGroups::new_from_dict_words(&w);
         let words_to_url = letter_groups.words_to_url;
 

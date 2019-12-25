@@ -6,7 +6,7 @@ use regex::Regex;
 use crate::error::ToolError;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DictWord {
+pub struct DictWordMarkdown {
     pub word_header: DictWordHeader,
     #[serde(default)]
     pub definition_md: String,
@@ -197,7 +197,7 @@ pub struct DictWordGrammar {
     pub comment: String,
 }
 
-impl DictWord {
+impl DictWordMarkdown {
     pub fn new() -> Self {
         Self::default()
     }
@@ -211,7 +211,7 @@ impl DictWord {
         )
     }
 
-    pub fn from_markdown(s: &str) -> Result<DictWord, Box<dyn Error>> {
+    pub fn from_markdown(s: &str) -> Result<DictWordMarkdown, Box<dyn Error>> {
         let a = s.replace("``` toml", "");
         let parts: Vec<&str> = a.split("```").collect();
 
@@ -227,7 +227,7 @@ impl DictWord {
             }
         };
 
-        Ok(DictWord {
+        Ok(DictWordMarkdown {
             word_header,
             definition_md: (*parts.get(1).unwrap()).to_string(),
         })
@@ -260,20 +260,20 @@ impl DictWord {
     }
 
     pub fn set_url_id(&mut self) {
-        self.word_header.url_id = DictWord::gen_url_id(
+        self.word_header.url_id = DictWordMarkdown::gen_url_id(
             &self.word_header.word,
             &self.word_header.dict_label,
             self.word_header.meaning_order,
         );
     }
 
-    pub fn from_xlsx(w: &DictWordXlsx) -> DictWord {
-        DictWord {
+    pub fn from_xlsx(w: &DictWordXlsx) -> DictWordMarkdown {
+        DictWordMarkdown {
             word_header: DictWordHeader {
                 dict_label: w.dict_label.clone(),
                 meaning_order: w.meaning_order,
                 word: w.word.clone(),
-                url_id: DictWord::gen_url_id(&w.word, &w.dict_label, w.meaning_order),
+                url_id: DictWordMarkdown::gen_url_id(&w.word, &w.dict_label, w.meaning_order),
                 summary: w.summary.clone(),
 
                 grammar_case: w.grammar_case.clone(),
@@ -286,11 +286,11 @@ impl DictWord {
 
                 phonetic: w.phonetic.clone(),
                 transliteration: w.transliteration.clone(),
-                inflections: DictWord::parse_csv_list(&w.inflections),
-                synonyms: DictWord::parse_csv_list(&w.synonyms),
-                antonyms: DictWord::parse_csv_list(&w.antonyms),
-                see_also: DictWord::parse_csv_list(&w.see_also),
-                also_written_as: DictWord::parse_csv_list(&w.also_written_as),
+                inflections: DictWordMarkdown::parse_csv_list(&w.inflections),
+                synonyms: DictWordMarkdown::parse_csv_list(&w.synonyms),
+                antonyms: DictWordMarkdown::parse_csv_list(&w.antonyms),
+                see_also: DictWordMarkdown::parse_csv_list(&w.see_also),
+                also_written_as: DictWordMarkdown::parse_csv_list(&w.also_written_as),
                 examples: w.examples.clone(),
             },
             definition_md: w.definition_md.clone(),
@@ -299,7 +299,7 @@ impl DictWord {
 }
 
 impl DictWordXlsx {
-    pub fn from_dict_word(w: &DictWord) -> DictWordXlsx {
+    pub fn from_dict_word(w: &DictWordMarkdown) -> DictWordXlsx {
         let h = w.word_header.clone();
         DictWordXlsx {
             dict_label: h.dict_label.clone(),
@@ -328,9 +328,9 @@ impl DictWordXlsx {
     }
 }
 
-impl Default for DictWord {
+impl Default for DictWordMarkdown {
     fn default() -> Self {
-        DictWord {
+        DictWordMarkdown {
             word_header: DictWordHeader::default(),
             definition_md: "definition".to_string(),
         }
@@ -367,7 +367,7 @@ impl Default for DictWordHeader {
 }
 
 impl DictWordRender {
-    pub fn from_dict_word(w: &DictWord) -> DictWordRender {
+    pub fn from_dict_word_markdown(w: &DictWordMarkdown) -> DictWordRender {
         let h = w.word_header.clone();
 
         let grammar = DictWordGrammar {

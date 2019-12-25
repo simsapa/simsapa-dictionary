@@ -9,7 +9,7 @@ use walkdir::WalkDir;
 use regex::Regex;
 use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
-use crate::dict_word::{DictWord, DictWordHeader, DictWordXlsx};
+use crate::dict_word::{DictWordMarkdown, DictWordHeader, DictWordXlsx};
 use crate::ebook::{
     Ebook, OutputFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
 };
@@ -1062,13 +1062,13 @@ pub fn process_suttacentral_json(
     let entries: Vec<Entry> = serde_json::from_str(&s).unwrap();
 
     for e in entries.iter() {
-        let new_word = DictWord {
+        let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
                 meaning_order: 1,
                 word: e.word.to_lowercase(),
                 // ebook.add_word will increment meaning_order if needed
-                url_id: DictWord::gen_url_id(&e.word, &dict_label, 1),
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
 
                 grammar_case: "".to_string(),
@@ -1147,12 +1147,12 @@ pub fn process_nyanatiloka_entries(
     }
 
     for e in entries.iter() {
-        let new_word = DictWord {
+        let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
                 meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, &dict_label, 1),
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
 
                 grammar_case: "".to_string(),
@@ -1193,11 +1193,11 @@ pub fn process_markdown_list(
 pub fn split_metadata_and_entries(path: &PathBuf) -> Result<(String, String), Box<dyn Error>> {
     let s = fs::read_to_string(path).unwrap();
 
-    // Split the Dictionary header and the DictWord entries.
+    // Split the Dictionary header and the DictWordMarkdown entries.
     let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
 
     if parts.len() != 2 {
-        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries."
+        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWordMarkdown entries."
             .to_string();
         return Err(Box::new(ToolError::Exit(msg)));
     }
@@ -1239,12 +1239,12 @@ pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), 
 
     ebook.meta = parse_str_to_metadata(&meta_txt)?;
 
-    let entries: Vec<Result<DictWord, Box<dyn Error>>> = entries_txt
+    let entries: Vec<Result<DictWordMarkdown, Box<dyn Error>>> = entries_txt
         .split("``` toml")
         .filter_map(|s| {
             let a = s.trim();
             if !a.is_empty() {
-                Some(DictWord::from_markdown(a))
+                Some(DictWordMarkdown::from_markdown(a))
             } else {
                 None
             }
@@ -1351,7 +1351,7 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
 
     for i in entries.iter() {
         match i {
-            Ok(x) => ebook.add_word(DictWord::from_xlsx(x)),
+            Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
             Err(msg) => {
                 return Err(Box::new(ToolError::Exit(msg.clone())));
             }
