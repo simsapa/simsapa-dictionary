@@ -348,6 +348,13 @@ subcommands:
             required: false
             takes_value: false
 
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path
@@ -393,6 +400,13 @@ subcommands:
             required: false
             takes_value: false
 
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first XLSX source."
             long: output_path
@@ -437,6 +451,13 @@ subcommands:
             long: allow_raw_html
             required: false
             takes_value: false
+
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
 
         - output_path:
             help: "The C5 format text file to write. Defaults to the same file name and folder as the first Markdown source."
@@ -488,6 +509,13 @@ subcommands:
             long: allow_raw_html
             required: false
             takes_value: false
+
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
 
         - output_path:
             help: "The C5 format text file to write. Defaults to the same file name and folder as the first XLSX source."

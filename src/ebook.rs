@@ -46,6 +46,9 @@ pub struct Ebook {
     #[serde(skip)]
     pub output_path: PathBuf,
 
+    #[serde(skip)]
+    pub entries_template: Option<PathBuf>,
+
     /// The folder of the first source input file.
     #[serde(skip)]
     pub source_dir: PathBuf,
@@ -123,7 +126,14 @@ pub struct LetterGroupTemplateData {
 }
 
 impl Ebook {
-    pub fn new(output_format: OutputFormat, allow_raw_html: bool, source_dir: &PathBuf, output_path: &PathBuf) -> Self {
+    pub fn new(
+        output_format: OutputFormat,
+        allow_raw_html: bool,
+        source_dir: &PathBuf,
+        output_path: &PathBuf,
+        entries_template: Option<PathBuf>,
+        ) -> Self
+    {
         // asset_files_string
         let mut afs: BTreeMap<String, String> = BTreeMap::new();
         // asset_files_byte
@@ -288,6 +298,7 @@ impl Ebook {
             asset_files_byte: afb,
             output_path: output_path.to_path_buf(),
             source_dir: source_dir.to_path_buf(),
+            entries_template,
             build_base_dir: None,
             mimetype_path: None,
             meta_inf_dir: None,
@@ -1132,12 +1143,35 @@ impl Ebook {
     pub fn write_stardict_xml(&self) -> Result<(), Box<dyn Error>> {
         info!("write_stardict_xml()");
 
-        let template = "stardict_textual.xml".to_string();
-        let mut content = match self.templates.render(&template, &self) {
-            Ok(x) => x,
-            Err(e) => {
-                error!("Can't render template {}, {:?}", template, e);
-                "FIXME: Template rendering error.".to_string()
+        let mut content = match self.entries_template {
+            Some(ref path) => {
+                let template_source = match fs::read_to_string(path) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't read file: {:?}, {:?}", path, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
+
+                let h = Handlebars::new();
+                match h.render_template(&template_source, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
+            }
+
+            None => {
+                let template = "stardict_textual.xml".to_string();
+                match self.templates.render(&template, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template {}, {:?}", template, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
             }
         };
 
@@ -1157,20 +1191,43 @@ impl Ebook {
     pub fn write_c5(&self) -> Result<(), Box<dyn Error>> {
         info!("write_c5()");
 
-        let template = match self.output_format {
-            OutputFormat::C5Plain => "c5_plain.txt".to_string(),
-            OutputFormat::C5Html => "c5_html.txt".to_string(),
-            _ => {
-                let msg = "🔥 Only C5Plain or C5Html makes sense here.".to_string();
-                return Err(Box::new(ToolError::Exit(msg)));
-            }
-        };
+        let mut content = match self.entries_template {
+            Some(ref path) => {
+                let template_source = match fs::read_to_string(path) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't read file: {:?}, {:?}", path, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
 
-        let mut content = match self.templates.render(&template, &self) {
-            Ok(x) => x,
-            Err(e) => {
-                error!("Can't render template {}, {:?}", template, e);
-                "FIXME: Template rendering error.".to_string()
+                let h = Handlebars::new();
+                match h.render_template(&template_source, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
+            }
+
+            None => {
+                let template = match self.output_format {
+                    OutputFormat::C5Plain => "c5_plain.txt".to_string(),
+                    OutputFormat::C5Html => "c5_html.txt".to_string(),
+                    _ => {
+                        let msg = "🔥 Only C5Plain or C5Html makes sense here.".to_string();
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
+
+                match self.templates.render(&template, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template {}, {:?}", template, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
             }
         };
 
@@ -1996,6 +2053,7 @@ impl Default for Ebook {
             false,
             &PathBuf::from("."),
             &PathBuf::from("ebook.epub"),
+            None,
         )
     }
 }

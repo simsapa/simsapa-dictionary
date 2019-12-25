@@ -23,6 +23,7 @@ pub struct AppStartParams {
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
+    pub entries_template: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
     pub reuse_metadata: bool,
@@ -87,6 +88,7 @@ impl Default for AppStartParams {
             nyanatiloka_root: None,
             source_paths: None,
             output_path: None,
+            entries_template: None,
             kindlegen_path: None,
             reuse_metadata: false,
             title: None,
@@ -547,6 +549,22 @@ fn process_to_stardict(
         }
     }
 
+    if sub_matches.is_present("entries_template") {
+        if let Ok(x) = sub_matches
+            .value_of("entries_template")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.entries_template = Some(path);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
     if sub_matches.is_present("title") {
         if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
             params.title = Some(x);
@@ -682,6 +700,22 @@ fn process_to_c5(
             let path = PathBuf::from(&x);
             if path.exists() {
                 params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    if sub_matches.is_present("entries_template") {
+        if let Ok(x) = sub_matches
+            .value_of("entries_template")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.entries_template = Some(path);
             } else {
                 let msg = format!("🔥 Path does not exist: {:?}", &path);
                 return Err(Box::new(ToolError::Exit(msg)));
