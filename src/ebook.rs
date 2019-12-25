@@ -1133,13 +1133,15 @@ impl Ebook {
         info!("write_stardict_xml()");
 
         let template = "stardict_textual.xml".to_string();
-        let content = match self.templates.render(&template, &self) {
+        let mut content = match self.templates.render(&template, &self) {
             Ok(x) => x,
             Err(e) => {
                 error!("Can't render template {}, {:?}", template, e);
                 "FIXME: Template rendering error.".to_string()
             }
         };
+
+        content = clean_output_content(&content);
 
         let mut file = File::create(&self.output_path)?;
         file.write_all(content.as_bytes())?;
@@ -1176,18 +1178,7 @@ impl Ebook {
             content = content.replace("&amp;", "&");
         }
 
-        // Remove trailing spaces
-        let re_trailing = Regex::new(r" +\n").unwrap();
-        content = re_trailing.replace_all(&content, "\n").to_string();
-
-        // Remove empty <p></p>
-        let re_empty = Regex::new(r"<p> *</p>").unwrap();
-        content = re_empty.replace_all(&content, "").to_string();
-
-        // Remove double blanks from the output, empty attributes leave empty spaces when rendering
-        // the template.
-        let re_double_blanks = Regex::new(r"\n\n+").unwrap();
-        content = re_double_blanks.replace_all(&content, "\n\n").to_string();
+        content = clean_output_content(&content);
 
         let mut file = File::create(&self.output_path)?;
         file.write_all(content.as_bytes())?;
@@ -2028,5 +2019,24 @@ impl Default for EbookMetadata {
             allow_raw_html: false,
         }
     }
+}
+
+fn clean_output_content(text: &str) -> String {
+    let mut content = text.to_string();
+
+    // Remove trailing spaces
+    let re_trailing = Regex::new(r" +\n").unwrap();
+    content = re_trailing.replace_all(&content, "\n").to_string();
+
+    // Remove empty <p></p>
+    let re_empty = Regex::new(r"<p> *</p>").unwrap();
+    content = re_empty.replace_all(&content, "").to_string();
+
+    // Remove double blanks from the output, empty attributes leave empty spaces when rendering
+    // the template.
+    let re_double_blanks = Regex::new(r"\n\n+").unwrap();
+    content = re_double_blanks.replace_all(&content, "\n\n").to_string();
+
+    content
 }
 

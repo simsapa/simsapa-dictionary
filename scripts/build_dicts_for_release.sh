@@ -38,11 +38,11 @@ FREEDICT_RNG="$PROJ_ROOT/assets/freedict-P5.rng"
 if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
 
     for i in dhammika dppn ncped nyana pts; do
-        cd "$PROJ_ROOT"
 
         # === Mobi ===
 
         if [[ "$FORMAT_MOBI" -eq 1 ]]; then
+            cd "$PROJ_ROOT"
 
             cargo run -- markdown_to_ebook \
                 --source_path "$SRC_DIR/$i.md" \
@@ -57,6 +57,7 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Epub ===
 
         if [[ "$FORMAT_EPUB" -eq 1 ]]; then
+            cd "$PROJ_ROOT"
 
             cargo run -- markdown_to_ebook \
                 --source_path "$SRC_DIR/$i.md" \
@@ -70,6 +71,7 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Babylon ===
 
         if [[ "$FORMAT_BABYLON" -eq 1 ]]; then
+            cd "$PROJ_ROOT"
 
             cargo run -- markdown_to_babylon_gls \
                 --source_path "$SRC_DIR/$i.md" \
@@ -80,6 +82,7 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Stardict ===
 
         if [[ "$FORMAT_STARDICT" -eq 1 ]]; then
+            cd "$PROJ_ROOT"
 
             stardict_out="$OUT_DIR/$i-stardict"
             mkdir -p "$stardict_out"
@@ -100,7 +103,6 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Xlsx ===
 
         if [[ "$FORMAT_XLSX" -eq 1 ]]; then
-
             cd "$PROJ_ROOT"
 
             cargo run -- markdown_to_json \
@@ -123,6 +125,7 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Dict ===
 
         if [[ "$FORMAT_DICT" -eq 1 ]]; then
+            cd "$PROJ_ROOT"
 
             n="$SRC_DIR/$i.md"
             title=$(grep -E '^title = "' "$n" | sed 's/^title = "\([^"]\+\)"/\1/')
@@ -199,7 +202,6 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Freedict TEI ===
 
         if [[ "$FORMAT_TEI" -eq 1 ]]; then
-
             cd "$PROJ_ROOT"
 
             cargo run -- markdown_to_tei \
@@ -216,13 +218,12 @@ fi
 
 if [[ "$BUILD_COMBINED" -eq 1 ]]; then
 
-    cd "$PROJ_ROOT"
-
     i="combined-dictionary"
 
     # === Mobi ===
 
     if [[ "$FORMAT_MOBI" -eq 1 ]]; then
+        cd "$PROJ_ROOT"
 
         cargo run -- markdown_to_ebook \
             --title "Combined Pali - English Dictionary" \
@@ -237,6 +238,7 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
     # === Epub ===
 
     if [[ "$FORMAT_EPUB" -eq 1 ]]; then
+        cd "$PROJ_ROOT"
 
         cargo run -- markdown_to_ebook \
             --title "Combined Pali - English Dictionary" \
@@ -250,6 +252,7 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
     # === Babylon ===
 
     if [[ "$FORMAT_BABYLON" -eq 1 ]]; then
+        cd "$PROJ_ROOT"
 
         cargo run -- markdown_to_babylon_gls \
             --title "Combined Pali - English Dictionary" \
@@ -261,6 +264,7 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
     # === Stardict ===
 
     if [[ "$FORMAT_STARDICT" -eq 1 ]]; then
+        cd "$PROJ_ROOT"
 
         stardict_out="$OUT_DIR/$i-stardict"
         mkdir -p "$stardict_out"
@@ -282,6 +286,7 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
     # === Dict ===
 
     if [[ "$FORMAT_DICT" -eq 1 ]]; then
+        cd "$PROJ_ROOT"
 
         name="Combined Pali - English Dictionary"
         url="https://simsapa.github.io"
@@ -347,7 +352,6 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
     # === Freedict TEI ===
 
     if [[ "$FORMAT_TEI" -eq 1 ]]; then
-
         cd "$PROJ_ROOT"
 
         cargo run -- markdown_to_tei \
