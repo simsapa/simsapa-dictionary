@@ -1194,6 +1194,8 @@ impl Ebook {
             }
         };
 
+        // NOTE: ampersand '&' must be escaped in XML content.
+
         let re_def_whitespace = Regex::new(r#"(<definition type="[a-z]+">)[ \n]+(.*?)[ \n]*(</definition>)"#).unwrap();
         content = re_def_whitespace.replace_all(&content, "$1$2$3").to_string();
 
@@ -1673,7 +1675,7 @@ impl Ebook {
         let re_html = Regex::new(r"</*(sup|em|strong|a|i|b) *>").unwrap();
 
         match self.output_format {
-            OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+            OutputFormat::StardictXmlPlain | OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                 for w in self.dict_words_input.values_mut() {
                     w.definition_md = re_html.replace_all(&w.definition_md, "").to_string();
                 }

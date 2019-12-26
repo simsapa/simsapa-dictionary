@@ -14,6 +14,9 @@ FORMAT_XLSX=1
 FORMAT_DICT=1
 FORMAT_TEI=1
 
+FORMAT_HTML=1
+FORMAT_PLAINTEXT=1
+
 SRC_DIR=../simsapa-dictionary-data
 OUT_DIR=../simsapa-dictionary_releases/new-release
 
@@ -82,21 +85,46 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
         # === Stardict ===
 
         if [[ "$FORMAT_STARDICT" -eq 1 ]]; then
-            cd "$PROJ_ROOT"
 
-            stardict_out="$OUT_DIR/$i-stardict"
-            mkdir -p "$stardict_out"
+            for fmt in plaintext html; do
+                if [[ "$fmt" == "plaintext" && "$FORMAT_PLAINTEXT" -eq 0 ]]; then
+                    continue;
+                fi
+                if [[ "$fmt" == "html" && "$FORMAT_HTML" -eq 0 ]]; then
+                    continue;
+                fi
 
-            cargo run -- markdown_to_stardict_xml \
-                --source_path "$SRC_DIR/$i.md" \
-                --output_path "$stardict_out/$i.xml"
+                cd "$PROJ_ROOT"
 
-            cd "$stardict_out"
-            $STARDICT_TEXT2BIN "$i.xml" "$i.ifo"
-            rm "$i.xml"
-            cd ..
-            zip -r "$i-stardict.zip" "$i-stardict"
-            rm "$i-stardict" -r
+                echo "Format: $fmt"
+
+                stardict_out="$OUT_DIR/$i-$fmt-stardict"
+                mkdir -p "$stardict_out"
+
+                if [[ "$fmt" == "plaintext" ]]; then
+                    cargo run -- markdown_to_stardict_xml \
+                        --keep_entries_plaintext \
+                        --source_path "$SRC_DIR/$i.md" \
+                        --output_path "$stardict_out/$i-$fmt.xml"
+                else
+                    cargo run -- markdown_to_stardict_xml \
+                        --source_path "$SRC_DIR/$i.md" \
+                        --output_path "$stardict_out/$i-$fmt.xml"
+                fi
+
+                cd "$stardict_out"
+                $STARDICT_TEXT2BIN "$i-$fmt.xml" "$i-$fmt.ifo"
+                if [[ "$?" != "0" ]]; then
+                    echo "Stardict exited with error. Exiting."
+                    exit 2
+                fi
+
+                rm "$i-$fmt.xml"
+                cd ..
+                zip -r "$i-$fmt-stardict.zip" "$i-$fmt-stardict"
+                rm "$i-$fmt-stardict" -r
+
+            done
 
         fi
 
@@ -146,6 +174,13 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
             echo "Name: $name"
 
             for fmt in plaintext html; do
+                if [[ "$fmt" == "plaintext" && "$FORMAT_PLAINTEXT" -eq 0 ]]; then
+                    continue;
+                fi
+                if [[ "$fmt" == "html" && "$FORMAT_HTML" -eq 0 ]]; then
+                    continue;
+                fi
+
                 cd "$PROJ_ROOT"
 
                 echo "Format: $fmt"
@@ -187,6 +222,10 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
                         -u "$url" \
                         --mime-header 'Content-Type: text/html' \
                         "$i-$fmt" < "$i-$fmt.txt"
+                fi
+                if [[ "$?" != "0" ]]; then
+                    echo "dictfmt exited with error. Exiting."
+                    exit 2
                 fi
 
                 dictzip "$i-$fmt.dict"
@@ -264,22 +303,47 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
     # === Stardict ===
 
     if [[ "$FORMAT_STARDICT" -eq 1 ]]; then
-        cd "$PROJ_ROOT"
+        for fmt in plaintext html; do
+            if [[ "$fmt" == "plaintext" && "$FORMAT_PLAINTEXT" -eq 0 ]]; then
+                continue;
+            fi
+            if [[ "$fmt" == "html" && "$FORMAT_HTML" -eq 0 ]]; then
+                continue;
+            fi
 
-        stardict_out="$OUT_DIR/$i-stardict"
-        mkdir -p "$stardict_out"
+            cd "$PROJ_ROOT"
 
-        cargo run -- markdown_to_stardict_xml \
-            --title "Combined Pali - English Dictionary" \
-            --source_paths_list ./scripts/combined_dict_md_paths.txt \
-            --output_path "$stardict_out/$i.xml"
+            echo "Format: $fmt"
 
-        cd "$stardict_out"
-        $STARDICT_TEXT2BIN "$i.xml" "$i.ifo"
-        rm "$i.xml"
-        cd ..
-        zip -r "$i-stardict.zip" "$i-stardict"
-        rm "$i-stardict" -r
+            stardict_out="$OUT_DIR/$i-$fmt-stardict"
+            mkdir -p "$stardict_out"
+
+            if [[ "$fmt" == "plaintext" ]]; then
+                cargo run -- markdown_to_stardict_xml \
+                    --keep_entries_plaintext \
+                    --title "Combined Pali - English Dictionary" \
+                    --source_paths_list ./scripts/combined_dict_md_paths.txt \
+                    --output_path "$stardict_out/$i-$fmt.xml"
+            else
+                cargo run -- markdown_to_stardict_xml \
+                    --title "Combined Pali - English Dictionary" \
+                    --source_paths_list ./scripts/combined_dict_md_paths.txt \
+                    --output_path "$stardict_out/$i-$fmt.xml"
+            fi
+
+            cd "$stardict_out"
+            $STARDICT_TEXT2BIN "$i-$fmt.xml" "$i-$fmt.ifo"
+            if [[ "$?" != "0" ]]; then
+                echo "Stardict exited with error. Exiting."
+                exit 2
+            fi
+
+            rm "$i-$fmt.xml"
+            cd ..
+            zip -r "$i-$fmt-stardict.zip" "$i-$fmt-stardict"
+            rm "$i-$fmt-stardict" -r
+
+        done
 
     fi
 
@@ -337,6 +401,10 @@ if [[ "$BUILD_COMBINED" -eq 1 ]]; then
                     -u "$url" \
                     --mime-header 'Content-Type: text/html' \
                     "$i-$fmt" < "$i-$fmt.txt"
+            fi
+            if [[ "$?" != "0" ]]; then
+                echo "dictfmt exited with error. Exiting."
+                exit 2
             fi
 
             dictzip "$i-$fmt.dict"
