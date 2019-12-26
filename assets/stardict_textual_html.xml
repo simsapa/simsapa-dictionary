@@ -13,27 +13,34 @@
 
   <contents>
 
-    {{#each dict_words ~}}
+    {{#each dict_words_render ~}}
     <article>
-      <key>{{word_header.word}}</key>
+      <key>{{word}}</key>
 
-      {{#if word_header.inflections ~}}
-      {{#each word_header.inflections ~}}
+      {{#if inflections ~}}
+      {{#each inflections ~}}
       <synonym>{{this}}</synonym>
       {{/each ~}}
       {{/if ~}}
 
       <definition type="h">
         <![CDATA[
-{{#if word_header.dict_label ~}}
-<p>[{{word_header.dict_label}}]</p>
+{{#if dict_label ~}}
+<p>[{{dict_label}}]</p>
 {{/if ~}}
-{{grammar_phonetic_transliteration word_header ../meta.add_velthuis ~}}
-{{word_list "Also written as:" word_header.also_written_as ~}}
-{{markdown definition_md ../meta.allow_raw_html ~}}
-{{word_list "Synonyms:" word_header.synonyms ~}}
-{{word_list "Antonyms:" word_header.antonyms ~}}
-{{word_list "See also:" word_header.see_also ~}}
+{{phonetic_transliteration this ../meta.add_velthuis ~}}
+{{#each meanings}}
+<p>{{#if (gt ../meanings_count 1)}}({{meaning_order}}) {{/if}}{{grammar_text grammar}}</p>
+{{word_list "Also written as:" also_written_as ~}}
+{{markdown definition_md ../../meta.allow_raw_html ~}}
+{{#if examples ~}}
+<p>Examples:</p>
+{{markdown examples ../../meta.allow_raw_html ~}}
+{{/if ~}}
+{{word_list "Synonyms:" synonyms ~}}
+{{word_list "Antonyms:" antonyms ~}}
+{{word_list "See also:" see_also ~}}
+{{/each}}
         ]]>
       </definition>
     </article>

@@ -2,6 +2,8 @@
 @
 @ {{meta.description}}
 @
+@ {{countitems dict_words_render}} headwords
+@
 @ {{meta.source}}
 @
 @ {{meta.creator}}
@@ -9,22 +11,31 @@
 @
 @ {{#if meta.version}}Version {{meta.version}}{{/if}}
 
-{{#each dict_words}}
+{{#each dict_words_render}}
 
 ______
 
-{{headword_plain word_header.word word_header.inflections}}
+{{headword_plain word inflections}}
 
-{{#if word_header.dict_label ~}}
-[{{word_header.dict_label}}]
-{{/if ~}}
-{{grammar_phonetic_transliteration_plain word_header ../meta.add_velthuis}}
-{{word_list_plain "Also written as:" word_header.also_written_as ~}}
+{{#if dict_label}}[{{dict_label}}] {{/if}}{{phonetic_transliteration_plain this ../meta.add_velthuis}}
+
+{{#each meanings}}
+{{#if (gt ../meanings_count 1)}}({{meaning_order}}) {{/if}}{{grammar_text_plain grammar}}
+
+{{word_list_plain "Also written as:" also_written_as ~}}
 
 {{definition_md}}
 
-{{word_list_plain "Synonyms:" word_header.synonyms ~}}
-{{word_list_plain "Antonyms:" word_header.antonyms ~}}
-{{word_list_plain "See also:" word_header.see_also ~}}
+{{#if examples}}
+Examples:
+
+{{examples}}
+{{/if}}
+
+{{word_list_plain "Synonyms:" synonyms ~}}
+{{word_list_plain "Antonyms:" antonyms ~}}
+{{word_list_plain "See also:" see_also ~}}
+
+{{/each}}
 
 {{/each}}

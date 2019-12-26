@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate regex;
 extern crate walkdir;
 
@@ -44,9 +46,18 @@ use helpers::ok_or_exit;
 #[allow(clippy::cognitive_complexity)]
 fn main() {
     std::env::set_var("RUST_LOG", "error");
+
     match kankyo::init() {
         Ok(_) => {}
         Err(e) => info!("Couldn't find a .env file: {:?}", e),
+    }
+
+    let mut args = std::env::args();
+    let _bin_path = args.next();
+    if let Some(a) = args.next() {
+        if a == "--show_logs" {
+            std::env::set_var("RUST_LOG", "info");
+        }
     }
 
     env_logger::init();
@@ -68,10 +79,6 @@ fn main() {
         }
     };
 
-    if app_params.show_logs {
-        std::env::set_var("RUST_LOG", "simsapa_dictionary=info");
-    }
-
     info!("Subcommand given: {:?}", app_params.run_command);
 
     match app_params.run_command {
@@ -81,7 +88,12 @@ fn main() {
 
         RunCommand::SuttaCentralJsonToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             if app_params.reuse_metadata {
                 ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
@@ -114,7 +126,12 @@ fn main() {
 
         RunCommand::NyanatilokaToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             if app_params.reuse_metadata {
                 ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
@@ -141,7 +158,12 @@ fn main() {
 
         RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -180,7 +202,12 @@ fn main() {
 
         RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -209,7 +236,7 @@ fn main() {
             ebook.process_text();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
-            for (_, w) in ebook.dict_words.iter_mut() {
+            for (_, w) in ebook.dict_words_input.iter_mut() {
                 let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
                 w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
             }
@@ -221,7 +248,12 @@ fn main() {
 
         RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -256,7 +288,12 @@ fn main() {
 
         RunCommand::MarkdownToC5 | RunCommand::XlsxToC5 => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -291,7 +328,12 @@ fn main() {
 
         RunCommand::MarkdownToTei | RunCommand::XlsxToTei => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");
@@ -326,7 +368,12 @@ fn main() {
 
         RunCommand::MarkdownToJson => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(app_params.output_format, app_params.allow_raw_html, &i_p, &o_p);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
 
             let paths = app_params.source_paths.clone();
             let p = paths.expect("source_paths is missing.");

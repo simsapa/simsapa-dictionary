@@ -7,6 +7,7 @@ license = "MIT"
 
 [dependencies]
 regex = "1"
+lazy_static = "1.4"
 log = "0.4"
 env_logger = "0.6"
 kankyo = "0.3"

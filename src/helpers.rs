@@ -229,53 +229,118 @@ pub fn word_list_tei(
     Ok(())
 }
 
-pub fn format_grammar_phonetic_transliteration(
-    word: &str,
-    grammar: &str,
-    phonetic: &str,
-    transliteration: &str,
-    add_velthuis: bool)
-    -> String
-{
-    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !add_velthuis {
-        return "".to_string();
-    }
+fn get_grammar_text(grammar: &serde_json::Value) -> String {
+    let case    = grammar.get("case").unwrap().render();
+    let num     = grammar.get("num").unwrap().render();
+    let gender  = grammar.get("gender").unwrap().render();
+    let person  = grammar.get("person").unwrap().render();
+    let voice   = grammar.get("voice").unwrap().render();
+    let object  = grammar.get("object").unwrap().render();
+    let comment = grammar.get("comment").unwrap().render();
 
-    let g = if grammar.is_empty() {
+    let grammar_text = vec![
+        case,
+        num,
+        gender,
+        person,
+        voice,
+        object,
+        comment,
+    ].iter().filter_map(|i| {
+        let s = i.trim();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    }).collect::<Vec<&str>>().join(", ");
+
+    grammar_text.trim().to_string()
+}
+
+pub fn format_grammar_text_html(grammar: &serde_json::Value) -> String {
+    let grammar_text = get_grammar_text(grammar);
+
+    if grammar_text.is_empty() {
         "".to_string()
     } else {
         // grass green
-        format!("<i style=\"color: #448C19;\">{}</i>", grammar)
-    };
+        format!("<i style=\"color: #448C19;\">{}</i>", grammar_text)
+    }
+}
 
-    let ph = if phonetic.is_empty() {
+pub fn format_grammar_text_plain(grammar: &serde_json::Value) -> String {
+    let grammar_text = get_grammar_text(grammar);
+
+    if grammar_text.is_empty() {
         "".to_string()
     } else {
-        // dark ocean blue
-        format!(" | <span style=\"color: #0B4A72;\">{}</span>", phonetic)
-    };
+        format!("/{}/", grammar_text)
+    }
+}
 
-    let tr = if transliteration.is_empty() {
+pub fn grammar_text(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let grammar = h.param(0).unwrap().value();
+
+    out.write(&format_grammar_text_html(grammar))?;
+    Ok(())
+}
+
+pub fn grammar_text_plain(
+    h: &Helper,
+    _: &Handlebars,
+    _: &Context,
+    _rc: &mut RenderContext,
+    out: &mut dyn Output,
+) -> HelperResult {
+
+    let grammar = h.param(0).unwrap().value();
+
+    out.write(&format_grammar_text_plain(grammar))?;
+    Ok(())
+}
+
+pub fn format_phonetic_transliteration_html(dict_word_render: &serde_json::Value, add_velthuis: bool) -> String {
+
+    let word = dict_word_render.get("word").unwrap().render();
+    let phonetic = dict_word_render.get("phonetic").unwrap().render();
+    let transliteration = dict_word_render.get("transliteration").unwrap().render();
+
+    let mut parts: Vec<String> = Vec::new();
+
+    if !phonetic.is_empty() {
+        // dark ocean blue
+        parts.push(format!("<span style=\"color: #0B4A72;\">{}</span>", phonetic));
+    }
+
+    if transliteration.is_empty() {
         if add_velthuis {
             let velthuis = pali::to_velthuis(&word);
             if word != velthuis {
                 // dark ocean blue
-                format!(" | <span style=\"color: #0B4A72;\">{}</span>", velthuis)
-            } else {
-                "".to_string()
+                parts.push(format!("<span style=\"color: #0B4A72;\">{}</span>", velthuis));
             }
-        } else {
-            "".to_string()
         }
     } else {
         // dark ocean blue
-        format!(" | <span style=\"color: #0B4A72;\">{}</span>", transliteration)
+        parts.push(format!("<span style=\"color: #0B4A72;\">{}</span>", transliteration));
     };
 
-    format!("<p>{}{}{}</p>", g, ph, tr)
+    if parts.is_empty() {
+        "".to_string()
+    } else {
+        format!("<p>{}</p>", parts.join(" | "))
+    }
 }
 
-pub fn grammar_phonetic_transliteration(
+pub fn phonetic_transliteration(
     h: &Helper,
     _: &Handlebars,
     _: &Context,
@@ -283,62 +348,44 @@ pub fn grammar_phonetic_transliteration(
     out: &mut dyn Output,
 ) -> HelperResult {
 
-    let word_header = h.param(0).unwrap().value();
-
-    let word = word_header.get("word").unwrap().render();
-    let grammar = word_header.get("grammar").unwrap().render();
-    let phonetic = word_header.get("phonetic").unwrap().render();
-    let transliteration = word_header.get("transliteration").unwrap().render();
-
+    let dict_word_render = h.param(0).unwrap().value();
     let add_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
 
-    out.write(&format_grammar_phonetic_transliteration(&word, &grammar, &phonetic, &transliteration, add_velthuis))?;
+    out.write(&format_phonetic_transliteration_html(dict_word_render, add_velthuis))?;
     Ok(())
 }
 
-pub fn format_grammar_phonetic_transliteration_plain(
-    word: &str,
-    grammar: &str,
-    phonetic: &str,
-    transliteration: &str,
-    add_velthuis: bool)
-    -> String
-{
-    if grammar.is_empty() && phonetic.is_empty() && transliteration.is_empty() && !add_velthuis {
-        return "".to_string();
+pub fn format_phonetic_transliteration_plain(dict_word_render: &serde_json::Value, add_velthuis: bool) -> String {
+
+    let word = dict_word_render.get("word").unwrap().render();
+    let phonetic = dict_word_render.get("phonetic").unwrap().render();
+    let transliteration = dict_word_render.get("transliteration").unwrap().render();
+
+    let mut parts: Vec<String> = Vec::new();
+
+    if !phonetic.is_empty() {
+        parts.push(phonetic);
     }
 
-    let g = if grammar.is_empty() {
-        "".to_string()
-    } else {
-        format!("/{}/", grammar)
-    };
-
-    let ph = if phonetic.is_empty() {
-        "".to_string()
-    } else {
-        format!(" | {}", phonetic)
-    };
-
-    let tr = if transliteration.is_empty() {
+    if transliteration.is_empty() {
         if add_velthuis {
             let velthuis = pali::to_velthuis(&word);
             if word != velthuis {
-                format!(" | {}", velthuis)
-            } else {
-                "".to_string()
+                parts.push(velthuis);
             }
-        } else {
-            "".to_string()
         }
     } else {
-        format!(" | {}", transliteration)
+        parts.push(transliteration);
     };
 
-    format!("{}{}{}", g, ph, tr)
+    if parts.is_empty() {
+        "".to_string()
+    } else {
+        parts.join(" | ")
+    }
 }
 
-pub fn grammar_phonetic_transliteration_plain(
+pub fn phonetic_transliteration_plain(
     h: &Helper,
     _: &Handlebars,
     _: &Context,
@@ -347,15 +394,9 @@ pub fn grammar_phonetic_transliteration_plain(
 ) -> HelperResult {
 
     let word_header = h.param(0).unwrap().value();
-
-    let word = word_header.get("word").unwrap().render();
-    let grammar = word_header.get("grammar").unwrap().render();
-    let phonetic = word_header.get("phonetic").unwrap().render();
-    let transliteration = word_header.get("transliteration").unwrap().render();
-
     let add_velthuis = h.param(1).unwrap().value().as_bool().unwrap();
 
-    out.write(&format_grammar_phonetic_transliteration_plain(&word, &grammar, &phonetic, &transliteration, add_velthuis))?;
+    out.write(&format_phonetic_transliteration_plain(word_header, add_velthuis))?;
     Ok(())
 }
 

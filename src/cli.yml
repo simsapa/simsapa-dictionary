@@ -348,12 +348,25 @@ subcommands:
             required: false
             takes_value: false
 
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first Markdown source."
             long: output_path
             value_name: PATH
             required: false
             takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not HTML. Doesn't convert definition_md to HTML."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
 
   - xlsx_to_stardict_xml:
       about: "Process an XLSX file and generate a Stardict textual dictionary file (XML)."
@@ -393,12 +406,25 @@ subcommands:
             required: false
             takes_value: false
 
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - output_path:
             help: "The XML file to write. Defaults to the same file name and folder as the first XLSX source."
             long: output_path
             value_name: PATH
             required: false
             takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not HTML. Doesn't convert definition_md to HTML."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
 
   - markdown_to_c5:
       about: "Process an Markdown file and generate a C5 text file for processing with 'dictfmt -c5'."
@@ -437,6 +463,13 @@ subcommands:
             long: allow_raw_html
             required: false
             takes_value: false
+
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
 
         - output_path:
             help: "The C5 format text file to write. Defaults to the same file name and folder as the first Markdown source."
@@ -488,6 +521,13 @@ subcommands:
             long: allow_raw_html
             required: false
             takes_value: false
+
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
 
         - output_path:
             help: "The C5 format text file to write. Defaults to the same file name and folder as the first XLSX source."

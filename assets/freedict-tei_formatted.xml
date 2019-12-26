@@ -80,7 +80,12 @@
         <sense>
           <cit type="trans">
             <quote>
-              {{definition_md}}
+{{definition_md}}
+{{#if examples}}
+Examples:
+
+{{examples}}
+{{/if}}
             </quote>
           </cit>
 {{word_list_tei "Synonyms:" word_header.synonyms "syn" ~}}

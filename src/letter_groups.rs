@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::dict_word::DictWord;
+use crate::dict_word::DictWordMarkdown;
 use crate::pali;
 
 pub struct LetterGroups {
@@ -15,7 +15,7 @@ pub struct LetterGroup {
     pub title: String,
     pub group_letter: String,
     pub letter_index: usize,
-    pub dict_words: Vec<DictWord>,
+    pub dict_words: Vec<DictWordMarkdown>,
 }
 
 impl Default for LetterGroups {
@@ -28,7 +28,7 @@ impl Default for LetterGroups {
 }
 
 impl LetterGroups {
-    pub fn new_from_dict_words(dict_words: &[DictWord]) -> LetterGroups {
+    pub fn new_from_dict_words(dict_words: &[DictWordMarkdown]) -> LetterGroups {
         let mut groups: Groups = BTreeMap::new();
         let mut words_to_url: BTreeMap<String, String> = BTreeMap::new();
 
@@ -48,7 +48,7 @@ impl LetterGroups {
                 .or_insert(LetterGroup {
                     title: "".to_string(),
                     group_letter: first_letter.clone(),
-                    letter_index: letter_index,
+                    letter_index,
                     dict_words: Vec::new(),
                 })
                 .dict_words

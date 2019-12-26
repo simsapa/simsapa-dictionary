@@ -12,7 +12,7 @@ use regex::Regex;
 use deunicode::deunicode;
 
 use crate::app::{self, AppStartParams, ZipWith};
-use crate::dict_word::{DictWord, DictWordXlsx};
+use crate::dict_word::{DictWordMarkdown, DictWordRender, DictWordXlsx};
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
 use crate::letter_groups::{LetterGroups, LetterGroup};
@@ -26,7 +26,11 @@ pub struct Ebook {
     pub meta: EbookMetadata,
     pub output_format: OutputFormat,
 
-    pub dict_words: BTreeMap<String, DictWord>,
+    /// Words as serialized from the input formats, Markdown or XLSX. The map key is `word_header.url_id`.
+    pub dict_words_input: BTreeMap<String, DictWordMarkdown>,
+
+    /// Words as processed for rendering in the templates. The map key is `word_header.url_id`.
+    pub dict_words_render: BTreeMap<String, DictWordRender>,
 
     /// Collects the list of valid word names which can be linked to.
     #[serde(skip)]
@@ -41,6 +45,9 @@ pub struct Ebook {
 
     #[serde(skip)]
     pub output_path: PathBuf,
+
+    #[serde(skip)]
+    pub entries_template: Option<PathBuf>,
 
     /// The folder of the first source input file.
     #[serde(skip)]
@@ -99,7 +106,8 @@ pub enum OutputFormat {
     Epub,
     Mobi,
     BabylonGls,
-    StardictXml,
+    StardictXmlPlain,
+    StardictXmlHtml,
     C5Plain,
     C5Html,
     TeiPlain,
@@ -119,12 +127,21 @@ pub struct LetterGroupTemplateData {
 }
 
 impl Ebook {
-    pub fn new(output_format: OutputFormat, allow_raw_html: bool, source_dir: &PathBuf, output_path: &PathBuf) -> Self {
+    pub fn new(
+        output_format: OutputFormat,
+        allow_raw_html: bool,
+        source_dir: &PathBuf,
+        output_path: &PathBuf,
+        entries_template: Option<PathBuf>,
+        ) -> Self
+    {
         // asset_files_string
         let mut afs: BTreeMap<String, String> = BTreeMap::new();
         // asset_files_byte
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
+        h.set_strict_mode(true);
+        h.register_escape_fn(handlebars::no_escape);
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("countitems", Box::new(helpers::countitems));
@@ -135,8 +152,10 @@ impl Ebook {
         h.register_helper("word_list", Box::new(helpers::word_list));
         h.register_helper("word_list_plain", Box::new(helpers::word_list_plain));
         h.register_helper("word_list_tei", Box::new(helpers::word_list_tei));
-        h.register_helper("grammar_phonetic_transliteration", Box::new(helpers::grammar_phonetic_transliteration));
-        h.register_helper("grammar_phonetic_transliteration_plain", Box::new(helpers::grammar_phonetic_transliteration_plain));
+        h.register_helper("grammar_text", Box::new(helpers::grammar_text));
+        h.register_helper("grammar_text_plain", Box::new(helpers::grammar_text_plain));
+        h.register_helper("phonetic_transliteration", Box::new(helpers::phonetic_transliteration));
+        h.register_helper("phonetic_transliteration_plain", Box::new(helpers::phonetic_transliteration_plain));
 
         // Can't loop because the arg of include_str! must be a string literal.
 
@@ -210,10 +229,17 @@ impl Ebook {
         );
         reg_tmpl(&mut h, &k, &afs);
 
-        let k = "stardict_textual.xml".to_string();
+        let k = "stardict_textual_plain.xml".to_string();
         afs.insert(
             k.clone(),
-            include_str!("../assets/stardict_textual.xml").to_string(),
+            include_str!("../assets/stardict_textual_plain.xml").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "stardict_textual_html.xml".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/stardict_textual_html.xml").to_string(),
         );
         reg_tmpl(&mut h, &k, &afs);
 
@@ -273,7 +299,8 @@ impl Ebook {
         Ebook {
             meta,
             output_format,
-            dict_words: BTreeMap::new(),
+            dict_words_input: BTreeMap::new(),
+            dict_words_render: BTreeMap::new(),
             valid_words: Vec::new(),
             words_to_url: BTreeMap::new(),
             entries_manifest: Vec::new(),
@@ -281,6 +308,7 @@ impl Ebook {
             asset_files_byte: afb,
             output_path: output_path.to_path_buf(),
             source_dir: source_dir.to_path_buf(),
+            entries_template,
             build_base_dir: None,
             mimetype_path: None,
             meta_inf_dir: None,
@@ -300,7 +328,7 @@ impl Ebook {
     /// - velthuis
     /// - ascii
     pub fn process_add_transliterations(&mut self) {
-        for (_, dict_word) in self.dict_words.iter_mut() {
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
 
             if !dict_word.word_header.transliteration.is_empty() {
                 dict_word.word_header.inflections.push(dict_word.word_header.transliteration.clone());
@@ -344,53 +372,51 @@ impl Ebook {
         }
 
         if let Some(ref dict_label) = app_params.dict_label {
-            for (_key, word) in self.dict_words.iter_mut() {
+            for (_key, word) in self.dict_words_input.iter_mut() {
                 word.word_header.dict_label = dict_label.clone();
             }
         }
     }
 
-    pub fn add_word(&mut self, new_word: DictWord) {
+    pub fn add_word(&mut self, new_word: DictWordMarkdown) {
         let mut new_word = new_word;
 
+        if new_word.word_header.meaning_order == 0 {
+            new_word.word_header.meaning_order = 1;
+        }
         new_word.set_url_id();
 
         if !self.valid_words.contains(&new_word.word_header.word) {
             self.valid_words.push(new_word.word_header.word.clone());
         }
 
-        while self.dict_words.contains_key(&new_word.word_header.url_id) {
-            warn!(
-                "Double word: '{}'. Entries should be unique for url_id.",
-                &new_word.word_header.url_id
-            );
-
-            new_word.word_header.word = format!("{} FIXME double", new_word.word_header.word);
+        while self.dict_words_input.contains_key(&new_word.word_header.url_id) {
+            new_word.word_header.meaning_order += 1;
             new_word.set_url_id();
         }
 
         let id = new_word.word_header.url_id.clone();
-        let w = self.dict_words.insert(new_word.word_header.url_id.clone(), new_word);
+        let w = self.dict_words_input.insert(new_word.word_header.url_id.clone(), new_word);
         if w.is_some() {
             error!("Unhandled double word '{}', new value replacing the old.", id);
         }
     }
 
-    pub fn get_word(&self, word: &str) -> Option<&DictWord> {
-        self.dict_words.get(word)
+    pub fn get_word(&self, word: &str) -> Option<&DictWordMarkdown> {
+        self.dict_words_input.get(word)
     }
 
     pub fn len(&self) -> usize {
-        self.dict_words.len()
+        self.dict_words_input.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.dict_words.is_empty()
+        self.dict_words_input.is_empty()
     }
 
     pub fn entries_as_markdown(&self) -> String {
         info!("entries_as_markdown()");
-        self.dict_words
+        self.dict_words_input
             .values()
             .map(|i| i.as_markdown_and_toml_string())
             .collect::<Vec<String>>()
@@ -486,7 +512,7 @@ impl Ebook {
     pub fn write_entries(&mut self) -> Result<(), Box<dyn Error>> {
         info!("write_entries()");
 
-        let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
+        let w: Vec<DictWordMarkdown> = self.dict_words_input.values().cloned().collect();
         let mut letter_groups = LetterGroups::new_from_dict_words(&w);
 
         info!("Writing {} letter groups ...", letter_groups.len());
@@ -1049,7 +1075,7 @@ impl Ebook {
 &self.meta.created_date_opf));
 
         // Write the entries.
-        for (_, word) in self.dict_words.iter() {
+        for (_, word) in self.dict_words_input.iter() {
             // Blank line before each entry, including the first.
             content.push_str("\n\n");
 
@@ -1070,15 +1096,15 @@ impl Ebook {
                 text.push_str(&format!("<p>[{}]</p>", &word.word_header.dict_label));
             }
 
-            // grammar, phonetic, transliteration
-            let s = helpers::format_grammar_phonetic_transliteration(
-                &word.word_header.word,
-                &word.word_header.grammar,
-                &word.word_header.phonetic,
-                &word.word_header.transliteration,
-                self.meta.add_velthuis);
+            // let h = serde_json::to_value(&word.word_header).unwrap();
 
-            text.push_str(&s);
+            // FIXME grammar
+            // let s = helpers::grammar_text_html();
+            // text.push_str(&s);
+
+            // FIXME phonetic, transliteration
+            // let s = helpers::format_phonetic_transliteration_html(&h, self.meta.add_velthuis);
+            // text.push_str(&s);
 
             // Also written as
             if !word.word_header.also_written_as.is_empty() {
@@ -1127,14 +1153,51 @@ impl Ebook {
     pub fn write_stardict_xml(&self) -> Result<(), Box<dyn Error>> {
         info!("write_stardict_xml()");
 
-        let template = "stardict_textual.xml".to_string();
-        let content = match self.templates.render(&template, &self) {
-            Ok(x) => x,
-            Err(e) => {
-                error!("Can't render template {}, {:?}", template, e);
-                "FIXME: Template rendering error.".to_string()
+        let mut content = match self.entries_template {
+            Some(ref path) => {
+                let template_source = match fs::read_to_string(path) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't read file: {:?}, {:?}", path, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
+
+                let mut h = Handlebars::new();
+                h.set_strict_mode(true);
+                h.register_escape_fn(handlebars::no_escape);
+                match h.render_template(&template_source, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
+            }
+
+            None => {
+                let template = match self.output_format {
+                    OutputFormat::StardictXmlPlain => "stardict_textual_plain.xml".to_string(),
+                    OutputFormat::StardictXmlHtml => "stardict_textual_html.xml".to_string(),
+                    _ => {
+                        let msg = "🔥 Only StardictXmlPlain or StardictXmlHtml makes sense here.".to_string();
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
+                match self.templates.render(&template, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template {}, {:?}", template, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
             }
         };
+
+        let re_def_whitespace = Regex::new(r#"(<definition type="[a-z]+">)[ \n]+(.*?)[ \n]*(</definition>)"#).unwrap();
+        content = re_def_whitespace.replace_all(&content, "$1$2$3").to_string();
+
+        content = clean_output_content(&content);
 
         let mut file = File::create(&self.output_path)?;
         file.write_all(content.as_bytes())?;
@@ -1150,20 +1213,45 @@ impl Ebook {
     pub fn write_c5(&self) -> Result<(), Box<dyn Error>> {
         info!("write_c5()");
 
-        let template = match self.output_format {
-            OutputFormat::C5Plain => "c5_plain.txt".to_string(),
-            OutputFormat::C5Html => "c5_html.txt".to_string(),
-            _ => {
-                let msg = "🔥 Only C5Plain or C5Html makes sense here.".to_string();
-                return Err(Box::new(ToolError::Exit(msg)));
-            }
-        };
+        let mut content = match self.entries_template {
+            Some(ref path) => {
+                let template_source = match fs::read_to_string(path) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't read file: {:?}, {:?}", path, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
 
-        let mut content = match self.templates.render(&template, &self) {
-            Ok(x) => x,
-            Err(e) => {
-                error!("Can't render template {}, {:?}", template, e);
-                "FIXME: Template rendering error.".to_string()
+                let mut h = Handlebars::new();
+                h.set_strict_mode(true);
+                h.register_escape_fn(handlebars::no_escape);
+                match h.render_template(&template_source, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
+            }
+
+            None => {
+                let template = match self.output_format {
+                    OutputFormat::C5Plain => "c5_plain.txt".to_string(),
+                    OutputFormat::C5Html => "c5_html.txt".to_string(),
+                    _ => {
+                        let msg = "🔥 Only C5Plain or C5Html makes sense here.".to_string();
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
+
+                match self.templates.render(&template, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template {}, {:?}", template, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
             }
         };
 
@@ -1171,10 +1259,7 @@ impl Ebook {
             content = content.replace("&amp;", "&");
         }
 
-        // Remove double blanks from the output, empty attributes leave empty spaces when rendering
-        // the template.
-        let re_double_blanks = Regex::new(r"\n\n+").unwrap();
-        content = re_double_blanks.replace_all(&content, "\n\n").to_string();
+        content = clean_output_content(&content);
 
         let mut file = File::create(&self.output_path)?;
         file.write_all(content.as_bytes())?;
@@ -1233,7 +1318,7 @@ impl Ebook {
         // Write Entries as DictWordXlsx.
 
         {
-            let entries_xlsx = &self.dict_words
+            let entries_xlsx = &self.dict_words_input
                 .values()
                 .cloned()
                 .map(|i| DictWordXlsx::from_dict_word(&i))
@@ -1270,10 +1355,12 @@ impl Ebook {
     }
 
     pub fn process_text(&mut self) {
+        self.process_strip_html_for_plaintext();
         self.process_add_transliterations();
         self.process_links();
         self.process_define_links();
         self.process_ampersand();
+        self.process_input_to_render();
     }
 
     pub fn process_tidy(&mut self) {
@@ -1291,7 +1378,7 @@ impl Ebook {
         // Strip remaining internal links, i.e. which are not /define or outgoing http links.
         let re_strip_internal = Regex::new(r"\[(?P<label>[^\]]+)\]\((?P<define>/define/|http)?[^\)]+\)").unwrap();
 
-        for (_, dict_word) in self.dict_words.iter_mut() {
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
             let mut s = dict_word.definition_md.clone();
 
             // strip empty links
@@ -1326,7 +1413,7 @@ impl Ebook {
         let re_also_written_ital = Regex::new(r"\(also written as \*([^ ]+)\*\)").unwrap();
         let re_also_written_plain = Regex::new(r"\(also written as *([^ ]+)\)").unwrap();
 
-        for (_, dict_word) in self.dict_words.iter_mut() {
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
             //let word = dict_word.word_header.word.clone();
             let mut s = dict_word.definition_md.trim().to_string();
 
@@ -1391,7 +1478,7 @@ impl Ebook {
     pub fn process_strip_repeat_word_title(&mut self) {
         info!("process_strip_repeat_word_title()");
 
-        for (_, dict_word) in self.dict_words.iter_mut() {
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
             let word = dict_word.word_header.word.clone();
             let mut s = dict_word.definition_md.trim().to_string();
 
@@ -1423,7 +1510,7 @@ impl Ebook {
         // ~ā
         let re_suffix_a = Regex::new(r"^\\*~*[aā],* +").unwrap();
 
-        for (_key, dict_word) in self.dict_words.iter_mut() {
+        for (_key, dict_word) in self.dict_words_input.iter_mut() {
             let mut def = dict_word.definition_md.trim().to_string();
 
             let max_iter = 10;
@@ -1485,7 +1572,7 @@ impl Ebook {
                 }
             }
 
-            dict_word.word_header.grammar = dict_word.definition_md
+            dict_word.word_header.grammar_comment = dict_word.definition_md
                 .trim_end_matches(&def)
                 .trim_end_matches(',')
                 .trim()
@@ -1528,7 +1615,7 @@ impl Ebook {
         let re_also_three_plain = Regex::new(r"\(also +([^\*\(\), ]{3,}), +([^\*\(\), ]{3,})(, +| +and +|, +and +| +& +)([^\*\(\)]{3,})\)").unwrap();
         let re_also_three_italics = Regex::new(r"\(also +\*([^\*\(\), ]{3,})\*, +\*([^\*\(\), ]{3,})\*(, +| +and +|, +and +| +& +)\*([^\*\(\)]{3,})\*\)").unwrap();
 
-        for (_, w) in self.dict_words.iter_mut() {
+        for (_, w) in self.dict_words_input.iter_mut() {
             let mut def: String = w.definition_md.clone();
 
             // (also *abhisāpeti*) -> (see [abhisāpeti](/define/abhisāpeti))
@@ -1578,16 +1665,33 @@ impl Ebook {
         }
     }
 
+    pub fn process_strip_html_for_plaintext(&mut self) {
+        info!("process_strip_html_for_plaintext()");
+
+        // Have to match specific tags, sometimes text is wrapped in <...> in the definition as
+        // an editorial practice.
+        let re_html = Regex::new(r"</*(sup|em|strong|a|i|b) *>").unwrap();
+
+        match self.output_format {
+            OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+                for w in self.dict_words_input.values_mut() {
+                    w.definition_md = re_html.replace_all(&w.definition_md, "").to_string();
+                }
+            },
+            _ => {}
+        }
+    }
+
     pub fn process_define_links(&mut self) {
         info!("process_define_links()");
         // [abhuṃ](/define/abhuṃ)
         let re_define = Regex::new(r"\[[^0-9\]\(\)]+\]\(/define/(?P<define>[^\(\)]+)\)").unwrap();
 
-        let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
+        let w: Vec<DictWordMarkdown> = self.dict_words_input.values().cloned().collect();
         let letter_groups = LetterGroups::new_from_dict_words(&w);
         let words_to_url = letter_groups.words_to_url;
 
-        for (_, dict_word) in self.dict_words.iter_mut() {
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
             let def = dict_word.definition_md.clone();
             for cap in re_define.captures_iter(&def) {
                 let link = cap[0].to_string();
@@ -1601,7 +1705,7 @@ impl Ebook {
                         }
                     },
 
-                    OutputFormat::StardictXml | OutputFormat::BabylonGls => {
+                    OutputFormat::StardictXmlHtml | OutputFormat::BabylonGls => {
                         // If it is a valid word entry, replace to bword:// for Stardict and Babylon.
                         if self.valid_words.contains(&word) {
                             format!("[{}](bword://{})", word, word)
@@ -1619,7 +1723,7 @@ impl Ebook {
                         }
                     }
 
-                    OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+                    OutputFormat::StardictXmlPlain | OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                         if self.valid_words.contains(&word) {
                             // curly braces are escaped as {{ and }}
                             format!("{{{}}}", word)
@@ -1636,10 +1740,37 @@ impl Ebook {
     }
 
     pub fn process_ampersand(&mut self) {
-        for (_, dict_word) in self.dict_words.iter_mut() {
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
             dict_word.definition_md = dict_word.definition_md.replace('&', "&amp;");
             dict_word.word_header.summary = dict_word.word_header.summary.replace('&', "&amp;");
-            dict_word.word_header.grammar = dict_word.word_header.grammar.replace('&', "&amp;");
+            dict_word.word_header.grammar_comment = dict_word.word_header.grammar_comment.replace('&', "&amp;");
+        }
+    }
+
+    pub fn process_input_to_render(&mut self) {
+        info!("process_input_to_render()");
+
+        // dict_words_input is sorted by key 'word-label-meaning_order'
+        for dwi in self.dict_words_input.values() {
+            let dwr: DictWordRender = DictWordRender::from_dict_word_markdown(dwi);
+
+            // If the url_id already exist, append to the meanings.
+            // Otherwise, insert as new.
+            if let Some(word) = self.dict_words_render.get_mut(&dwr.url_id) {
+                for m in dwr.meanings.iter() {
+                    word.meanings.push(m.clone());
+                }
+            } else {
+                self.dict_words_render.insert(dwr.url_id.clone(), dwr);
+            };
+        }
+
+        // Renumber meaning_order values, they must start from 1 and be continuous.
+        for dwr in self.dict_words_render.values_mut() {
+            for (n, meaning) in dwr.meanings.iter_mut().enumerate() {
+                meaning.meaning_order = n + 1;
+            }
+            dwr.meanings_count = dwr.meanings.len();
         }
     }
 
@@ -1683,7 +1814,7 @@ impl Ebook {
             let re_hyphenated_twice = Regex::new(r"^\w+-\w+-\w+\b").unwrap();
             let re_hyphenated_once = Regex::new(r"^\w+-\w+\b").unwrap();
 
-        for (_key, dict_word) in self.dict_words.iter_mut() {
+        for (_key, dict_word) in self.dict_words_input.iter_mut() {
             if !dict_word.word_header.summary.is_empty() {
                 dict_word.word_header.summary = dict_word.word_header.summary.trim().to_string();
             }
@@ -1859,7 +1990,7 @@ impl Ebook {
                 }
             },
 
-            OutputFormat::BabylonGls | OutputFormat::StardictXml => {
+            OutputFormat::BabylonGls | OutputFormat::StardictXmlHtml => {
                 if valid_words.contains(&w.to_string()) {
                     format!("<a href=\"bword://{}\">{}</a>", w, w)
                 } else {
@@ -1890,7 +2021,7 @@ impl Ebook {
                 }
             }
 
-            OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+            OutputFormat::StardictXmlPlain | OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                 if valid_words.contains(&w.to_string()) {
                     // curly braces are escaped as {{ and }}
                     format!("{{{}}}", w)
@@ -1907,11 +2038,11 @@ impl Ebook {
     pub fn process_links(&mut self) {
         info!("process_links()");
 
-        let w: Vec<DictWord> = self.dict_words.values().cloned().collect();
+        let w: Vec<DictWordMarkdown> = self.dict_words_input.values().cloned().collect();
         let letter_groups = LetterGroups::new_from_dict_words(&w);
         let words_to_url = letter_groups.words_to_url;
 
-        for (_key, dict_word) in self.dict_words.iter_mut() {
+        for (_key, dict_word) in self.dict_words_input.iter_mut() {
             for w in dict_word.word_header.synonyms.iter_mut() {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
@@ -1946,6 +2077,7 @@ impl Default for Ebook {
             false,
             &PathBuf::from("."),
             &PathBuf::from("ebook.epub"),
+            None,
         )
     }
 }
@@ -1969,5 +2101,24 @@ impl Default for EbookMetadata {
             allow_raw_html: false,
         }
     }
+}
+
+fn clean_output_content(text: &str) -> String {
+    let mut content = text.to_string();
+
+    // Remove trailing spaces
+    let re_trailing = Regex::new(r" +\n").unwrap();
+    content = re_trailing.replace_all(&content, "\n").to_string();
+
+    // Remove empty <p></p>
+    let re_empty = Regex::new(r"<p> *</p>").unwrap();
+    content = re_empty.replace_all(&content, "").to_string();
+
+    // Remove double blanks from the output, empty attributes leave empty spaces when rendering
+    // the template.
+    let re_double_blanks = Regex::new(r"\n\n+").unwrap();
+    content = re_double_blanks.replace_all(&content, "\n\n").to_string();
+
+    content
 }
 

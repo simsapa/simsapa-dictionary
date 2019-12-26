@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<stardict>
+  <info>
+    <version>{{#if meta.version}}{{meta.version}}{{else}}0.1.0{{/if}}</version>
+    <bookname>{{meta.title}}</bookname>
+    <author>{{meta.creator}}</author>
+    <email>{{meta.email}}</email>
+    <website>{{meta.source}}</website>
+    <description>{{meta.description}}</description>
+    <date>{{meta.created_date_opf}}</date>
+    <dicttype><!-- this element is normally empty --></dicttype>
+  </info>
+
+  <contents>
+
+    {{#each dict_words_render ~}}
+    <article>
+      <key>{{word}}</key>
+
+      {{#if inflections ~}}
+      {{#each inflections ~}}
+      <synonym>{{this}}</synonym>
+      {{/each ~}}
+      {{/if ~}}
+
+      <definition type="m">
+{{#if dict_label}}[{{dict_label}}] {{/if}}{{phonetic_transliteration_plain this ../meta.add_velthuis}}
+
+{{#each meanings}}
+{{#if (gt ../meanings_count 1)}}({{meaning_order}}) {{/if}}{{grammar_text_plain grammar}}
+
+{{word_list_plain "Also written as:" also_written_as ~}}
+
+{{definition_md}}
+
+{{#if examples}}
+Examples:
+
+{{examples}}
+{{/if}}
+
+{{word_list_plain "Synonyms:" synonyms ~}}
+{{word_list_plain "Antonyms:" antonyms ~}}
+{{word_list_plain "See also:" see_also ~}}
+
+{{/each}}
+      </definition>
+    </article>
+    {{/each ~}}
+
+  </contents>
+</stardict>
+

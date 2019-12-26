@@ -9,7 +9,7 @@ use walkdir::WalkDir;
 use regex::Regex;
 use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
-use crate::dict_word::{DictWord, DictWordHeader, DictWordXlsx};
+use crate::dict_word::{DictWordMarkdown, DictWordHeader, DictWordXlsx};
 use crate::ebook::{
     Ebook, OutputFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
 };
@@ -23,6 +23,7 @@ pub struct AppStartParams {
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
+    pub entries_template: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
     pub reuse_metadata: bool,
@@ -87,6 +88,7 @@ impl Default for AppStartParams {
             nyanatiloka_root: None,
             source_paths: None,
             output_path: None,
+            entries_template: None,
             kindlegen_path: None,
             reuse_metadata: false,
             title: None,
@@ -522,7 +524,11 @@ fn process_to_stardict(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
-    params.output_format = OutputFormat::StardictXml;
+    if sub_matches.is_present("keep_entries_plaintext") {
+        params.output_format = OutputFormat::StardictXmlPlain;
+    } else {
+        params.output_format = OutputFormat::StardictXmlHtml;
+    }
 
     if !sub_matches.is_present("source_path")
         && !sub_matches.is_present("source_paths_list")
@@ -540,6 +546,22 @@ fn process_to_stardict(
             let path = PathBuf::from(&x);
             if path.exists() {
                 params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    if sub_matches.is_present("entries_template") {
+        if let Ok(x) = sub_matches
+            .value_of("entries_template")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.entries_template = Some(path);
             } else {
                 let msg = format!("🔥 Path does not exist: {:?}", &path);
                 return Err(Box::new(ToolError::Exit(msg)));
@@ -682,6 +704,22 @@ fn process_to_c5(
             let path = PathBuf::from(&x);
             if path.exists() {
                 params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    if sub_matches.is_present("entries_template") {
+        if let Ok(x) = sub_matches
+            .value_of("entries_template")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.entries_template = Some(path);
             } else {
                 let msg = format!("🔥 Path does not exist: {:?}", &path);
                 return Err(Box::new(ToolError::Exit(msg)));
@@ -1062,13 +1100,23 @@ pub fn process_suttacentral_json(
     let entries: Vec<Entry> = serde_json::from_str(&s).unwrap();
 
     for e in entries.iter() {
-        let new_word = DictWord {
+        let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
+                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, "", &dict_label),
+                // ebook.add_word will increment meaning_order if needed
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
-                grammar: "".to_string(),
+
+                grammar_case: "".to_string(),
+                grammar_num: "".to_string(),
+                grammar_gender: "".to_string(),
+                grammar_person: "".to_string(),
+                grammar_voice: "".to_string(),
+                grammar_object: "".to_string(),
+                grammar_comment: "".to_string(),
+
                 phonetic: "".to_string(),
                 transliteration: "".to_string(),
                 inflections: Vec::new(),
@@ -1076,6 +1124,7 @@ pub fn process_suttacentral_json(
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
                 also_written_as: Vec::new(),
+                examples: "".to_string(),
             },
             definition_md: html_to_markdown(&e.text).to_string(),
         };
@@ -1136,13 +1185,22 @@ pub fn process_nyanatiloka_entries(
     }
 
     for e in entries.iter() {
-        let new_word = DictWord {
+        let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
                 dict_label: (*dict_label).to_string(),
+                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWord::gen_url_id(&e.word, "", &dict_label),
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
                 summary: "".to_string(),
-                grammar: "".to_string(),
+
+                grammar_case: "".to_string(),
+                grammar_num: "".to_string(),
+                grammar_gender: "".to_string(),
+                grammar_person: "".to_string(),
+                grammar_voice: "".to_string(),
+                grammar_object: "".to_string(),
+                grammar_comment: "".to_string(),
+
                 phonetic: "".to_string(),
                 transliteration: "".to_string(),
                 inflections: Vec::new(),
@@ -1150,6 +1208,7 @@ pub fn process_nyanatiloka_entries(
                 antonyms: Vec::new(),
                 see_also: Vec::new(),
                 also_written_as: Vec::new(),
+                examples: "".to_string(),
             },
             definition_md: html_to_markdown(&e.text),
         };
@@ -1172,11 +1231,11 @@ pub fn process_markdown_list(
 pub fn split_metadata_and_entries(path: &PathBuf) -> Result<(String, String), Box<dyn Error>> {
     let s = fs::read_to_string(path).unwrap();
 
-    // Split the Dictionary header and the DictWord entries.
+    // Split the Dictionary header and the DictWordMarkdown entries.
     let parts: Vec<&str> = s.split(DICTIONARY_WORD_ENTRIES_SEP).collect();
 
     if parts.len() != 2 {
-        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWord entries."
+        let msg = "Bad Markdown input. Can't separate the Dictionary header and DictWordMarkdown entries."
             .to_string();
         return Err(Box::new(ToolError::Exit(msg)));
     }
@@ -1218,12 +1277,12 @@ pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), 
 
     ebook.meta = parse_str_to_metadata(&meta_txt)?;
 
-    let entries: Vec<Result<DictWord, Box<dyn Error>>> = entries_txt
+    let entries: Vec<Result<DictWordMarkdown, Box<dyn Error>>> = entries_txt
         .split("``` toml")
         .filter_map(|s| {
             let a = s.trim();
             if !a.is_empty() {
-                Some(DictWord::from_markdown(a))
+                Some(DictWordMarkdown::from_markdown(a))
             } else {
                 None
             }
@@ -1330,7 +1389,7 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
 
     for i in entries.iter() {
         match i {
-            Ok(x) => ebook.add_word(DictWord::from_xlsx(x)),
+            Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
             Err(msg) => {
                 return Err(Box::new(ToolError::Exit(msg.clone())));
             }
