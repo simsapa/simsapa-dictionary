@@ -246,7 +246,14 @@ fn get_grammar_text(grammar: &serde_json::Value) -> String {
         voice,
         object,
         comment,
-    ].join(" ");
+    ].iter().filter_map(|i| {
+        let s = i.trim();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    }).collect::<Vec<&str>>().join(", ");
 
     grammar_text.trim().to_string()
 }

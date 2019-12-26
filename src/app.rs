@@ -524,7 +524,11 @@ fn process_to_stardict(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
-    params.output_format = OutputFormat::StardictXml;
+    if sub_matches.is_present("keep_entries_plaintext") {
+        params.output_format = OutputFormat::StardictXmlPlain;
+    } else {
+        params.output_format = OutputFormat::StardictXmlHtml;
+    }
 
     if !sub_matches.is_present("source_path")
         && !sub_matches.is_present("source_paths_list")

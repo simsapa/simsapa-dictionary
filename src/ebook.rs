@@ -106,7 +106,8 @@ pub enum OutputFormat {
     Epub,
     Mobi,
     BabylonGls,
-    StardictXml,
+    StardictXmlPlain,
+    StardictXmlHtml,
     C5Plain,
     C5Html,
     TeiPlain,
@@ -139,6 +140,8 @@ impl Ebook {
         // asset_files_byte
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
+        h.set_strict_mode(true);
+        h.register_escape_fn(handlebars::no_escape);
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("countitems", Box::new(helpers::countitems));
@@ -226,10 +229,17 @@ impl Ebook {
         );
         reg_tmpl(&mut h, &k, &afs);
 
-        let k = "stardict_textual.xml".to_string();
+        let k = "stardict_textual_plain.xml".to_string();
         afs.insert(
             k.clone(),
-            include_str!("../assets/stardict_textual.xml").to_string(),
+            include_str!("../assets/stardict_textual_plain.xml").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "stardict_textual_html.xml".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/stardict_textual_html.xml").to_string(),
         );
         reg_tmpl(&mut h, &k, &afs);
 
@@ -1153,7 +1163,9 @@ impl Ebook {
                     }
                 };
 
-                let h = Handlebars::new();
+                let mut h = Handlebars::new();
+                h.set_strict_mode(true);
+                h.register_escape_fn(handlebars::no_escape);
                 match h.render_template(&template_source, &self) {
                     Ok(x) => x,
                     Err(e) => {
@@ -1164,7 +1176,14 @@ impl Ebook {
             }
 
             None => {
-                let template = "stardict_textual.xml".to_string();
+                let template = match self.output_format {
+                    OutputFormat::StardictXmlPlain => "stardict_textual_plain.xml".to_string(),
+                    OutputFormat::StardictXmlHtml => "stardict_textual_html.xml".to_string(),
+                    _ => {
+                        let msg = "🔥 Only StardictXmlPlain or StardictXmlHtml makes sense here.".to_string();
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
                 match self.templates.render(&template, &self) {
                     Ok(x) => x,
                     Err(e) => {
@@ -1174,6 +1193,9 @@ impl Ebook {
                 }
             }
         };
+
+        let re_def_whitespace = Regex::new(r#"(<definition type="[a-z]+">)[ \n]+(.*?)[ \n]*(</definition>)"#).unwrap();
+        content = re_def_whitespace.replace_all(&content, "$1$2$3").to_string();
 
         content = clean_output_content(&content);
 
@@ -1201,7 +1223,9 @@ impl Ebook {
                     }
                 };
 
-                let h = Handlebars::new();
+                let mut h = Handlebars::new();
+                h.set_strict_mode(true);
+                h.register_escape_fn(handlebars::no_escape);
                 match h.render_template(&template_source, &self) {
                     Ok(x) => x,
                     Err(e) => {
@@ -1681,7 +1705,7 @@ impl Ebook {
                         }
                     },
 
-                    OutputFormat::StardictXml | OutputFormat::BabylonGls => {
+                    OutputFormat::StardictXmlHtml | OutputFormat::BabylonGls => {
                         // If it is a valid word entry, replace to bword:// for Stardict and Babylon.
                         if self.valid_words.contains(&word) {
                             format!("[{}](bword://{})", word, word)
@@ -1699,7 +1723,7 @@ impl Ebook {
                         }
                     }
 
-                    OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+                    OutputFormat::StardictXmlPlain | OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                         if self.valid_words.contains(&word) {
                             // curly braces are escaped as {{ and }}
                             format!("{{{}}}", word)
@@ -1966,7 +1990,7 @@ impl Ebook {
                 }
             },
 
-            OutputFormat::BabylonGls | OutputFormat::StardictXml => {
+            OutputFormat::BabylonGls | OutputFormat::StardictXmlHtml => {
                 if valid_words.contains(&w.to_string()) {
                     format!("<a href=\"bword://{}\">{}</a>", w, w)
                 } else {
@@ -1997,7 +2021,7 @@ impl Ebook {
                 }
             }
 
-            OutputFormat::C5Plain | OutputFormat::TeiPlain => {
+            OutputFormat::StardictXmlPlain | OutputFormat::C5Plain | OutputFormat::TeiPlain => {
                 if valid_words.contains(&w.to_string()) {
                     // curly braces are escaped as {{ and }}
                     format!("{{{}}}", w)
