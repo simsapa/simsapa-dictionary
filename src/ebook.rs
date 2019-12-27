@@ -141,7 +141,7 @@ impl Ebook {
         let mut afb: BTreeMap<String, Vec<u8>> = BTreeMap::new();
         let mut h = Handlebars::new();
         h.set_strict_mode(true);
-        h.register_escape_fn(handlebars::no_escape);
+        h.register_escape_fn(helpers::light_html_escape);
 
         h.register_helper("markdown", Box::new(helpers::markdown_helper));
         h.register_helper("countitems", Box::new(helpers::countitems));
@@ -1167,7 +1167,7 @@ impl Ebook {
 
                 let mut h = Handlebars::new();
                 h.set_strict_mode(true);
-                h.register_escape_fn(handlebars::no_escape);
+                h.register_escape_fn(helpers::light_html_escape);
                 match h.render_template(&template_source, &self) {
                     Ok(x) => x,
                     Err(e) => {
@@ -1229,7 +1229,7 @@ impl Ebook {
 
                 let mut h = Handlebars::new();
                 h.set_strict_mode(true);
-                h.register_escape_fn(handlebars::no_escape);
+                h.register_escape_fn(helpers::light_html_escape);
                 match h.render_template(&template_source, &self) {
                     Ok(x) => x,
                     Err(e) => {
@@ -1363,7 +1363,6 @@ impl Ebook {
         self.process_add_transliterations();
         self.process_links();
         self.process_define_links();
-        self.process_ampersand();
         self.process_input_to_render();
     }
 
@@ -1740,16 +1739,6 @@ impl Ebook {
 
                 dict_word.definition_md = dict_word.definition_md.replace(&link, &new_link).to_string();
             }
-        }
-    }
-
-    pub fn process_ampersand(&mut self) {
-        info!("process_ampersand()");
-
-        for (_, dict_word) in self.dict_words_input.iter_mut() {
-            dict_word.definition_md = dict_word.definition_md.replace('&', "&amp;");
-            dict_word.word_header.summary = dict_word.word_header.summary.replace('&', "&amp;");
-            dict_word.word_header.grammar_comment = dict_word.word_header.grammar_comment.replace('&', "&amp;");
         }
     }
 

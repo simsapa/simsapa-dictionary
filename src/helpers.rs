@@ -450,3 +450,13 @@ pub fn uppercase_first_letter(s: &str) -> String {
         Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
     }
 }
+
+pub fn light_html_escape(data: &str) -> String {
+    //lazy_static! {
+    //    static ref RE_AMP: Regex = Regex::new(r"&\b").unwrap();
+    //}
+    //RE_AMP.replace_all(&data, "&amp;").to_string()
+
+    data.replace('&', "&amp;")
+}
+
