@@ -328,6 +328,8 @@ impl Ebook {
     /// - velthuis
     /// - ascii
     pub fn process_add_transliterations(&mut self) {
+        info!("process_add_transliterations()");
+
         for (_, dict_word) in self.dict_words_input.iter_mut() {
 
             if !dict_word.word_header.transliteration.is_empty() {
@@ -343,7 +345,7 @@ impl Ebook {
 
             {
                 let s = deunicode(&dict_word.word_header.word);
-                if !dict_word.word_header.inflections.contains(&s) && s != dict_word.word_header.word {
+                if !s.contains("[?]") && !dict_word.word_header.inflections.contains(&s) && s != dict_word.word_header.word {
                     dict_word.word_header.inflections.push(s);
                 }
             }
@@ -1742,6 +1744,8 @@ impl Ebook {
     }
 
     pub fn process_ampersand(&mut self) {
+        info!("process_ampersand()");
+
         for (_, dict_word) in self.dict_words_input.iter_mut() {
             dict_word.definition_md = dict_word.definition_md.replace('&', "&amp;");
             dict_word.word_header.summary = dict_word.word_header.summary.replace('&', "&amp;");
