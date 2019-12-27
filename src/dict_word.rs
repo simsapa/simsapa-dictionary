@@ -1,5 +1,6 @@
 use std::default::Default;
 use std::error::Error;
+use std::collections::BTreeMap;
 
 use regex::Regex;
 
@@ -243,20 +244,9 @@ impl DictWordMarkdown {
     }
 
     pub fn gen_url_id(word: &str, dict_label: &str, meaning_order: usize) -> String {
-        let id_word = if word.is_empty() {
-            "untitled".to_string()
-        } else {
-            word.to_string()
-        };
+        let id_part = DictWordRender::gen_url_id(word, dict_label);
 
-        let id_label = if dict_label.is_empty() {
-            "unlabeled".to_string()
-        } else {
-            dict_label.to_string()
-        };
-
-        let id = format!("{}-{}-{}", id_word, id_label, meaning_order);
-        clean_url_id(&id)
+        format!("{}-{}", id_part, meaning_order)
     }
 
     pub fn set_url_id(&mut self) {
@@ -407,20 +397,19 @@ impl DictWordRender {
     }
 
     pub fn gen_url_id(word: &str, dict_label: &str) -> String {
-        let id_word = if word.is_empty() {
+        let id_word = if word.trim().is_empty() {
             "untitled".to_string()
         } else {
-            word.to_string()
+            text_to_url_id_part(word.trim())
         };
 
-        let id_label = if dict_label.is_empty() {
+        let id_label = if dict_label.trim().is_empty() {
             "unlabeled".to_string()
         } else {
-            dict_label.to_string()
+            text_to_url_id_part(dict_label.trim())
         };
 
-        let id = format!("{}-{}", id_word, id_label);
-        clean_url_id(&id)
+        format!("{}-{}", id_word, id_label)
     }
 
     pub fn set_url_id(&mut self) {
@@ -432,12 +421,36 @@ impl DictWordRender {
 
 }
 
-fn clean_url_id(text: &str) -> String {
+fn text_to_url_id_part(text: &str) -> String {
     lazy_static! {
-        static ref RE_INVALID_URL_ID: Regex = Regex::new(r"[^a-z0-9āīūṃṁṅñṭṭḍḍṇḷ-]").unwrap();
+        static ref RE_INVALID_URL_ID: Regex = Regex::new(r"([^a-z0-9āīūṃṁṅñṭṭḍḍṇḷ-])").unwrap();
     }
 
-    let id = text.to_lowercase().replace('.', "-").replace(' ', "-");
-    RE_INVALID_URL_ID.replace_all(&id, "-").to_string()
+    let mut id = text.to_lowercase().replace('.', "-").replace(' ', "-");
+
+    let mut replace_list: BTreeMap<char, String> = BTreeMap::new();
+
+    for caps in RE_INVALID_URL_ID.captures_iter(&id) {
+        let from = caps.get(1).unwrap().as_str().to_string();
+        let letter = from.chars().next().unwrap();
+
+        replace_list
+            .entry(letter)
+            .or_insert_with(|| char_to_unicode_codepoint_text(letter));
+    }
+
+    for (from_letter, to_text) in replace_list.iter() {
+        id = id.replace(&format!("{}", from_letter), to_text);
+    }
+
+    id
+}
+
+fn char_to_unicode_codepoint_text(letter: char) -> String {
+    let text: String = letter.escape_unicode().collect();
+    text
+        .replace(r"\u", "u")
+        .replace('{', "")
+        .replace('}', "")
 }
 

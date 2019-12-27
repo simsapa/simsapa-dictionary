@@ -38,7 +38,7 @@ impl LetterGroups {
             let first_letter = match pali::first_letter(&w) {
                 Some(x) => x,
                 None => {
-                    error!("Can't find first Pali letter of: {}", w);
+                    //warn!("Can't find the first letter of '{}', using 'a' and letter index {}", w, letter_index);
                     "a".to_string()
                 }
             };
