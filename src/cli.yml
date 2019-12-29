@@ -348,6 +348,12 @@ subcommands:
             required: false
             takes_value: false
 
+        - dont_generate_synonyms:
+            help: "Don't add generated synonyms, such as ascii and velthuis."
+            long: dont_generate_synonyms
+            required: false
+            takes_value: false
+
         - entries_template:
             help: "Handlebars template to render the word entries file."
             long: entries_template
@@ -403,6 +409,12 @@ subcommands:
         - allow_raw_html:
             help: "Raw HTML (including unsafe Javascript and links) will not be stripped from the definition_md field."
             long: allow_raw_html
+            required: false
+            takes_value: false
+
+        - dont_generate_synonyms:
+            help: "Don't add generated synonyms, such as ascii and velthuis."
+            long: dont_generate_synonyms
             required: false
             takes_value: false
 

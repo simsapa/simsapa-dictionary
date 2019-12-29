@@ -99,6 +99,8 @@ pub struct EbookMetadata {
     pub add_velthuis: bool,
     #[serde(default)]
     pub allow_raw_html: bool,
+    #[serde(default)]
+    pub dont_generate_synonyms: bool,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
@@ -328,6 +330,10 @@ impl Ebook {
     /// - velthuis
     /// - ascii
     pub fn process_add_transliterations(&mut self) {
+        if self.meta.dont_generate_synonyms {
+            return;
+        }
+
         info!("process_add_transliterations()");
 
         for (_, dict_word) in self.dict_words_input.iter_mut() {
@@ -365,13 +371,9 @@ impl Ebook {
             self.meta.word_prefix = prefix.clone();
         }
 
-        if app_params.word_prefix_velthuis {
-            self.meta.word_prefix_velthuis = app_params.word_prefix_velthuis;
-        }
-
-        if app_params.allow_raw_html {
-            self.meta.allow_raw_html = app_params.allow_raw_html;
-        }
+        self.meta.word_prefix_velthuis = app_params.word_prefix_velthuis;
+        self.meta.allow_raw_html = app_params.allow_raw_html;
+        self.meta.dont_generate_synonyms = app_params.dont_generate_synonyms;
 
         if let Some(ref dict_label) = app_params.dict_label {
             for (_key, word) in self.dict_words_input.iter_mut() {
@@ -2094,6 +2096,7 @@ impl Default for EbookMetadata {
             word_prefix_velthuis: false,
             add_velthuis: false,
             allow_raw_html: false,
+            dont_generate_synonyms: false,
         }
     }
 }
