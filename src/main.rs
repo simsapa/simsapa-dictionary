@@ -110,6 +110,8 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.use_cli_overrides(&app_params.clone());
+
             if !app_params.dont_process {
                 ebook.process_tidy();
                 ebook.process_also_written_as();
@@ -118,8 +120,6 @@ fn main() {
                 ebook.process_see_also_from_definition(app_params.dont_remove_see_also);
                 ok_or_exit(app_params.used_first_arg, ebook.process_summary());
             }
-
-            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -146,12 +146,12 @@ fn main() {
                 &mut ebook,
             );
 
+            ebook.use_cli_overrides(&app_params.clone());
+
             ebook.process_tidy();
             ok_or_exit(app_params.used_first_arg, ebook.process_summary());
 
             info!("Added words: {}", ebook.len());
-
-            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
@@ -189,9 +189,9 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_text();
-
             ebook.use_cli_overrides(&app_params.clone());
+
+            ebook.process_text();
 
             ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
 
@@ -233,6 +233,8 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
+            ebook.use_cli_overrides(&app_params.clone());
+
             ebook.process_text();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
@@ -240,8 +242,6 @@ fn main() {
                 let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
                 w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
             }
-
-            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
         }
@@ -279,9 +279,9 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_text();
-
             ebook.use_cli_overrides(&app_params.clone());
+
+            ebook.process_text();
 
             ok_or_exit(app_params.used_first_arg, ebook.create_stardict());
         }
@@ -319,9 +319,9 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_text();
-
             ebook.use_cli_overrides(&app_params.clone());
+
+            ebook.process_text();
 
             ok_or_exit(app_params.used_first_arg, ebook.create_c5());
         }
@@ -359,9 +359,9 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.process_text();
-
             ebook.use_cli_overrides(&app_params.clone());
+
+            ebook.process_text();
 
             ok_or_exit(app_params.used_first_arg, ebook.create_tei());
         }
@@ -385,6 +385,8 @@ fn main() {
             );
 
             info!("Added words: {}", ebook.len());
+
+            ebook.use_cli_overrides(&app_params.clone());
 
             ok_or_exit(app_params.used_first_arg, ebook.create_json());
         }

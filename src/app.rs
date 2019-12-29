@@ -33,6 +33,7 @@ pub struct AppStartParams {
     pub word_prefix: Option<String>,
     pub word_prefix_velthuis: bool,
     pub allow_raw_html: bool,
+    pub dont_generate_synonyms: bool,
     pub dont_run_kindlegen: bool,
     pub dont_remove_generated_files: bool,
     pub dont_process: bool,
@@ -98,6 +99,7 @@ impl Default for AppStartParams {
             word_prefix_velthuis: false,
             allow_raw_html: false,
             mobi_compression: 0,
+            dont_generate_synonyms: false,
             dont_run_kindlegen: false,
             dont_remove_generated_files: false,
             dont_process: false,
@@ -636,6 +638,10 @@ fn process_to_stardict(
 
     if sub_matches.is_present("allow_raw_html") {
         params.allow_raw_html = true;
+    }
+
+    if sub_matches.is_present("dont_generate_synonyms") {
+        params.dont_generate_synonyms = true;
     }
 
     params.run_command = run_command;
