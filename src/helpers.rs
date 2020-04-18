@@ -12,10 +12,10 @@ use comrak::{markdown_to_html, ComrakOptions};
 use crate::pali;
 
 pub fn markdown_helper(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
     let param = h.param(0).unwrap();
@@ -26,10 +26,10 @@ pub fn markdown_helper(
 }
 
 pub fn countitems(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
     let count = if let Some(items) = h.param(0).unwrap().value().as_array() {
@@ -44,10 +44,10 @@ pub fn countitems(
 }
 
 pub fn to_velthuis(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
     let param = h.param(0).unwrap();
@@ -57,10 +57,10 @@ pub fn to_velthuis(
 }
 
 pub fn word_title(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
     let word: String = h.param(0).unwrap().value().as_str().unwrap().to_string();
@@ -88,10 +88,10 @@ pub fn word_title(
 }
 
 pub fn headword_plain(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
     let word: String = h.param(0).unwrap().value().as_str().unwrap().to_string();
@@ -122,10 +122,10 @@ pub fn headword_plain(
 }
 
 pub fn cover_media_type(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
     let path = h.param(0).unwrap().value().render();
@@ -139,10 +139,10 @@ pub fn cover_media_type(
 }
 
 pub fn word_list(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 
@@ -168,10 +168,10 @@ pub fn word_list(
 }
 
 pub fn word_list_plain(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 
@@ -197,10 +197,10 @@ pub fn word_list_plain(
 }
 
 pub fn word_list_tei(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 
@@ -280,10 +280,10 @@ pub fn format_grammar_text_plain(grammar: &serde_json::Value) -> String {
 }
 
 pub fn grammar_text(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 
@@ -294,10 +294,10 @@ pub fn grammar_text(
 }
 
 pub fn grammar_text_plain(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 
@@ -341,10 +341,10 @@ pub fn format_phonetic_transliteration_html(dict_word_render: &serde_json::Value
 }
 
 pub fn phonetic_transliteration(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 
@@ -386,10 +386,10 @@ pub fn format_phonetic_transliteration_plain(dict_word_render: &serde_json::Valu
 }
 
 pub fn phonetic_transliteration_plain(
-    h: &Helper,
+    h: &Helper<'_, '_>,
     _: &Handlebars,
     _: &Context,
-    _rc: &mut RenderContext,
+    _rc: &mut RenderContext<'_>,
     out: &mut dyn Output,
 ) -> HelperResult {
 

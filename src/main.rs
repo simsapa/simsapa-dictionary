@@ -110,7 +110,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             if !app_params.dont_process {
                 ebook.process_tidy();
@@ -146,7 +146,7 @@ fn main() {
                 &mut ebook,
             );
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ebook.process_tidy();
             ok_or_exit(app_params.used_first_arg, ebook.process_summary());
@@ -189,7 +189,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ebook.process_text();
 
@@ -233,7 +233,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ebook.process_text();
 
@@ -279,7 +279,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ebook.process_text();
 
@@ -319,7 +319,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ebook.process_text();
 
@@ -359,7 +359,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ebook.process_text();
 
@@ -386,7 +386,7 @@ fn main() {
 
             info!("Added words: {}", ebook.len());
 
-            ebook.use_cli_overrides(&app_params.clone());
+            ebook.use_cli_overrides(&app_params);
 
             ok_or_exit(app_params.used_first_arg, ebook.create_json());
         }

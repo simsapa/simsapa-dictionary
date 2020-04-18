@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::{error, fmt};
 
 pub enum ToolError {
@@ -6,18 +5,18 @@ pub enum ToolError {
 }
 
 impl fmt::Display for ToolError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{}", self.description())
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "{}", self.to_string())
     }
 }
 
 impl fmt::Debug for ToolError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let kind: &'static str = match *self {
             ToolError::Exit(_) => "ExitError",
         };
 
-        write!(fmt, "{}:\n{}", kind, self.description())
+        write!(fmt, "{}:\n{}", kind, self.to_string())
     }
 }
 

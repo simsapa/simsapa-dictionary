@@ -220,7 +220,7 @@ fn look_for_kindlegen() -> Option<PathBuf> {
 #[allow(clippy::cognitive_complexity)]
 fn process_to_ebook(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -416,7 +416,7 @@ fn process_to_ebook(
 
 fn process_to_babylon(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -522,7 +522,7 @@ fn process_to_babylon(
 
 fn process_to_stardict(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -651,7 +651,7 @@ fn process_to_stardict(
 
 fn process_markdown_to_json(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -684,7 +684,7 @@ fn process_markdown_to_json(
 
 fn process_to_c5(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -809,7 +809,7 @@ fn process_to_c5(
 
 fn process_to_tei(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -916,7 +916,7 @@ fn process_to_tei(
 
 fn process_suttacentral_json_to_markdown(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -975,7 +975,7 @@ fn process_suttacentral_json_to_markdown(
 
 fn process_nyanatiloka_to_markdown(
     params: &mut AppStartParams,
-    sub_matches: &clap::ArgMatches,
+    sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
@@ -1028,7 +1028,7 @@ fn process_nyanatiloka_to_markdown(
     Ok(())
 }
 
-pub fn process_cli_args(matches: clap::ArgMatches) -> Result<AppStartParams, Box<dyn Error>> {
+pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams, Box<dyn Error>> {
     info!("process_cli_args()");
     let mut params = AppStartParams::default();
 
