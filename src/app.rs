@@ -1108,29 +1108,51 @@ pub fn process_suttacentral_json(
     for e in entries.iter() {
         let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
-                dict_label: (*dict_label).to_string(),
-                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                // ebook.add_word will increment meaning_order if needed
-                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
+                meaning_order: 1,
+                word_nom_sg: "".to_string(),
+                dict_label: (*dict_label).to_string(),
+
+                inflections: Vec::new(),
+                phonetic: "".to_string(),
+                transliteration: "".to_string(),
+
                 summary: "".to_string(),
 
+                synonyms: Vec::new(),
+                antonyms: Vec::new(),
+                variants: Vec::new(),
+                also_written_as: Vec::new(),
+                see_also: Vec::new(),
+                comment: "".to_string(),
+
+                grammar_roots: Vec::new(),
+                grammar_prefix_and_root: "".to_string(),
+
+                grammar_related_origin_word: "".to_string(),
+                grammar_related_origin_roots: Vec::new(),
+
+                grammar_construction: "".to_string(),
+                grammar_base_construction: "".to_string(),
+                grammar_compound_type: "".to_string(),
+                grammar_compound_construction: "".to_string(),
+
+                grammar_comment: "".to_string(),
+                grammar_speech: "".to_string(),
                 grammar_case: "".to_string(),
                 grammar_num: "".to_string(),
                 grammar_gender: "".to_string(),
                 grammar_person: "".to_string(),
                 grammar_voice: "".to_string(),
                 grammar_object: "".to_string(),
-                grammar_comment: "".to_string(),
+                grammar_transitive: "".to_string(),
+                grammar_negative: "".to_string(),
+                grammar_verb: "".to_string(),
 
-                phonetic: "".to_string(),
-                transliteration: "".to_string(),
-                inflections: Vec::new(),
-                synonyms: Vec::new(),
-                antonyms: Vec::new(),
-                see_also: Vec::new(),
-                also_written_as: Vec::new(),
                 examples: "".to_string(),
+
+                // ebook.add_word will increment meaning_order if needed
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
             },
             definition_md: html_to_markdown(&e.text).to_string(),
         };
@@ -1193,28 +1215,51 @@ pub fn process_nyanatiloka_entries(
     for e in entries.iter() {
         let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
-                dict_label: (*dict_label).to_string(),
-                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
+                meaning_order: 1,
+                word_nom_sg: "".to_string(),
+                dict_label: (*dict_label).to_string(),
+
+                inflections: Vec::new(),
+                phonetic: "".to_string(),
+                transliteration: "".to_string(),
+
                 summary: "".to_string(),
 
+                synonyms: Vec::new(),
+                antonyms: Vec::new(),
+                variants: Vec::new(),
+                also_written_as: Vec::new(),
+                see_also: Vec::new(),
+                comment: "".to_string(),
+
+                grammar_roots: Vec::new(),
+                grammar_prefix_and_root: "".to_string(),
+
+                grammar_related_origin_word: "".to_string(),
+                grammar_related_origin_roots: Vec::new(),
+
+                grammar_construction: "".to_string(),
+                grammar_base_construction: "".to_string(),
+                grammar_compound_type: "".to_string(),
+                grammar_compound_construction: "".to_string(),
+
+                grammar_comment: "".to_string(),
+                grammar_speech: "".to_string(),
                 grammar_case: "".to_string(),
                 grammar_num: "".to_string(),
                 grammar_gender: "".to_string(),
                 grammar_person: "".to_string(),
                 grammar_voice: "".to_string(),
                 grammar_object: "".to_string(),
-                grammar_comment: "".to_string(),
+                grammar_transitive: "".to_string(),
+                grammar_negative: "".to_string(),
+                grammar_verb: "".to_string(),
 
-                phonetic: "".to_string(),
-                transliteration: "".to_string(),
-                inflections: Vec::new(),
-                synonyms: Vec::new(),
-                antonyms: Vec::new(),
-                see_also: Vec::new(),
-                also_written_as: Vec::new(),
                 examples: "".to_string(),
+
+                // ebook.add_word will increment meaning_order if needed
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
             },
             definition_md: html_to_markdown(&e.text),
         };
@@ -1339,7 +1384,11 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
         return Err(Box::new(ToolError::Exit(msg)));
     };
 
-    let entries_name = if sheet_names.contains(&"Word entries".to_string()) {
+    let entries_name = if sheet_names.contains(&"Words".to_string()) {
+        "Words"
+     } else if sheet_names.contains(&"words".to_string()) {
+        "words"
+     } else if sheet_names.contains(&"Word entries".to_string()) {
         "Word entries"
     } else if sheet_names.contains(&"Word Entries".to_string()) {
         "Word Entries"
