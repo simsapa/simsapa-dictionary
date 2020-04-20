@@ -15,14 +15,19 @@ pub struct DictWordMarkdown {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DictWordXlsx {
-    /// `word` is the only required field.
+    /// `word` is the only required field. Every other field has a default or empty.
     pub word: String,
 
     #[serde(default)]
     pub meaning_order: usize,
 
     /// Nominative singular form.
+    #[serde(default)]
     pub word_nom_sg: String,
+
+    /// Marking root entries to separate them from words.
+    #[serde(default)]
+    pub is_root: bool,
 
     #[serde(default)]
     pub dict_label: String,
@@ -137,30 +142,23 @@ pub struct DictWordXlsx {
     pub ex_2_text: String,
     #[serde(default)]
     pub ex_2_translation: String,
-}
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DictRootXlsx {
-    #[serde(default)]
-    pub root: String,
+    // Root entry specific
 
     #[serde(default)]
-    pub meaning_order: usize,
+    pub root_language: String,
 
+    /// ["upa", "gam"]
     #[serde(default)]
-    pub language: String,
+    pub root_groups: Vec<String>,
 
+    /// "a"
     #[serde(default)]
-    pub definition_md: String,
+    pub root_sign: String,
 
+    /// "1.1"
     #[serde(default)]
-    pub groups: String,
-
-    #[serde(default)]
-    pub sign: String,
-
-    #[serde(default)]
-    pub numbered_group: String,
+    pub root_numbered_group: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -172,7 +170,11 @@ pub struct DictWordHeader {
     pub meaning_order: usize,
 
     /// Nominative singular form.
+    #[serde(default)]
     pub word_nom_sg: String,
+
+    #[serde(default)]
+    pub is_root: bool,
 
     #[serde(default)]
     pub dict_label: String,
@@ -257,6 +259,20 @@ pub struct DictWordHeader {
     #[serde(default)]
     pub examples: String,
 
+    // Root entry specific
+
+    #[serde(default)]
+    pub root_language: String,
+
+    #[serde(default)]
+    pub root_groups: Vec<String>,
+
+    #[serde(default)]
+    pub root_sign: String,
+
+    #[serde(default)]
+    pub root_numbered_group: String,
+
     #[serde(default)]
     pub url_id: String,
 }
@@ -267,7 +283,12 @@ pub struct DictWordRender {
     pub word: String,
 
     /// The nominative singular form (if applies).
+    #[serde(default)]
     pub word_nom_sg: String,
+
+    /// Marking root entries to separate them from words.
+    #[serde(default)]
+    pub is_root: bool,
 
     /// A label to distinguish dictionary sources or authors.
     #[serde(default)]
@@ -290,6 +311,21 @@ pub struct DictWordRender {
 
     #[serde(default)]
     pub meanings: Vec<DictWordMeaning>,
+
+    #[serde(default)]
+    pub root_language: String,
+
+    /// ["upa", "gam"]
+    #[serde(default)]
+    pub root_groups: Vec<String>,
+
+    /// "a"
+    #[serde(default)]
+    pub root_sign: String,
+
+    /// "1.1"
+    #[serde(default)]
+    pub root_numbered_group: String,
 
     /// Used to create cross-link id attributes. Auto-generated internally.
     #[serde(default)]
@@ -423,34 +459,6 @@ pub struct DictWordExample {
     translation: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
-pub struct DictRoot {
-    #[serde(default)]
-    pub root: String,
-
-    #[serde(default)]
-    pub meaning_order: usize,
-
-    #[serde(default)]
-    pub language: String,
-
-    /// Translation and explanation in English, Markdown format.
-    #[serde(default)]
-    pub definition_md: String,
-
-    /// ["upa", "gam"]
-    #[serde(default)]
-    pub groups: Vec<String>,
-
-    /// "a"
-    #[serde(default)]
-    pub sign: String,
-
-    /// "1.1"
-    #[serde(default)]
-    pub numbered_group: String,
-}
-
 impl DictWordMarkdown {
     pub fn new() -> Self {
         Self::default()
@@ -517,6 +525,7 @@ impl DictWordMarkdown {
                 word: w.word.clone(),
                 meaning_order: w.meaning_order,
                 word_nom_sg: w.word_nom_sg.clone(),
+                is_root: w.is_root,
                 dict_label: w.dict_label.clone(),
 
                 inflections: DictWordMarkdown::parse_csv_list(&w.inflections),
@@ -562,6 +571,11 @@ impl DictWordMarkdown {
                 // FIXME parse examples
                 examples: "".to_string(),
 
+                root_language: w.root_language.clone(),
+                root_groups: w.root_groups.clone(),
+                root_sign: w.root_sign.clone(),
+                root_numbered_group: w.root_numbered_group.clone(),
+
                 url_id: DictWordMarkdown::gen_url_id(&w.word, &w.dict_label, w.meaning_order),
             },
             definition_md: w.definition_md.clone(),
@@ -577,6 +591,7 @@ impl DictWordXlsx {
             word: h.word.clone(),
             meaning_order: h.meaning_order,
             word_nom_sg: h.word_nom_sg.clone(),
+            is_root: h.is_root,
             dict_label: h.dict_label.clone(),
 
             inflections: h.inflections.join(", "),
@@ -632,6 +647,11 @@ impl DictWordXlsx {
             ex_2_source_title: "".to_string(),
             ex_2_text: "".to_string(),
             ex_2_translation: "".to_string(),
+
+            root_language: h.root_language.clone(),
+            root_groups: h.root_groups.clone(),
+            root_sign: h.root_sign.clone(),
+            root_numbered_group: h.root_numbered_group.clone(),
         }
     }
 }
@@ -651,6 +671,7 @@ impl Default for DictWordHeader {
             word: "word".to_string(),
             meaning_order: 1,
             word_nom_sg: "".to_string(),
+            is_root: false,
             dict_label: "".to_string(),
 
             inflections: Vec::new(),
@@ -695,6 +716,11 @@ impl Default for DictWordHeader {
 
             // FIXME examples should be Vec<DictWordExample>
             examples: "".to_string(),
+
+            root_language: "".to_string(),
+            root_groups: Vec::new(),
+            root_sign: "".to_string(),
+            root_numbered_group: "".to_string(),
 
             url_id: "word".to_string(),
         }
@@ -751,12 +777,17 @@ impl DictWordRender {
         DictWordRender {
             word: h.word.clone(),
             word_nom_sg: h.word_nom_sg.clone(),
+            is_root: h.is_root,
             dict_label: h.dict_label.clone(),
             inflections: h.inflections.clone(),
             phonetic: h.phonetic.clone(),
             transliteration: h.transliteration.clone(),
             meanings_count: 1,
             meanings,
+            root_language: h.root_language.clone(),
+            root_groups: h.root_groups.clone(),
+            root_sign: h.root_sign.clone(),
+            root_numbered_group: h.root_numbered_group.clone(),
             url_id: DictWordRender::gen_url_id(&h.word, &h.dict_label),
         }
     }

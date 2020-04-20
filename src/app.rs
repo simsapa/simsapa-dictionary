@@ -1111,6 +1111,7 @@ pub fn process_suttacentral_json(
                 word: e.word.to_lowercase(),
                 meaning_order: 1,
                 word_nom_sg: "".to_string(),
+                is_root: false,
                 dict_label: (*dict_label).to_string(),
 
                 inflections: Vec::new(),
@@ -1150,6 +1151,11 @@ pub fn process_suttacentral_json(
                 grammar_verb: "".to_string(),
 
                 examples: "".to_string(),
+
+                root_language: "".to_string(),
+                root_groups: Vec::new(),
+                root_sign: "".to_string(),
+                root_numbered_group: "".to_string(),
 
                 // ebook.add_word will increment meaning_order if needed
                 url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
@@ -1218,6 +1224,7 @@ pub fn process_nyanatiloka_entries(
                 word: e.word.to_lowercase(),
                 meaning_order: 1,
                 word_nom_sg: "".to_string(),
+                is_root: false,
                 dict_label: (*dict_label).to_string(),
 
                 inflections: Vec::new(),
@@ -1257,6 +1264,11 @@ pub fn process_nyanatiloka_entries(
                 grammar_verb: "".to_string(),
 
                 examples: "".to_string(),
+
+                root_language: "".to_string(),
+                root_groups: Vec::new(),
+                root_sign: "".to_string(),
+                root_numbered_group: "".to_string(),
 
                 // ebook.add_word will increment meaning_order if needed
                 url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
@@ -1393,7 +1405,16 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
     } else if sheet_names.contains(&"Word Entries".to_string()) {
         "Word Entries"
     } else {
-        let msg = "Can't find sheet: 'Word entries'".to_string();
+        let msg = "Can't find sheet: 'Words'".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    };
+
+    let roots_name = if sheet_names.contains(&"Roots".to_string()) {
+        "Roots"
+    } else if sheet_names.contains(&"roots".to_string()) {
+        "roots"
+    } else {
+        let msg = "Can't find sheet: 'Roots'".to_string();
         return Err(Box::new(ToolError::Exit(msg)));
     };
 
@@ -1401,6 +1422,8 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
         .ok_or_else(|| format!("Can't find sheet: '{}'", &metadata_name))??;
     let entries_range = workbook.worksheet_range(entries_name)
         .ok_or_else(|| format!("Can't find sheet: '{}'", &entries_name))??;
+    let roots_range = workbook.worksheet_range(roots_name)
+        .ok_or_else(|| format!("Can't find sheet: '{}'", &roots_name))??;
 
     // Parse Metadata sheet
 
@@ -1424,7 +1447,7 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
         }
     }
 
-    // Parse Word entries sheet
+    // Parse Words sheet
 
     {
         let iter = RangeDeserializerBuilder::new()
@@ -1442,14 +1465,49 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
             })
         .collect();
 
-    for i in entries.iter() {
-        match i {
-            Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
-            Err(msg) => {
-                return Err(Box::new(ToolError::Exit(msg.clone())));
+        for i in entries.iter() {
+            match i {
+                Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
+                Err(msg) => {
+                    println!("{}", msg);
+                    // FIXME this segfaults
+                    return Err(Box::new(ToolError::Exit(msg.clone())));
+                }
             }
         }
     }
+
+    // Parse Roots sheet
+    // Same as 'Words' but we set 'is_root' to true.
+
+    {
+        let iter = RangeDeserializerBuilder::new()
+            .has_headers(true)
+            .from_range(&roots_range)?;
+
+        let entries: Vec<Result<DictWordXlsx, String>> = iter
+            .map(|e| {
+                match e {
+                    Ok(x) => Ok(x),
+                    Err(e) => {
+                        Err(format!("Can't parse: {:?}", e))
+                    }
+                }
+            })
+        .collect();
+
+        for i in entries.iter() {
+            match i {
+                Ok(x) => {
+                    let mut a: DictWordXlsx = x.clone();
+                    a.is_root = true;
+                    ebook.add_word(DictWordMarkdown::from_xlsx(&a))
+                },
+                Err(msg) => {
+                    return Err(Box::new(ToolError::Exit(msg.clone())));
+                }
+            }
+        }
     }
 
     Ok(())

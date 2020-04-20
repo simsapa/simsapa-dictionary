@@ -325,6 +325,19 @@ impl Ebook {
         Ok(())
     }
 
+    pub fn sanitize_word_text(&mut self) {
+        info!("sanitize_word_text()");
+        for (_, dict_word) in self.dict_words_input.iter_mut() {
+            if dict_word.word_header.word.contains('√') {
+                let a = dict_word.word_header.word.clone();
+                let w = dict_word.word_header.word.trim_start_matches('√').to_string();
+
+                dict_word.word_header.inflections.push(a);
+                dict_word.word_header.word = w;
+            }
+        }
+    }
+
     /// Add transliterations to help searching:
     /// - given with the transliteration attribute
     /// - velthuis
@@ -384,6 +397,26 @@ impl Ebook {
 
     pub fn add_word(&mut self, new_word: DictWordMarkdown) {
         let mut new_word = new_word;
+
+        // If the word contains a trailing digit, strip it and use it as `meaning_order`.
+        lazy_static! {
+            static ref RE_TRAIL_NUM: Regex = Regex::new(r" *([0-9]+) *$").unwrap();
+        }
+
+        let mut w = "".to_string();
+        for caps in RE_TRAIL_NUM.captures_iter(&new_word.word_header.word) {
+            let a = caps.get(1).unwrap().as_str().to_string();
+
+            match a.trim().to_string().parse::<usize>() {
+                Ok(x) => new_word.word_header.meaning_order = x,
+                Err(_) => break,
+            }
+
+            w = new_word.word_header.word.trim_end_matches(&a).to_string();
+        }
+        if !w.is_empty() {
+            new_word.word_header.word = w;
+        }
 
         if new_word.word_header.meaning_order == 0 {
             new_word.word_header.meaning_order = 1;
@@ -1362,6 +1395,7 @@ impl Ebook {
 
     pub fn process_text(&mut self) {
         self.process_strip_html_for_plaintext();
+        self.sanitize_word_text();
         self.process_add_transliterations();
         self.process_links();
         self.process_define_links();
