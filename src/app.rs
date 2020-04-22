@@ -1122,7 +1122,7 @@ pub fn process_suttacentral_json(
 
                 synonyms: Vec::new(),
                 antonyms: Vec::new(),
-                variants: Vec::new(),
+                homonyms: Vec::new(),
                 also_written_as: Vec::new(),
                 see_also: Vec::new(),
                 comment: "".to_string(),
@@ -1150,7 +1150,7 @@ pub fn process_suttacentral_json(
                 grammar_negative: "".to_string(),
                 grammar_verb: "".to_string(),
 
-                examples: "".to_string(),
+                examples: Vec::new(),
 
                 root_language: "".to_string(),
                 root_groups: Vec::new(),
@@ -1235,7 +1235,7 @@ pub fn process_nyanatiloka_entries(
 
                 synonyms: Vec::new(),
                 antonyms: Vec::new(),
-                variants: Vec::new(),
+                homonyms: Vec::new(),
                 also_written_as: Vec::new(),
                 see_also: Vec::new(),
                 comment: "".to_string(),
@@ -1263,7 +1263,7 @@ pub fn process_nyanatiloka_entries(
                 grammar_negative: "".to_string(),
                 grammar_verb: "".to_string(),
 
-                examples: "".to_string(),
+                examples: Vec::new(),
 
                 root_language: "".to_string(),
                 root_groups: Vec::new(),

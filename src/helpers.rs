@@ -230,22 +230,29 @@ pub fn word_list_tei(
 }
 
 fn get_grammar_text(grammar: &serde_json::Value) -> String {
+    let speech  = grammar.get("speech").unwrap().render();
     let case    = grammar.get("case").unwrap().render();
     let num     = grammar.get("num").unwrap().render();
     let gender  = grammar.get("gender").unwrap().render();
     let person  = grammar.get("person").unwrap().render();
     let voice   = grammar.get("voice").unwrap().render();
     let object  = grammar.get("object").unwrap().render();
-    let comment = grammar.get("comment").unwrap().render();
+
+    let transitive = grammar.get("transitive").unwrap().render();
+    let negative = grammar.get("negative").unwrap().render();
+    let verb = grammar.get("verb").unwrap().render();
 
     let grammar_text = vec![
+        speech,
         case,
         num,
         gender,
         person,
         voice,
         object,
-        comment,
+        transitive,
+        negative,
+        verb,
     ].iter().filter_map(|i| {
         let s = i.trim();
         if s.is_empty() {

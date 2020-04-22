@@ -325,19 +325,6 @@ impl Ebook {
         Ok(())
     }
 
-    pub fn sanitize_word_text(&mut self) {
-        info!("sanitize_word_text()");
-        for (_, dict_word) in self.dict_words_input.iter_mut() {
-            if dict_word.word_header.word.contains('√') {
-                let a = dict_word.word_header.word.clone();
-                let w = dict_word.word_header.word.trim_start_matches('√').to_string();
-
-                dict_word.word_header.inflections.push(a);
-                dict_word.word_header.word = w;
-            }
-        }
-    }
-
     /// Add transliterations to help searching:
     /// - given with the transliteration attribute
     /// - velthuis
@@ -397,6 +384,27 @@ impl Ebook {
 
     pub fn add_word(&mut self, new_word: DictWordMarkdown) {
         let mut new_word = new_word;
+
+        // Sanitize the word name.
+
+        // Trim whitespace.
+        new_word.word_header.word = new_word.word_header.word.trim().to_string();
+
+        // Remove the root prefix used by some authors, but keep it as an inflection, so that it
+        // may be still matched when searching Goldendict.
+
+        let a = new_word.word_header.word.clone();
+        if a.contains('√') {
+            let w = new_word.word_header.word.trim_start_matches('√').to_string();
+            new_word.word_header.inflections.push(a);
+            new_word.word_header.word = w;
+        }
+
+        // Remove the root sign from `grammar_roots`.
+
+        for w in new_word.word_header.grammar_roots.iter_mut() {
+            *w = w.trim_start_matches('√').to_string();
+        }
 
         // If the word contains a trailing digit, strip it and use it as `meaning_order`.
         lazy_static! {
@@ -1360,7 +1368,7 @@ impl Ebook {
             let entries_xlsx = &self.dict_words_input
                 .values()
                 .cloned()
-                .map(|i| DictWordXlsx::from_dict_word(&i))
+                .map(|i| DictWordXlsx::from_dict_word_markdown(&i))
                 .collect::<Vec<DictWordXlsx>>();
             let content = serde_json::to_string(&entries_xlsx)?;
 
@@ -1395,7 +1403,6 @@ impl Ebook {
 
     pub fn process_text(&mut self) {
         self.process_strip_html_for_plaintext();
-        self.sanitize_word_text();
         self.process_add_transliterations();
         self.process_links();
         self.process_define_links();
@@ -2063,6 +2070,34 @@ impl Ebook {
         }
     }
 
+    pub fn all_words_to_links(
+        valid_words: &[String],
+        words_to_url: &BTreeMap<String, String>,
+        output_format: OutputFormat,
+        text: &str
+        )
+        -> String
+    {
+        lazy_static! {
+            static ref RE_WORD_TO_LINK: Regex = Regex::new(r"([^ +>=√\(\)-]+)([ +>=√\(\)-]*)").unwrap();
+        }
+
+        let mut linked_text = String::new();
+
+        for caps in RE_WORD_TO_LINK.captures_iter(&text) {
+            let word = caps.get(1).unwrap().as_str().to_string();
+            let sep = caps.get(2).unwrap().as_str().to_string();
+
+            let w = word.trim_start_matches('√').to_string();
+            let link = Ebook::word_to_link(valid_words, &words_to_url, output_format, &w);
+
+            linked_text.push_str(&word.replace(&w, &link));
+            linked_text.push_str(&sep);
+        }
+
+        linked_text
+    }
+
     /// Turn word lists into links for valid words.
     ///
     /// Run this before rendering, when no more words are added to `see_also` and other lists.
@@ -2084,6 +2119,11 @@ impl Ebook {
                 *w = w.replace('&', "&amp;");
             }
 
+            for w in dict_word.word_header.homonyms.iter_mut() {
+                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = w.replace('&', "&amp;");
+            }
+
             for w in dict_word.word_header.see_also.iter_mut() {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
@@ -2093,6 +2133,35 @@ impl Ebook {
                 *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
+
+            for w in dict_word.word_header.grammar_roots.iter_mut() {
+                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = w.replace('&', "&amp;");
+            }
+
+            // Replace construction words with links.
+
+            dict_word.word_header.grammar_construction = Ebook::all_words_to_links(
+                &self.valid_words,
+                &words_to_url,
+                self.output_format,
+                &dict_word.word_header.grammar_construction
+            );
+
+            dict_word.word_header.grammar_base_construction = Ebook::all_words_to_links(
+                &self.valid_words,
+                &words_to_url,
+                self.output_format,
+                &dict_word.word_header.grammar_base_construction
+            );
+
+            dict_word.word_header.grammar_compound_construction = Ebook::all_words_to_links(
+                &self.valid_words,
+                &words_to_url,
+                self.output_format,
+                &dict_word.word_header.grammar_compound_construction
+            );
+
         }
     }
 }

@@ -25,10 +25,6 @@ pub struct DictWordXlsx {
     #[serde(default)]
     pub word_nom_sg: String,
 
-    /// Marking root entries to separate them from words.
-    #[serde(default)]
-    pub is_root: bool,
-
     #[serde(default)]
     pub dict_label: String,
 
@@ -65,7 +61,7 @@ pub struct DictWordXlsx {
 
     /// comma-seperated list
     #[serde(default)]
-    pub variants: String,
+    pub homonyms: String,
 
     /// comma-seperated list
     #[serde(default)]
@@ -78,6 +74,27 @@ pub struct DictWordXlsx {
     /// General comment or study notes.
     #[serde(default)]
     pub comment: String,
+
+    // Root meaning specific
+
+    /// Marking root meanings to separate them from words.
+    #[serde(default)]
+    pub is_root: bool,
+
+    #[serde(default)]
+    pub root_language: String,
+
+    /// ["upa", "gam"]
+    #[serde(default)]
+    pub root_groups: Vec<String>,
+
+    /// "a"
+    #[serde(default)]
+    pub root_sign: String,
+
+    /// "1.1"
+    #[serde(default)]
+    pub root_numbered_group: String,
 
     // Grammar
 
@@ -130,35 +147,18 @@ pub struct DictWordXlsx {
     #[serde(default)]
     pub ex_1_source_title: String,
     #[serde(default)]
-    pub ex_1_text: String,
+    pub ex_1_text_md: String,
     #[serde(default)]
-    pub ex_1_translation: String,
+    pub ex_1_translation_md: String,
 
     #[serde(default)]
     pub ex_2_source_ref: String,
     #[serde(default)]
     pub ex_2_source_title: String,
     #[serde(default)]
-    pub ex_2_text: String,
+    pub ex_2_text_md: String,
     #[serde(default)]
-    pub ex_2_translation: String,
-
-    // Root entry specific
-
-    #[serde(default)]
-    pub root_language: String,
-
-    /// ["upa", "gam"]
-    #[serde(default)]
-    pub root_groups: Vec<String>,
-
-    /// "a"
-    #[serde(default)]
-    pub root_sign: String,
-
-    /// "1.1"
-    #[serde(default)]
-    pub root_numbered_group: String,
+    pub ex_2_translation_md: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -172,9 +172,6 @@ pub struct DictWordHeader {
     /// Nominative singular form.
     #[serde(default)]
     pub word_nom_sg: String,
-
-    #[serde(default)]
-    pub is_root: bool,
 
     #[serde(default)]
     pub dict_label: String,
@@ -200,7 +197,7 @@ pub struct DictWordHeader {
     pub antonyms: Vec<String>,
 
     #[serde(default)]
-    pub variants: Vec<String>,
+    pub homonyms: Vec<String>,
 
     #[serde(default)]
     pub also_written_as: Vec<String>,
@@ -210,6 +207,23 @@ pub struct DictWordHeader {
 
     #[serde(default)]
     pub comment: String,
+
+    // Root meaning specific
+
+    #[serde(default)]
+    pub is_root: bool,
+
+    #[serde(default)]
+    pub root_language: String,
+
+    #[serde(default)]
+    pub root_groups: Vec<String>,
+
+    #[serde(default)]
+    pub root_sign: String,
+
+    #[serde(default)]
+    pub root_numbered_group: String,
 
     // Grammar
 
@@ -255,23 +269,8 @@ pub struct DictWordHeader {
     #[serde(default)]
     pub grammar_verb: String,
 
-    // FIXME examples should be Vec<DictWordExample>
     #[serde(default)]
-    pub examples: String,
-
-    // Root entry specific
-
-    #[serde(default)]
-    pub root_language: String,
-
-    #[serde(default)]
-    pub root_groups: Vec<String>,
-
-    #[serde(default)]
-    pub root_sign: String,
-
-    #[serde(default)]
-    pub root_numbered_group: String,
+    pub examples: Vec<DictWordExample>,
 
     #[serde(default)]
     pub url_id: String,
@@ -285,10 +284,6 @@ pub struct DictWordRender {
     /// The nominative singular form (if applies).
     #[serde(default)]
     pub word_nom_sg: String,
-
-    /// Marking root entries to separate them from words.
-    #[serde(default)]
-    pub is_root: bool,
 
     /// A label to distinguish dictionary sources or authors.
     #[serde(default)]
@@ -312,25 +307,9 @@ pub struct DictWordRender {
     #[serde(default)]
     pub meanings: Vec<DictWordMeaning>,
 
-    #[serde(default)]
-    pub root_language: String,
-
-    /// ["upa", "gam"]
-    #[serde(default)]
-    pub root_groups: Vec<String>,
-
-    /// "a"
-    #[serde(default)]
-    pub root_sign: String,
-
-    /// "1.1"
-    #[serde(default)]
-    pub root_numbered_group: String,
-
     /// Used to create cross-link id attributes. Auto-generated internally.
     #[serde(default)]
     pub url_id: String,
-
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -355,7 +334,7 @@ pub struct DictWordMeaning {
     pub antonyms: Vec<String>,
     /// Similar form or construction but different meaning.
     #[serde(default)]
-    pub variants: Vec<String>,
+    pub homonyms: Vec<String>,
     /// Spelling variations of the same word.
     #[serde(default)]
     pub also_written_as: Vec<String>,
@@ -366,8 +345,32 @@ pub struct DictWordMeaning {
     #[serde(default)]
     pub comment: String,
 
+    // Root meaning specific
+
+    /// Marking root entries to separate them from words.
+    #[serde(default)]
+    pub is_root: bool,
+
+    #[serde(default)]
+    pub root_language: String,
+
+    /// ["upa", "gam"]
+    #[serde(default)]
+    pub root_groups: Vec<String>,
+
+    /// "a"
+    #[serde(default)]
+    pub root_sign: String,
+
+    /// "1.1"
+    #[serde(default)]
+    pub root_numbered_group: String,
+
     #[serde(default)]
     pub grammar: DictWordGrammar,
+
+    #[serde(default)]
+    pub example_count: usize,
 
     #[serde(default)]
     pub examples: Vec<DictWordExample>,
@@ -453,10 +456,10 @@ pub struct DictWordExample {
 
     /// "evam'eva kho, bhikkhave, sace tumhe'pi na orimaṃ tīraṃ upagacchatha, na pārimaṃ tīraṃ upagacchatha..."
     #[serde(default)]
-    text: String,
+    text_md: String,
 
     #[serde(default)]
-    translation: String,
+    translation_md: String,
 }
 
 impl DictWordMarkdown {
@@ -519,7 +522,34 @@ impl DictWordMarkdown {
     }
 
     pub fn from_xlsx(w: &DictWordXlsx) -> DictWordMarkdown {
-        // FIXME complete construction from xlsx to markdown
+        let mut examples: Vec<DictWordExample> = Vec::new();
+
+        {
+            let ex = DictWordExample {
+                source_ref: w.ex_1_source_ref.clone(),
+                source_title: w.ex_1_source_title.clone(),
+                text_md: w.ex_1_text_md.clone(),
+                translation_md: w.ex_1_translation_md.clone(),
+            };
+            let n = ex.source_ref.len() + ex.source_title.len() + ex.text_md.len() + ex.translation_md.len();
+            if n > 0 {
+                examples.push(ex);
+            }
+        }
+
+        {
+            let ex = DictWordExample {
+                source_ref: w.ex_2_source_ref.clone(),
+                source_title: w.ex_2_source_title.clone(),
+                text_md: w.ex_2_text_md.clone(),
+                translation_md: w.ex_2_translation_md.clone(),
+            };
+            let n = ex.source_ref.len() + ex.source_title.len() + ex.text_md.len() + ex.translation_md.len();
+            if n > 0 {
+                examples.push(ex);
+            }
+        }
+
         DictWordMarkdown {
             word_header: DictWordHeader {
                 word: w.word.clone(),
@@ -538,7 +568,7 @@ impl DictWordMarkdown {
 
                 synonyms: DictWordMarkdown::parse_csv_list(&w.synonyms),
                 antonyms: DictWordMarkdown::parse_csv_list(&w.antonyms),
-                variants: DictWordMarkdown::parse_csv_list(&w.variants),
+                homonyms: DictWordMarkdown::parse_csv_list(&w.homonyms),
                 also_written_as: DictWordMarkdown::parse_csv_list(&w.also_written_as),
                 see_also: DictWordMarkdown::parse_csv_list(&w.see_also),
                 comment: w.comment.clone(),
@@ -568,8 +598,7 @@ impl DictWordMarkdown {
                 grammar_negative: w.gr_negative.clone(),
                 grammar_verb: w.gr_verb.clone(),
 
-                // FIXME parse examples
-                examples: "".to_string(),
+                examples,
 
                 root_language: w.root_language.clone(),
                 root_groups: w.root_groups.clone(),
@@ -584,10 +613,9 @@ impl DictWordMarkdown {
 }
 
 impl DictWordXlsx {
-    // FIXME rename to from_dict_word_markdown
-    pub fn from_dict_word(w: &DictWordMarkdown) -> DictWordXlsx {
+    pub fn from_dict_word_markdown(w: &DictWordMarkdown) -> DictWordXlsx {
         let h = w.word_header.clone();
-        DictWordXlsx {
+        let mut a = DictWordXlsx {
             word: h.word.clone(),
             meaning_order: h.meaning_order,
             word_nom_sg: h.word_nom_sg.clone(),
@@ -598,7 +626,7 @@ impl DictWordXlsx {
             phonetic: h.phonetic.clone(),
             transliteration: h.transliteration.clone(),
 
-            example_count: 0, // FIXME
+            example_count: 0,
 
             definition_md: w.definition_md.clone().trim().to_string(),
 
@@ -606,7 +634,7 @@ impl DictWordXlsx {
 
             synonyms: h.synonyms.join(", "),
             antonyms: h.antonyms.join(", "),
-            variants: h.variants.join(", "),
+            homonyms: h.homonyms.join(", "),
 
             also_written_as: h.also_written_as.join(", "),
             see_also: h.see_also.join(", "),
@@ -635,24 +663,47 @@ impl DictWordXlsx {
             gr_negative: h.grammar_negative.clone(),
             gr_verb: h.grammar_verb.clone(),
 
-            // FIXME parse examples
-            // examples: h.examples.clone(),
-
             ex_1_source_ref: "".to_string(),
             ex_1_source_title: "".to_string(),
-            ex_1_text: "".to_string(),
-            ex_1_translation: "".to_string(),
+            ex_1_text_md: "".to_string(),
+            ex_1_translation_md: "".to_string(),
 
             ex_2_source_ref: "".to_string(),
             ex_2_source_title: "".to_string(),
-            ex_2_text: "".to_string(),
-            ex_2_translation: "".to_string(),
+            ex_2_text_md: "".to_string(),
+            ex_2_translation_md: "".to_string(),
 
             root_language: h.root_language.clone(),
             root_groups: h.root_groups.clone(),
             root_sign: h.root_sign.clone(),
             root_numbered_group: h.root_numbered_group.clone(),
+        };
+
+        if let Some(ex) = w.word_header.examples.get(0) {
+            a.ex_1_source_ref = ex.source_ref.clone();
+            a.ex_1_source_title = ex.source_title.clone();
+            a.ex_1_text_md = ex.text_md.clone();
+            a.ex_1_translation_md = ex.translation_md.clone();
+
+            let n = ex.source_ref.len() + ex.source_title.len() + ex.text_md.len() + ex.translation_md.len();
+            if n > 0 {
+                a.example_count += 1;
+            }
         }
+
+        if let Some(ex) = w.word_header.examples.get(1) {
+            a.ex_2_source_ref = ex.source_ref.clone();
+            a.ex_2_source_title = ex.source_title.clone();
+            a.ex_2_text_md = ex.text_md.clone();
+            a.ex_2_translation_md = ex.translation_md.clone();
+
+            let n = ex.source_ref.len() + ex.source_title.len() + ex.text_md.len() + ex.translation_md.len();
+            if n > 0 {
+                a.example_count += 1;
+            }
+        }
+
+        a
     }
 }
 
@@ -684,7 +735,7 @@ impl Default for DictWordHeader {
 
             synonyms: Vec::new(),
             antonyms: Vec::new(),
-            variants: Vec::new(),
+            homonyms: Vec::new(),
             also_written_as: Vec::new(),
             see_also: Vec::new(),
             comment: "".to_string(),
@@ -714,8 +765,7 @@ impl Default for DictWordHeader {
             grammar_negative: "".to_string(),
             grammar_verb: "".to_string(),
 
-            // FIXME examples should be Vec<DictWordExample>
-            examples: "".to_string(),
+            examples: Vec::new(),
 
             root_language: "".to_string(),
             root_groups: Vec::new(),
@@ -761,15 +811,18 @@ impl DictWordRender {
             summary: h.summary.clone(),
             synonyms: h.synonyms.clone(),
             antonyms: h.antonyms.clone(),
-            variants: h.variants.clone(),
+            homonyms: h.homonyms.clone(),
             also_written_as: h.also_written_as.clone(),
             see_also: h.see_also.clone(),
             comment: h.comment.clone(),
+            is_root: h.is_root,
+            root_language: h.root_language.clone(),
+            root_groups: h.root_groups.clone(),
+            root_sign: h.root_sign.clone(),
+            root_numbered_group: h.root_numbered_group.clone(),
             grammar,
-
-            // FIXME examples
-            // examples: h.examples.clone(),
-            examples: Vec::new(),
+            example_count: h.examples.len(),
+            examples: h.examples.clone(),
         };
 
         let meanings: Vec<DictWordMeaning> = vec![meaning];
@@ -777,17 +830,12 @@ impl DictWordRender {
         DictWordRender {
             word: h.word.clone(),
             word_nom_sg: h.word_nom_sg.clone(),
-            is_root: h.is_root,
             dict_label: h.dict_label.clone(),
             inflections: h.inflections.clone(),
             phonetic: h.phonetic.clone(),
             transliteration: h.transliteration.clone(),
             meanings_count: 1,
             meanings,
-            root_language: h.root_language.clone(),
-            root_groups: h.root_groups.clone(),
-            root_sign: h.root_sign.clone(),
-            root_numbered_group: h.root_numbered_group.clone(),
             url_id: DictWordRender::gen_url_id(&h.word, &h.dict_label),
         }
     }
