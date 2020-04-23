@@ -1473,11 +1473,6 @@ impl Ebook {
                 "also_written_as".to_string(),
                 "see_also".to_string(),
                 "comment".to_string(),
-                "is_root".to_string(),
-                "root_language".to_string(),
-                "root_groups".to_string(),
-                "root_sign".to_string(),
-                "root_numbered_group".to_string(),
                 "gr_roots".to_string(),
                 "gr_prefix_and_root".to_string(),
                 "gr_related_origin_word".to_string(),
@@ -1527,10 +1522,15 @@ impl Ebook {
                 "add_velthuis".to_string(),
             ];
 
-            // The Words sheet should include all fields.
+            // The Words sheet should include all fields, except 5:
+            // - is_root
+            // - root_language
+            // - root_groups
+            // - root_sign
+            // - root_numbered_group
             {
                 let e: &Map<String, Value> = entries_json[0].as_object().unwrap();
-                if words_sheet_columns.len() != e.keys().len() {
+                if words_sheet_columns.len() != e.keys().len() - 5 {
                     let msg = "🔥 Column numbers don't match.".to_string();
                     return Err(Box::new(ToolError::Exit(msg)));
                 }
