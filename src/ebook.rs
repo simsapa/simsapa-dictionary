@@ -5,11 +5,14 @@ use std::process::Command;
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::convert::TryInto;
 
 use handlebars::{self, Handlebars};
 use walkdir::WalkDir;
 use regex::Regex;
 use deunicode::deunicode;
+use xlsxwriter::{Workbook, Worksheet, FormatColor, Format};
+use serde_json::{Value, Map};
 
 use crate::app::{self, AppStartParams, ZipWith};
 use crate::dict_word::{DictWordMarkdown, DictWordRender, DictWordXlsx};
@@ -420,7 +423,10 @@ impl Ebook {
                 Err(_) => break,
             }
 
-            w = new_word.word_header.word.trim_end_matches(&a).to_string();
+            w = new_word.word_header.word
+                .trim_end_matches(&a)
+                .trim()
+                .to_string();
         }
         if !w.is_empty() {
             new_word.word_header.word = w;
@@ -1388,6 +1394,192 @@ impl Ebook {
 
             let mut file = File::create(&path)?;
             file.write_all(content.as_bytes())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn create_xlsx(&mut self) -> Result<(), Box<dyn Error>> {
+        info!("create_xlsx()");
+
+        let workbook: Workbook = Workbook::new(&self.output_path.to_str().unwrap());
+        let mut words_sheet: Worksheet = workbook.add_worksheet(Some("Words"))?;
+        let mut roots_sheet: Worksheet = workbook.add_worksheet(Some("Roots"))?;
+        let mut metadata_sheet: Worksheet = workbook.add_worksheet(Some("Metadata"))?;
+
+        let header_format: Format = workbook.add_format()
+            .set_bg_color(FormatColor::Custom(0xDBDBDB))
+            .set_font_color(FormatColor::Black);
+
+        // Convert the Markdown to DictWordXlsx, serialize it to JSON, and create the values in the
+        // worksheets.
+
+        {
+            let entries_xlsx = &self.dict_words_input
+                .values()
+                .cloned()
+                .map(|i| DictWordXlsx::from_dict_word_markdown(&i))
+                .collect::<Vec<DictWordXlsx>>();
+
+            let entries_json: Vec<Value> = serde_json::to_value(&entries_xlsx)?
+                .as_array().unwrap().to_vec();
+
+            let word_entries: Vec<Map<String, Value>> = entries_json.iter()
+                .filter_map(|i| {
+                    let e: &Map<String, Value> = i.as_object().unwrap();
+                    if e.get("is_root").unwrap().as_bool().unwrap() {
+                        None
+                    } else {
+                        Some(e.clone())
+                    }
+                })
+            .collect();
+
+            let root_entries: Vec<Map<String, Value>> = entries_json.iter()
+                .filter_map(|i| {
+                    let e: &Map<String, Value> = i.as_object().unwrap();
+                    if e.get("is_root").unwrap().as_bool().unwrap() {
+                        Some(e.clone())
+                    } else {
+                        None
+                    }
+                })
+            .collect();
+
+            let meta_json = serde_json::to_value(&self.meta).unwrap();
+            let metadata_entries: Vec<Map<String, Value>> = vec![
+                meta_json.as_object().unwrap().clone()
+            ];
+
+            // By default, keys are ordered alphabetically.
+            //
+            // An array has to specify a meaningful order of keys which helps when authoring
+            // the entries.
+
+            let words_sheet_columns: Vec<String> = vec![
+                "word".to_string(),
+                "meaning_order".to_string(),
+                "word_nom_sg".to_string(),
+                "dict_label".to_string(),
+                "inflections".to_string(),
+                "phonetic".to_string(),
+                "transliteration".to_string(),
+                "example_count".to_string(),
+                "definition_md".to_string(),
+                "summary".to_string(),
+                "synonyms".to_string(),
+                "antonyms".to_string(),
+                "homonyms".to_string(),
+                "also_written_as".to_string(),
+                "see_also".to_string(),
+                "comment".to_string(),
+                "is_root".to_string(),
+                "root_language".to_string(),
+                "root_groups".to_string(),
+                "root_sign".to_string(),
+                "root_numbered_group".to_string(),
+                "gr_roots".to_string(),
+                "gr_prefix_and_root".to_string(),
+                "gr_related_origin_word".to_string(),
+                "gr_related_origin_roots".to_string(),
+                "gr_construction".to_string(),
+                "gr_base_construction".to_string(),
+                "gr_compound_type".to_string(),
+                "gr_compound_construction".to_string(),
+                "gr_comment".to_string(),
+                "gr_speech".to_string(),
+                "gr_case".to_string(),
+                "gr_num".to_string(),
+                "gr_gender".to_string(),
+                "gr_person".to_string(),
+                "gr_voice".to_string(),
+                "gr_object".to_string(),
+                "gr_transitive".to_string(),
+                "gr_negative".to_string(),
+                "gr_verb".to_string(),
+                "ex_1_source_ref".to_string(),
+                "ex_1_source_title".to_string(),
+                "ex_1_text_md".to_string(),
+                "ex_1_translation_md".to_string(),
+                "ex_2_source_ref".to_string(),
+                "ex_2_source_title".to_string(),
+                "ex_2_text_md".to_string(),
+                "ex_2_translation_md".to_string(),
+            ];
+
+            let roots_sheet_columns: Vec<String> = vec![
+                "word".to_string(),
+                "meaning_order".to_string(),
+                "root_language".to_string(),
+                "root_groups".to_string(),
+                "root_sign".to_string(),
+                "root_numbered_group".to_string(),
+                "definition_md".to_string(),
+            ];
+
+            let metadata_sheet_columns: Vec<String> = vec![
+                "title".to_string(),
+                "description".to_string(),
+                "creator".to_string(),
+                "source".to_string(),
+                "cover_path".to_string(),
+                "book_id".to_string(),
+                "add_velthuis".to_string(),
+            ];
+
+            // The Words sheet should include all fields.
+            {
+                let e: &Map<String, Value> = entries_json[0].as_object().unwrap();
+                if words_sheet_columns.len() != e.keys().len() {
+                    let msg = "🔥 Column numbers don't match.".to_string();
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            }
+
+            Ebook::fill_sheet(&mut words_sheet, &word_entries, &words_sheet_columns, &header_format)?;
+
+            Ebook::fill_sheet(&mut roots_sheet, &root_entries, &roots_sheet_columns, &header_format)?;
+
+            Ebook::fill_sheet(&mut metadata_sheet, &metadata_entries, &metadata_sheet_columns, &header_format)?;
+
+        }
+
+        workbook.close()?;
+
+        Ok(())
+    }
+
+    fn fill_sheet(
+        sheet: &mut Worksheet,
+        entries: &[Map<String, Value>],
+        column_names: &[String],
+        header_format: &Format)
+        -> Result<(), Box<dyn Error>>
+    {
+        for (entry_idx, e) in entries.iter().enumerate() {
+
+            // Row 0: column names
+            for (col_idx, col_name) in column_names.iter().enumerate() {
+                sheet.write_string(0, col_idx.try_into().unwrap(), col_name, Some(header_format))?;
+            }
+
+            // Row 1, 2, ...: values
+            let row = entry_idx + 1;
+            for (col_idx, col_name) in column_names.iter().enumerate() {
+                let row_u32: u32 = row.try_into().unwrap();
+                let col_idx_u16: u16 = col_idx.try_into().unwrap();
+
+                match e.get(col_name).unwrap() {
+                    Value::Null => {},
+                    Value::Bool(x) => sheet.write_boolean(row_u32, col_idx_u16, *x, None)?,
+                    Value::Number(x) => sheet.write_number(row_u32, col_idx_u16, x.as_f64().unwrap(), None)?,
+                    Value::String(x) => sheet.write_string(row_u32, col_idx_u16, x, None)?,
+                    Value::Array(_) | Value::Object(_) => {
+                        error!("🔥 Can't write Array or Object to XLSX.");
+                        sheet.write_string(row_u32, col_idx_u16, "FIXME", None)?;
+                    },
+                }
+            }
         }
 
         Ok(())

@@ -20,6 +20,7 @@ use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
 pub struct AppStartParams {
     pub output_format: OutputFormat,
     pub json_path: Option<PathBuf>,
+    pub metadata_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
@@ -60,6 +61,8 @@ pub enum RunCommand {
     XlsxToC5,
     MarkdownToTei,
     XlsxToTei,
+    XlsxToJson,
+    JsonToXlsx,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -86,6 +89,7 @@ impl Default for AppStartParams {
         AppStartParams {
             output_format: OutputFormat::Epub,
             json_path: None,
+            metadata_path: None,
             nyanatiloka_root: None,
             source_paths: None,
             output_path: None,
@@ -682,6 +686,86 @@ fn process_markdown_to_json(
     Ok(())
 }
 
+fn process_xlsx_to_json(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+fn process_json_to_xlsx(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("metadata_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.metadata_path = Some(path);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
 fn process_to_c5(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches<'_>,
@@ -1040,6 +1124,12 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_json") {
         process_markdown_to_json(&mut params, sub_matches, RunCommand::MarkdownToJson)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_json") {
+        process_xlsx_to_json(&mut params, sub_matches, RunCommand::XlsxToJson)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("json_to_xlsx") {
+        process_json_to_xlsx(&mut params, sub_matches, RunCommand::JsonToXlsx)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;
@@ -1509,6 +1599,42 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
             }
         }
     }
+
+    Ok(())
+}
+
+pub fn process_json_list(
+    source_paths: Vec<PathBuf>,
+    metadata_path: PathBuf,
+    ebook: &mut Ebook,
+) -> Result<(), Box<dyn Error>> {
+    for p in source_paths.iter() {
+        process_json_entries(p, ebook)?;
+    }
+    process_json_metadata(&metadata_path, ebook)?;
+
+    Ok(())
+}
+
+pub fn process_json_entries(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Begin processing {:?} ===", source_path};
+
+    let s = fs::read_to_string(source_path).unwrap();
+    let entries: Vec<DictWordXlsx> = serde_json::from_str(&s).unwrap();
+
+    for i in entries.iter() {
+        ebook.add_word(DictWordMarkdown::from_xlsx(i));
+    }
+
+    Ok(())
+}
+
+pub fn process_json_metadata(metadata_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Processing Metadata {:?} ===", metadata_path};
+
+    let s = fs::read_to_string(metadata_path).unwrap();
+    let meta: EbookMetadata = serde_json::from_str(&s).unwrap();
+    ebook.meta = meta;
 
     Ok(())
 }

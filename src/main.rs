@@ -9,6 +9,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
 extern crate calamine;
+extern crate xlsxwriter;
 
 extern crate html2md;
 extern crate zip;
@@ -389,6 +390,59 @@ fn main() {
             ebook.use_cli_overrides(&app_params);
 
             ok_or_exit(app_params.used_first_arg, ebook.create_json());
+        }
+
+        RunCommand::XlsxToJson => {
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_xlsx_list(source_paths, &mut ebook),
+            );
+
+            info!("Added words: {}", ebook.len());
+
+            ebook.use_cli_overrides(&app_params);
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_json());
+        }
+
+        RunCommand::JsonToXlsx => {
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            let mp = app_params.metadata_path.clone();
+            let metadata_path = mp.expect("metadata_path is missing");
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_json_list(source_paths, metadata_path, &mut ebook),
+            );
+
+            info!("Added words: {}", ebook.len());
+
+            ebook.use_cli_overrides(&app_params);
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_xlsx());
         }
     }
 

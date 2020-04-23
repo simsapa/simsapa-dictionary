@@ -84,9 +84,9 @@ pub struct DictWordXlsx {
     #[serde(default)]
     pub root_language: String,
 
-    /// ["upa", "gam"]
+    /// comma-seperated list
     #[serde(default)]
-    pub root_groups: Vec<String>,
+    pub root_groups: String,
 
     /// "a"
     #[serde(default)]
@@ -601,7 +601,7 @@ impl DictWordMarkdown {
                 examples,
 
                 root_language: w.root_language.clone(),
-                root_groups: w.root_groups.clone(),
+                root_groups: DictWordMarkdown::parse_csv_list(&w.root_groups),
                 root_sign: w.root_sign.clone(),
                 root_numbered_group: w.root_numbered_group.clone(),
 
@@ -674,7 +674,7 @@ impl DictWordXlsx {
             ex_2_translation_md: "".to_string(),
 
             root_language: h.root_language.clone(),
-            root_groups: h.root_groups.clone(),
+            root_groups: h.root_groups.join(", "),
             root_sign: h.root_sign.clone(),
             root_numbered_group: h.root_numbered_group.clone(),
         };
