@@ -29,17 +29,46 @@
 <p>[{{dict_label}}]</p>
 {{/if ~}}
 {{phonetic_transliteration this ../meta.add_velthuis ~}}
+{{#if word_nom_sg}}<p>Nom.sg.: {{word_nom_sg}}</p>{{/if ~}}
 {{#each meanings}}
 <p>{{#if (gt ../meanings_count 1)}}({{meaning_order}}) {{/if}}{{grammar_text grammar}}</p>
-{{word_list "Also written as:" also_written_as ~}}
-{{markdown definition_md ../../meta.allow_raw_html ~}}
-{{#if examples ~}}
-<p>Examples:</p>
-{{markdown examples ../../meta.allow_raw_html ~}}
+{{#if is_root}}
+<p><b>(root)</b></p>
+{{#if root_language}}
+<p>Language: {{root_language}}</p>
 {{/if ~}}
+{{word_list "Root groups:" root_groups ~}}
+{{#if root_sign}}
+<p>Sign: {{root_sign}}</p>
+{{/if ~}}
+{{#if root_numbered_group}}
+<p>Numbered group: {{root_numbered_group}}</p>
+{{/if ~}}
+{{/if ~}}
+{{word_list "Also written as:" also_written_as ~}}
+{{#if summary}}<p>(Summary: {{summary}})</p>{{/if ~}}
+{{markdown definition_md ../../meta.allow_raw_html ~}}
+{{#if comment}}<p>Comment: {{comment}}</p>{{/if ~}}
+{{word_list "Roots:" grammar.roots ~}}
+{{#if grammar.construction}}<p>Construction: {{grammar.construction}}</p>{{/if ~}}
+{{#if grammar.base_construction}}<p>Base Construction: {{grammar.base_construction}}</p>{{/if ~}}
+{{#if grammar.compound_type}}<p>Compound type: {{grammar.compound_type}}</p>{{/if ~}}
+{{#if grammar.compound_construction}}<p>Compound Construction: {{grammar.compound_construction}}</p>{{/if ~}}
+{{#if grammar.comment}}<p>Grammar comment: {{grammar.comment}}</p>{{/if ~}}
 {{word_list "Synonyms:" synonyms ~}}
 {{word_list "Antonyms:" antonyms ~}}
+{{word_list "Homonyms:" homonyms ~}}
 {{word_list "See also:" see_also ~}}
+{{#if related_origin_word}}<p>Related origin: {{grammar.related_origin_word}}</p>{{/if ~}}
+{{word_list "Related origin roots:" grammar.related_origin_roots ~}}
+{{#if (gt example_count 0)}}<p><b>Examples:</b></p>{{/if ~}}
+{{#each examples ~}}
+{{markdown text_md ../../../meta.allow_raw_html ~}}
+{{markdown translation_md ../../../meta.allow_raw_html ~}}
+{{#if source_ref}}<p><i>{{source_ref}}</i></p>{{/if ~}}
+{{#if source_title}}<p><i>{{source_title}}</i></p>{{/if ~}}
+{{/each ~}}
+<p>----------</p>
 {{/each}}
         ]]>
       </definition>

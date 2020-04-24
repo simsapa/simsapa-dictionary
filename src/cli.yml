@@ -645,7 +645,7 @@ subcommands:
             takes_value: false
 
   - markdown_to_json:
-      about: "Read a Markdown file and serialized it to JSON."
+      about: "Read a Markdown file and serialize it to JSON."
 
       args:
         - source_path:
@@ -657,6 +657,49 @@ subcommands:
 
         - output_path:
             help: "The entries JSON file to write. Metadata JSON will be written to the same folder with '_metadata' postfix."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+  - xlsx_to_json:
+      about: "Read an XLSX file and serialize it to JSON."
+
+      args:
+        - source_path:
+            help: "Path to the XLSX file."
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The entries JSON file to write. Metadata JSON will be written to the same folder with '_metadata' postfix."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+  - json_to_xlsx:
+      about: "Read a JSON file and convert it to an XLSX MS Excel Spreadsheet."
+
+      args:
+        - source_path:
+            help: "Path to the JSON file with the dictionary entries."
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - metadata_path:
+            help: "Path to the JSON file with the Metadata."
+            long: metadata_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The XLSX file to write."
             long: output_path
             value_name: PATH
             required: true

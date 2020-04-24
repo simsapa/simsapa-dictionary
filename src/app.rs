@@ -20,6 +20,7 @@ use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
 pub struct AppStartParams {
     pub output_format: OutputFormat,
     pub json_path: Option<PathBuf>,
+    pub metadata_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
@@ -60,6 +61,8 @@ pub enum RunCommand {
     XlsxToC5,
     MarkdownToTei,
     XlsxToTei,
+    XlsxToJson,
+    JsonToXlsx,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -86,6 +89,7 @@ impl Default for AppStartParams {
         AppStartParams {
             output_format: OutputFormat::Epub,
             json_path: None,
+            metadata_path: None,
             nyanatiloka_root: None,
             source_paths: None,
             output_path: None,
@@ -682,6 +686,86 @@ fn process_markdown_to_json(
     Ok(())
 }
 
+fn process_xlsx_to_json(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+fn process_json_to_xlsx(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("metadata_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.metadata_path = Some(path);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
 fn process_to_c5(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches<'_>,
@@ -1041,6 +1125,12 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_json") {
         process_markdown_to_json(&mut params, sub_matches, RunCommand::MarkdownToJson)?;
 
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_json") {
+        process_xlsx_to_json(&mut params, sub_matches, RunCommand::XlsxToJson)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("json_to_xlsx") {
+        process_json_to_xlsx(&mut params, sub_matches, RunCommand::JsonToXlsx)?;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_ebook") {
         process_to_ebook(&mut params, sub_matches, RunCommand::MarkdownToEbook)?;
 
@@ -1108,29 +1198,57 @@ pub fn process_suttacentral_json(
     for e in entries.iter() {
         let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
-                dict_label: (*dict_label).to_string(),
-                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                // ebook.add_word will increment meaning_order if needed
-                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
+                meaning_order: 1,
+                word_nom_sg: "".to_string(),
+                is_root: false,
+                dict_label: (*dict_label).to_string(),
+
+                inflections: Vec::new(),
+                phonetic: "".to_string(),
+                transliteration: "".to_string(),
+
                 summary: "".to_string(),
 
+                synonyms: Vec::new(),
+                antonyms: Vec::new(),
+                homonyms: Vec::new(),
+                also_written_as: Vec::new(),
+                see_also: Vec::new(),
+                comment: "".to_string(),
+
+                grammar_roots: Vec::new(),
+                grammar_prefix_and_root: "".to_string(),
+
+                grammar_related_origin_word: "".to_string(),
+                grammar_related_origin_roots: Vec::new(),
+
+                grammar_construction: "".to_string(),
+                grammar_base_construction: "".to_string(),
+                grammar_compound_type: "".to_string(),
+                grammar_compound_construction: "".to_string(),
+
+                grammar_comment: "".to_string(),
+                grammar_speech: "".to_string(),
                 grammar_case: "".to_string(),
                 grammar_num: "".to_string(),
                 grammar_gender: "".to_string(),
                 grammar_person: "".to_string(),
                 grammar_voice: "".to_string(),
                 grammar_object: "".to_string(),
-                grammar_comment: "".to_string(),
+                grammar_transitive: "".to_string(),
+                grammar_negative: "".to_string(),
+                grammar_verb: "".to_string(),
 
-                phonetic: "".to_string(),
-                transliteration: "".to_string(),
-                inflections: Vec::new(),
-                synonyms: Vec::new(),
-                antonyms: Vec::new(),
-                see_also: Vec::new(),
-                also_written_as: Vec::new(),
-                examples: "".to_string(),
+                examples: Vec::new(),
+
+                root_language: "".to_string(),
+                root_groups: Vec::new(),
+                root_sign: "".to_string(),
+                root_numbered_group: "".to_string(),
+
+                // ebook.add_word will increment meaning_order if needed
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
             },
             definition_md: html_to_markdown(&e.text).to_string(),
         };
@@ -1193,28 +1311,57 @@ pub fn process_nyanatiloka_entries(
     for e in entries.iter() {
         let new_word = DictWordMarkdown {
             word_header: DictWordHeader {
-                dict_label: (*dict_label).to_string(),
-                meaning_order: 1,
                 word: e.word.to_lowercase(),
-                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
+                meaning_order: 1,
+                word_nom_sg: "".to_string(),
+                is_root: false,
+                dict_label: (*dict_label).to_string(),
+
+                inflections: Vec::new(),
+                phonetic: "".to_string(),
+                transliteration: "".to_string(),
+
                 summary: "".to_string(),
 
+                synonyms: Vec::new(),
+                antonyms: Vec::new(),
+                homonyms: Vec::new(),
+                also_written_as: Vec::new(),
+                see_also: Vec::new(),
+                comment: "".to_string(),
+
+                grammar_roots: Vec::new(),
+                grammar_prefix_and_root: "".to_string(),
+
+                grammar_related_origin_word: "".to_string(),
+                grammar_related_origin_roots: Vec::new(),
+
+                grammar_construction: "".to_string(),
+                grammar_base_construction: "".to_string(),
+                grammar_compound_type: "".to_string(),
+                grammar_compound_construction: "".to_string(),
+
+                grammar_comment: "".to_string(),
+                grammar_speech: "".to_string(),
                 grammar_case: "".to_string(),
                 grammar_num: "".to_string(),
                 grammar_gender: "".to_string(),
                 grammar_person: "".to_string(),
                 grammar_voice: "".to_string(),
                 grammar_object: "".to_string(),
-                grammar_comment: "".to_string(),
+                grammar_transitive: "".to_string(),
+                grammar_negative: "".to_string(),
+                grammar_verb: "".to_string(),
 
-                phonetic: "".to_string(),
-                transliteration: "".to_string(),
-                inflections: Vec::new(),
-                synonyms: Vec::new(),
-                antonyms: Vec::new(),
-                see_also: Vec::new(),
-                also_written_as: Vec::new(),
-                examples: "".to_string(),
+                examples: Vec::new(),
+
+                root_language: "".to_string(),
+                root_groups: Vec::new(),
+                root_sign: "".to_string(),
+                root_numbered_group: "".to_string(),
+
+                // ebook.add_word will increment meaning_order if needed
+                url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
             },
             definition_md: html_to_markdown(&e.text),
         };
@@ -1339,12 +1486,25 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
         return Err(Box::new(ToolError::Exit(msg)));
     };
 
-    let entries_name = if sheet_names.contains(&"Word entries".to_string()) {
+    let entries_name = if sheet_names.contains(&"Words".to_string()) {
+        "Words"
+     } else if sheet_names.contains(&"words".to_string()) {
+        "words"
+     } else if sheet_names.contains(&"Word entries".to_string()) {
         "Word entries"
     } else if sheet_names.contains(&"Word Entries".to_string()) {
         "Word Entries"
     } else {
-        let msg = "Can't find sheet: 'Word entries'".to_string();
+        let msg = "Can't find sheet: 'Words'".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    };
+
+    let roots_name = if sheet_names.contains(&"Roots".to_string()) {
+        "Roots"
+    } else if sheet_names.contains(&"roots".to_string()) {
+        "roots"
+    } else {
+        let msg = "Can't find sheet: 'Roots'".to_string();
         return Err(Box::new(ToolError::Exit(msg)));
     };
 
@@ -1352,6 +1512,8 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
         .ok_or_else(|| format!("Can't find sheet: '{}'", &metadata_name))??;
     let entries_range = workbook.worksheet_range(entries_name)
         .ok_or_else(|| format!("Can't find sheet: '{}'", &entries_name))??;
+    let roots_range = workbook.worksheet_range(roots_name)
+        .ok_or_else(|| format!("Can't find sheet: '{}'", &roots_name))??;
 
     // Parse Metadata sheet
 
@@ -1375,7 +1537,7 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
         }
     }
 
-    // Parse Word entries sheet
+    // Parse Words sheet
 
     {
         let iter = RangeDeserializerBuilder::new()
@@ -1393,15 +1555,86 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
             })
         .collect();
 
-    for i in entries.iter() {
-        match i {
-            Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
-            Err(msg) => {
-                return Err(Box::new(ToolError::Exit(msg.clone())));
+        for i in entries.iter() {
+            match i {
+                Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
+                Err(msg) => {
+                    println!("{}", msg);
+                    // FIXME this segfaults
+                    return Err(Box::new(ToolError::Exit(msg.clone())));
+                }
             }
         }
     }
+
+    // Parse Roots sheet
+    // Same as 'Words' but we set 'is_root' to true.
+
+    {
+        let iter = RangeDeserializerBuilder::new()
+            .has_headers(true)
+            .from_range(&roots_range)?;
+
+        let entries: Vec<Result<DictWordXlsx, String>> = iter
+            .map(|e| {
+                match e {
+                    Ok(x) => Ok(x),
+                    Err(e) => {
+                        Err(format!("Can't parse: {:?}", e))
+                    }
+                }
+            })
+        .collect();
+
+        for i in entries.iter() {
+            match i {
+                Ok(x) => {
+                    let mut a: DictWordXlsx = x.clone();
+                    a.is_root = true;
+                    ebook.add_word(DictWordMarkdown::from_xlsx(&a))
+                },
+                Err(msg) => {
+                    return Err(Box::new(ToolError::Exit(msg.clone())));
+                }
+            }
+        }
     }
+
+    Ok(())
+}
+
+pub fn process_json_list(
+    source_paths: Vec<PathBuf>,
+    metadata_path: PathBuf,
+    ebook: &mut Ebook,
+) -> Result<(), Box<dyn Error>> {
+    for p in source_paths.iter() {
+        process_json_entries(p, ebook)?;
+    }
+    process_json_metadata(&metadata_path, ebook)?;
+
+    Ok(())
+}
+
+pub fn process_json_entries(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Begin processing {:?} ===", source_path};
+
+    let s = fs::read_to_string(source_path).unwrap();
+    let entries: Vec<DictWordXlsx> = serde_json::from_str(&s).unwrap();
+
+    for i in entries.iter() {
+        ebook.add_word(DictWordMarkdown::from_xlsx(i));
+    }
+
+    Ok(())
+}
+
+pub fn process_json_metadata(metadata_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+    info! {"=== Processing Metadata {:?} ===", metadata_path};
+
+    let s = fs::read_to_string(metadata_path).unwrap();
+    let meta: EbookMetadata = serde_json::from_str(&s).unwrap();
+    ebook.meta = meta;
 
     Ok(())
 }
