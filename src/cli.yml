@@ -438,6 +438,64 @@ subcommands:
             required: false
             takes_value: false
 
+  - xlsx_to_latex:
+      about: "Process an XLSX file and generate LaTeX for compiling a PDF."
+
+      args:
+        - source_paths_list:
+            help: "A file with a list of XLSX file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - source_path:
+            help: "A single XLSX file to read dictionary entries from. Either this or 'source_paths_list' must be used."
+            long: source_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary, instead of the one defined in the XLSX file."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "Use this dict_label property, instead of the one defined in the XLSX file."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - dont_generate_synonyms:
+            help: "Don't add generated synonyms, such as ascii and velthuis."
+            long: dont_generate_synonyms
+            required: false
+            takes_value: false
+
+        - entries_template:
+            help: "Handlebars template to render the word entries file."
+            long: entries_template
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The LaTeX file to write. Defaults to the same file name and folder as the first XLSX source."
+            long: output_path
+            value_name: PATH
+            required: false
+            takes_value: true
+
+        - keep_entries_plaintext:
+            help: "Entry definitions will be plain text, not converting definition_md from Markdown to LaTeX."
+            long: keep_entries_plaintext
+            required: false
+            takes_value: false
+
   - markdown_to_c5:
       about: "Process an Markdown file and generate a C5 text file for processing with 'dictfmt -c5'."
 

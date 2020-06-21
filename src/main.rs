@@ -367,6 +367,33 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.create_tei());
         }
 
+        RunCommand::XlsxToLaTeX => {
+            let (i_p, o_p) = get_input_output(&app_params);
+            let mut ebook = Ebook::new(
+                app_params.output_format,
+                app_params.allow_raw_html,
+                &i_p,
+                &o_p,
+                app_params.entries_template.clone());
+
+            let paths = app_params.source_paths.clone();
+            let p = paths.expect("source_paths is missing.");
+            let source_paths = p.to_vec();
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                app::process_xlsx_list(source_paths, &mut ebook),
+            );
+
+            info!("Added words: {}", ebook.len());
+
+            ebook.use_cli_overrides(&app_params);
+
+            ebook.process_text();
+
+            ok_or_exit(app_params.used_first_arg, ebook.create_latex());
+        }
+
         RunCommand::MarkdownToJson => {
             let (i_p, o_p) = get_input_output(&app_params);
             let mut ebook = Ebook::new(
