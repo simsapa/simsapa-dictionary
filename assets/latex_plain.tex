@@ -1,0 +1,274 @@
+\documentclass[11pt, a4paper, landscape, oneside, twocolumn]{memoir}
+
+\makeatletter
+
+\usepackage[british]{babel}
+\usepackage{xcolor}
+\usepackage{multicol}
+
+\definecolor{textbody}{gray}{0}% Maximum contrast for printing on office printers.
+\definecolor{link}{rgb}{0.2,0.2,1}% not so light blue
+
+\usepackage{fontspec}
+\defaultfontfeatures{Ligatures={TeX}}
+
+\setmainfont[%
+  BoldFont = texgyrepagella-bold.otf,
+  ItalicFont = texgyrepagella-italic.otf,
+  BoldItalicFont = texgyrepagella-bolditalic.otf,
+]{texgyrepagella-regular.otf}
+
+\usepackage[final,babel=true]{microtype}
+
+\RequirePackage{hyperxmp}
+\RequirePackage{hyperref}
+
+\hypersetup{
+  unicode=true,
+  bookmarksopen=true,
+  bookmarksopenlevel=3,
+  hypertexnames=true,
+  linktocpage=true,
+  plainpages=false,
+  breaklinks,
+  colorlinks=true,
+  linkcolor=link,
+  citecolor=link,
+  filecolor=link,
+  urlcolor=link,
+}
+
+% memoir's more allowing penalties
+\midsloppy
+
+\raggedbottom
+\raggedbottomsection
+
+\nouppercaseheads
+
+\def\BOOK@fontSizePt{10.5}
+\def\BOOK@lineHeightPt{14}
+
+\renewcommand{\normalsize}{%
+  \@setfontsize\normalsize\BOOK@fontSizePt\BOOK@lineHeightPt
+  \abovedisplayskip 11\p@ \@plus3\p@ \@minus6\p@
+  \abovedisplayshortskip \z@ \@plus3\p@
+  \belowdisplayshortskip 6.5\p@ \@plus3.5\p@ \@minus3\p@
+  \belowdisplayskip \abovedisplayskip
+  \color{textbody}
+  \let\@listi\@listI}
+\normalsize
+
+\setlength{\vgap}{1.5em}
+\setlength{\vindent}{\vgap}
+\setlength{\vleftmargin}{2em}
+
+\setlength{\parskip}{8pt}
+\setlength{\parindent}{0pt}
+
+\setlrmarginsandblock{25mm}{25mm}{*}
+\setulmarginsandblock{22mm}{15mm}{*}
+\setheadfoot{10mm}{30pt}
+\setheaderspaces{*}{5mm}{*}
+%\setlength{\footskip}{30pt}
+
+% Fixes these warnings:
+%
+% Overfull \vbox (1.4pt too high) has occurred while \output is active
+\addtolength{\headheight}{2pt}
+
+\checkandfixthelayout
+
+\maxtocdepth{section}
+\setsecnumdepth{part}
+
+\makepagestyle{topcorners}
+\makeevenhead{topcorners}{}{%
+  \textsc{\thetitle}%
+  \hfill\thepage%
+  \vskip -5pt%
+  \rule{\textwidth}{0.2pt}%
+}{}
+\makeevenfoot{topcorners}{}{}{}
+\makeoddhead{topcorners}{}{%
+  \textsc{\thetitle}%
+  \hfill\thepage%
+  \vskip -5pt%
+  \rule{\textwidth}{0.2pt}%
+}{}
+\makeoddfoot{topcorners}{}{}{}
+\makepsmarks{topcorners}{%
+  \nouppercaseheads
+  \createmark{chapter}{left}{nonumber}{}{}
+  \createmark{section}{right}{nonumber}{}{}
+  \createplainmark{toc}{both}{\contentsname}
+  \createplainmark{lof}{both}{\listfigurename}
+  \createplainmark{lot}{both}{\listtablename}
+  \createplainmark{bib}{both}{\bibname}
+  \createplainmark{index}{both}{\indexname}
+  \createplainmark{glossary}{both}{\glossaryname}
+}
+
+\makechapterstyle{notitle}{
+  \chapterstyle{default}
+  \setlength{\beforechapskip}{0pt}
+  \renewcommand\printchaptername{}
+  \renewcommand\chapternamenum{}
+  \renewcommand\chapnumfont{}
+  \renewcommand\printchapternum{}
+  \setlength{\midchapskip}{0pt}
+  \renewcommand\afterchapternum{}
+  \renewcommand\printchapternonum{}
+  \renewcommand\chaptitlefont{}
+  \renewcommand\printchaptertitle[1]{}
+  \setlength{\afterchapskip}{0pt}
+  \renewcommand\afterchaptertitle{}
+}
+
+\addtodef{\frontmatter}{}{\chapterstyle{notitle}\aliaspagestyle{chapter}{empty}\pagestyle{empty}}
+\addtodef{\mainmatter}{}{\chapterstyle{default}\aliaspagestyle{chapter}{topcorners}\pagestyle{normalpage}}
+
+\aliaspagestyle{normalpage}{topcorners}
+\aliaspagestyle{chapter}{topcorners}
+\pagestyle{normalpage}
+
+\makeatother
+
+\title{%
+{{meta.title}}%
+}
+\author{%
+{{meta.creator}}%
+}
+
+\begin{document}
+
+\frontmatter
+
+\twocolumn[%
+\begin{@twocolumnfalse}%
+{\centering%
+
+{\fontsize{24}{30}\bfseries\selectfont%
+{{meta.title}}%
+}
+
+{\large%
+{{meta.creator}}%
+}
+
+\vspace*{140mm}
+
+{{meta.created_date_human}}
+
+\par}%
+\end{@twocolumnfalse}%
+]
+
+\clearpage
+\tableofcontents*
+
+\mainmatter
+
+\addtocontents{toc}{\protect\begin{multicols}{3}}
+
+{\raggedright
+
+{{#each dict_words_render}}
+
+\section{%
+{{word}}%
+}
+
+{{#if dict_label ~}}
+[%
+{{dict_label}}%
+]
+{{/if ~}}
+{{phonetic_transliteration this ../meta.add_velthuis}}
+{{#if word_nom_sg}}Nom.sg.: {{word_nom_sg}}{{/if}}
+
+{{#each meanings}}
+{{#if (gt ../meanings_count 1)}}({{meaning_order}}) {{/if}} {{grammar_text_plain grammar}}
+
+{{#if is_root}}
+\textbf{(root)}
+
+{{#if root_language}}
+Language: {{root_language}}
+{{/if ~}}
+
+{{word_list_plain "Root groups:" root_groups ~}}
+
+{{#if root_sign}}
+Sign: {{root_sign}}
+{{/if ~}}
+
+{{#if root_numbered_group}}
+Numbered group: {{root_numbered_group}}
+{{/if ~}}
+{{/if ~}}
+
+{{word_list_plain "Also written as:" also_written_as}}
+
+{{#if summary}}Summary: {{summary}}{{/if}}
+
+% FIXME latex definition_md ~
+{{definition_md}}
+
+{{#if comment}}Comment: {{comment}}{{/if}}
+
+{{word_list_plain "Roots:" grammar.roots}}
+
+{{#if grammar.construction}}Construction: {{grammar.construction}}{{/if}}
+
+{{#if grammar.base_construction}}Base Construction: {{grammar.base_construction}}{{/if}}
+
+{{#if grammar.compound_type}}Compound type: {{grammar.compound_type}}{{/if}}
+
+{{#if grammar.compound_construction}}Compound Construction: {{grammar.compound_construction}}{{/if}}
+
+{{#if grammar.comment}}Grammar comment: {{grammar.comment}}{{/if}}
+
+{{word_list_plain "Synonyms:" synonyms}}
+
+{{word_list_plain "Antonyms:" antonyms}}
+
+{{word_list_plain "Homonyms:" homonyms}}
+
+{{word_list_plain "See also:" see_also}}
+
+{{#if related_origin_word}}Related origin: {{grammar.related_origin_word}}{{/if}}
+
+{{word_list_plain "Related origin roots:" grammar.related_origin_roots}}
+
+{{#if (gt example_count 0)}}\textbf{Examples:}{{/if}}
+
+{{#each examples}}
+
+% FIXME latex text_md ~
+{{text_md}}
+
+% FIXME latex translation_md ~
+{{translation_md}}
+
+{{#if source_ref}}
+\textit{%
+{{source_ref}}%
+}{{/if}}{{#if source_title}}
+\textit{%
+ {{source_title}}%
+}
+{{/if}}
+{{/each}}
+
+{{/each}}
+
+{{/each}}% dict_words_render
+
+}% End of raggedright
+
+\addtocontents{toc}{\protect\end{multicols}}
+
+\end{document}
+

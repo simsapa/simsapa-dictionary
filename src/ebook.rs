@@ -113,6 +113,7 @@ pub enum OutputFormat {
     BabylonGls,
     StardictXmlPlain,
     StardictXmlHtml,
+    LaTeXPlain,
     C5Plain,
     C5Html,
     TeiPlain,
@@ -273,6 +274,13 @@ impl Ebook {
         afs.insert(
             k.clone(),
             include_str!("../assets/freedict-tei_formatted.xml").to_string(),
+        );
+        reg_tmpl(&mut h, &k, &afs);
+
+        let k = "latex_plain.tex".to_string();
+        afs.insert(
+            k.clone(),
+            include_str!("../assets/latex_plain.tex").to_string(),
         );
         reg_tmpl(&mut h, &k, &afs);
 
@@ -1263,6 +1271,62 @@ impl Ebook {
         Ok(())
     }
 
+    pub fn write_latex(&self) -> Result<(), Box<dyn Error>> {
+        info!("write_latex()");
+
+        let mut content = match self.entries_template {
+            Some(ref path) => {
+                let template_source = match fs::read_to_string(path) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't read file: {:?}, {:?}", path, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                };
+
+                let mut h = Handlebars::new();
+                h.set_strict_mode(true);
+                h.register_escape_fn(helpers::light_html_escape);
+                match h.render_template(&template_source, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template: {:?}", e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
+            }
+
+            None => {
+                let template = "latex_plain.tex".to_string();
+                match self.templates.render(&template, &self) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        let msg = format!("Can't render template {}, {:?}", template, e);
+                        return Err(Box::new(ToolError::Exit(msg)));
+                    }
+                }
+            }
+        };
+
+        // NOTE: ampersand '&' must be escaped in LaTeX.
+        content = content.replace("&", "\\&");
+
+        let re_def_whitespace = Regex::new(r#"(<definition type="[a-z]+">)[ \n]+(.*?)[ \n]*(</definition>)"#).unwrap();
+        content = re_def_whitespace.replace_all(&content, "$1$2$3").to_string();
+
+        content = clean_output_content(&content);
+
+        let mut file = File::create(&self.output_path)?;
+        file.write_all(content.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn create_latex(&mut self) -> Result<(), Box<dyn Error>> {
+        self.write_latex()?;
+        Ok(())
+    }
+
     pub fn write_c5(&self) -> Result<(), Box<dyn Error>> {
         info!("write_c5()");
 
@@ -1970,6 +2034,8 @@ impl Ebook {
                         }
                     }
 
+                    OutputFormat::LaTeXPlain => word,
+
                 };
 
                 dict_word.definition_md = dict_word.definition_md.replace(&link, &new_link).to_string();
@@ -2259,6 +2325,8 @@ impl Ebook {
                     format!("*{}*", w)
                 }
             }
+
+            OutputFormat::LaTeXPlain => w.to_string(),
         }
     }
 
