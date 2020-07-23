@@ -59,8 +59,6 @@
 {{word_list "Antonyms:" antonyms ~}}
 {{word_list "Homonyms:" homonyms ~}}
 {{word_list "See also:" see_also ~}}
-{{#if related_origin_word}}<p>Related origin: {{grammar.related_origin_word}}</p>{{/if ~}}
-{{word_list "Related origin roots:" grammar.related_origin_roots ~}}
 {{#if (gt example_count 0)}}<p><b>Examples:</b></p>{{/if ~}}
 {{#each examples ~}}
 {{markdown text_md ../../../meta.allow_raw_html ~}}

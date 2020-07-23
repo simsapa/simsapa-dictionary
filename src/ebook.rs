@@ -1539,8 +1539,6 @@ impl Ebook {
                 "comment".to_string(),
                 "gr_roots".to_string(),
                 "gr_prefix_and_root".to_string(),
-                "gr_related_origin_word".to_string(),
-                "gr_related_origin_roots".to_string(),
                 "gr_construction".to_string(),
                 "gr_base_construction".to_string(),
                 "gr_compound_type".to_string(),

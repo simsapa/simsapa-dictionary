@@ -104,11 +104,6 @@ pub struct DictWordXlsx {
     pub gr_prefix_and_root: String,
 
     #[serde(default)]
-    pub gr_related_origin_word: String,
-    #[serde(default)]
-    pub gr_related_origin_roots: String,
-
-    #[serde(default)]
     pub gr_construction: String,
     #[serde(default)]
     pub gr_base_construction: String,
@@ -231,11 +226,6 @@ pub struct DictWordHeader {
     pub grammar_roots: Vec<String>,
     #[serde(default)]
     pub grammar_prefix_and_root: String,
-
-    #[serde(default)]
-    pub grammar_related_origin_word: String,
-    #[serde(default)]
-    pub grammar_related_origin_roots: Vec<String>,
 
     #[serde(default)]
     pub grammar_construction: String,
@@ -385,14 +375,6 @@ pub struct DictWordGrammar {
     /// "ā bhuj", for ābhujati
     #[serde(default)]
     prefix_and_root: String,
-
-    /// Such as a Sanskrit word.
-    #[serde(default)]
-    related_origin_word: String,
-
-    /// Such as Sanskrit roots.
-    #[serde(default)]
-    related_origin_roots: Vec<String>,
 
     /// "upa + gaccha + ti"
     #[serde(default)]
@@ -578,9 +560,6 @@ impl DictWordMarkdown {
                 grammar_roots: DictWordMarkdown::parse_csv_list(&w.gr_roots),
                 grammar_prefix_and_root: w.gr_prefix_and_root.clone(),
 
-                grammar_related_origin_word: w.gr_related_origin_word.clone(),
-                grammar_related_origin_roots: DictWordMarkdown::parse_csv_list(&w.gr_related_origin_roots),
-
                 grammar_construction: w.gr_construction.clone(),
                 grammar_base_construction: w.gr_base_construction.clone(),
                 grammar_compound_type: w.gr_compound_type.clone(),
@@ -642,9 +621,6 @@ impl DictWordXlsx {
 
             gr_roots: h.grammar_roots.join(", "),
             gr_prefix_and_root: h.grammar_prefix_and_root.clone(),
-
-            gr_related_origin_word: h.grammar_related_origin_word.clone(),
-            gr_related_origin_roots: h.grammar_related_origin_roots.join(", "),
 
             gr_construction: h.grammar_construction.clone(),
             gr_base_construction: h.grammar_base_construction.clone(),
@@ -745,9 +721,6 @@ impl Default for DictWordHeader {
             grammar_roots: Vec::new(),
             grammar_prefix_and_root: "".to_string(),
 
-            grammar_related_origin_word: "".to_string(),
-            grammar_related_origin_roots: Vec::new(),
-
             grammar_construction: "".to_string(),
             grammar_base_construction: "".to_string(),
             grammar_compound_type: "".to_string(),
@@ -784,8 +757,6 @@ impl DictWordRender {
         let grammar = DictWordGrammar {
             roots: h.grammar_roots.clone(),
             prefix_and_root: h.grammar_prefix_and_root,
-            related_origin_word: h.grammar_related_origin_word,
-            related_origin_roots: h.grammar_related_origin_roots.clone(),
 
             construction: h.grammar_construction,
             base_construction: h.grammar_base_construction,

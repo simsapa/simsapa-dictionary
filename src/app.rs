@@ -1349,9 +1349,6 @@ pub fn process_suttacentral_json(
                 grammar_roots: Vec::new(),
                 grammar_prefix_and_root: "".to_string(),
 
-                grammar_related_origin_word: "".to_string(),
-                grammar_related_origin_roots: Vec::new(),
-
                 grammar_construction: "".to_string(),
                 grammar_base_construction: "".to_string(),
                 grammar_compound_type: "".to_string(),
@@ -1461,9 +1458,6 @@ pub fn process_nyanatiloka_entries(
 
                 grammar_roots: Vec::new(),
                 grammar_prefix_and_root: "".to_string(),
-
-                grammar_related_origin_word: "".to_string(),
-                grammar_related_origin_roots: Vec::new(),
 
                 grammar_construction: "".to_string(),
                 grammar_base_construction: "".to_string(),
