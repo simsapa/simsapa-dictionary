@@ -47,23 +47,24 @@ pub struct AppStartParams {
 
 #[derive(Clone, Copy, Debug)]
 pub enum RunCommand {
-    NoOp,
-    SuttaCentralJsonToMarkdown,
-    NyanatilokaToMarkdown,
-    MarkdownToEbook,
-    XlsxToEbook,
-    MarkdownToBabylon,
-    XlsxToBabylon,
-    MarkdownToStardict,
-    XlsxToStardict,
-    MarkdownToJson,
-    MarkdownToC5,
-    XlsxToC5,
-    MarkdownToTei,
-    XlsxToTei,
-    XlsxToJson,
     JsonToXlsx,
+    MarkdownToBabylon,
+    MarkdownToC5,
+    MarkdownToEbook,
+    MarkdownToJson,
+    MarkdownToStardict,
+    MarkdownToTei,
+    NoOp,
+    NyanatilokaToMarkdown,
+    SuttaCentralJsonToMarkdown,
+    XlsxToBabylon,
+    XlsxToC5,
+    XlsxToEbook,
+    XlsxToJson,
     XlsxToLaTeX,
+    XlsxToRenderJson,
+    XlsxToStardict,
+    XlsxToTei,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1253,6 +1254,9 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
 
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_json") {
         process_xlsx_to_json(&mut params, sub_matches, RunCommand::XlsxToJson)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_render_json") {
+        process_to_ebook(&mut params, sub_matches, RunCommand::XlsxToRenderJson)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("json_to_xlsx") {
         process_json_to_xlsx(&mut params, sub_matches, RunCommand::JsonToXlsx)?;

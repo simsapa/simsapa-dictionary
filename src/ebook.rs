@@ -1463,6 +1463,37 @@ impl Ebook {
         Ok(())
     }
 
+    pub fn create_render_json(&mut self) -> Result<(), Box<dyn Error>> {
+        info!("create_render_json()");
+
+        {
+            let entries = &self.dict_words_render
+                .values()
+                .cloned()
+                .collect::<Vec<DictWordRender>>();
+            let content = serde_json::to_string(&entries)?;
+
+            let mut file = File::create(&self.output_path)?;
+            file.write_all(content.as_bytes())?;
+        }
+
+        // Write Metadata.
+
+        {
+            let content = serde_json::to_string(&self.meta)?;
+
+            let a = PathBuf::from(self.output_path.file_name().unwrap());
+            let mut b = a.file_stem().unwrap().to_str().unwrap().to_string();
+            b.push_str("-metadata.json");
+            let path = self.output_path.with_file_name(b);
+
+            let mut file = File::create(&path)?;
+            file.write_all(content.as_bytes())?;
+        }
+
+        Ok(())
+    }
+
     pub fn create_xlsx(&mut self) -> Result<(), Box<dyn Error>> {
         info!("create_xlsx()");
 

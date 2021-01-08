@@ -157,7 +157,7 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
-        RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
+        RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson => {
             let (i_p, o_p) = get_input_output(&app_params);
             let mut ebook = Ebook::new(
                 app_params.output_format,
@@ -178,7 +178,7 @@ fn main() {
                     );
                 }
 
-                RunCommand::XlsxToEbook => {
+                RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson => {
                     ok_or_exit(
                         app_params.used_first_arg,
                         app::process_xlsx_list(source_paths, &mut ebook),
@@ -194,7 +194,17 @@ fn main() {
 
             ebook.process_text();
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
+            match app_params.run_command {
+                RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
+                    ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
+                }
+
+                RunCommand::XlsxToRenderJson => {
+                    ok_or_exit(app_params.used_first_arg, ebook.create_render_json());
+                }
+
+                _ => {},
+            }
 
             if !app_params.dont_remove_generated_files {
                 ok_or_exit(app_params.used_first_arg, ebook.remove_generated_files());

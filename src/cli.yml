@@ -721,7 +721,25 @@ subcommands:
             takes_value: true
 
   - xlsx_to_json:
-      about: "Read an XLSX file and serialize it to JSON."
+      about: "Read an XLSX file and serialize it to JSON, with fields corresponding to the XLSX columns."
+
+      args:
+        - source_path:
+            help: "Path to the XLSX file."
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The entries JSON file to write. Metadata JSON will be written to the same folder with '_metadata' postfix."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+  - xlsx_to_render_json:
+      about: "Read an XLSX file and serialize it to JSON, with data parsed to meanings and examples as for an ebook."
 
       args:
         - source_path:
