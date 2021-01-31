@@ -36,7 +36,7 @@ This tool generates EPUB, MOBI, Stardict (.zip) and Babylon (.gls) dictionary fi
 
 I hope it is useful for:
 
-- looking Pali words more easily on different devices
+- looking up Pali words more easily on different devices
 - with fulltext search (looking for English words in Pali)
 - in an offline context
 
