@@ -7,6 +7,186 @@ use regex::Regex;
 use crate::error::ToolError;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DictWord {
+    /// The dictionary word lookup entry.
+    pub word: String,
+
+    /// The nominative singular form (if applies).
+    #[serde(default)]
+    pub word_nom_sg: String,
+
+    /// A label to distinguish dictionary sources or authors.
+    #[serde(default)]
+    pub dict_label: String,
+
+    /// Inflected or conjugated forms such as plurals, which should return this word entry.
+    #[serde(default)]
+    pub inflections: Vec<String>,
+
+    /// Phonetic spelling, such as IPA.
+    #[serde(default)]
+    pub phonetic: String,
+
+    /// Transliteration to Latin from other alphabets such as Thai or Chinese.
+    #[serde(default)]
+    pub transliteration: String,
+
+    /// Used to create cross-link id attributes, auto-generated in this crate.
+    #[serde(default)]
+    pub url_id: String,
+
+    #[serde(default)]
+    pub meanings: Vec<Meaning>,
+
+    /// (Used internally)
+    #[serde(default)]
+    pub meanings_count: usize,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Meaning {
+    /// Used for sorting.
+    #[serde(default)]
+    pub meaning_order: usize,
+
+    /// Translation and explanation in English, Markdown format.
+    #[serde(default)]
+    pub definition_md: String,
+
+    /// Short translation in English, plain text.
+    #[serde(default)]
+    pub summary: String,
+
+    /// Different words with similar meaning.
+    #[serde(default)]
+    pub synonyms: Vec<String>,
+    /// Opposite meanings.
+    #[serde(default)]
+    pub antonyms: Vec<String>,
+    /// Similar form or construction but different meaning.
+    #[serde(default)]
+    pub homonyms: Vec<String>,
+    /// Spelling variations of the same word.
+    #[serde(default)]
+    pub also_written_as: Vec<String>,
+    /// Related terms.
+    #[serde(default)]
+    pub see_also: Vec<String>,
+
+    #[serde(default)]
+    pub comment: String,
+
+    // Root meaning specific
+
+    /// Marking root entries to separate them from words.
+    #[serde(default)]
+    pub is_root: bool,
+
+    #[serde(default)]
+    pub root_language: String,
+
+    /// ["upa", "gam"]
+    #[serde(default)]
+    pub root_groups: Vec<String>,
+
+    /// "a"
+    #[serde(default)]
+    pub root_sign: String,
+
+    /// "1.1"
+    #[serde(default)]
+    pub root_numbered_group: String,
+
+    #[serde(default)]
+    pub grammar: Grammar,
+
+    #[serde(default)]
+    pub examples: Vec<Example>,
+
+    /// (Used internally)
+    #[serde(default)]
+    pub example_count: usize,
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct Grammar {
+    /// ["upa", "gam"]
+    #[serde(default)]
+    roots: Vec<String>,
+
+    /// "ā bhuj", for ābhujati
+    #[serde(default)]
+    prefix_and_root: String,
+
+    /// "upa + gaccha + ti"
+    #[serde(default)]
+    construction: String,
+
+    /// "gam + a = gaccha", Root and conjugation sign
+    #[serde(default)]
+    base_construction: String,
+
+    /// kammadhāraya / etc.
+    #[serde(default)]
+    compound_type: String,
+    /// abahula + kata
+    #[serde(default)]
+    compound_construction: String,
+
+    /// "pp. of upagata", General grammar comment
+    #[serde(default)]
+    pub comment: String,
+
+    /// "verb", Part of speech.
+    #[serde(default)]
+    pub speech: String,
+
+    /// "acc."
+    #[serde(default)]
+    pub case: String,
+    #[serde(default)]
+    pub num: String,
+    #[serde(default)]
+    pub gender: String,
+    #[serde(default)]
+    pub person: String,
+    #[serde(default)]
+    pub voice: String,
+    #[serde(default)]
+    pub object: String,
+
+    /// trans. / intrans. / ditrans. / empty
+    #[serde(default)]
+    pub transitive: String,
+
+    /// true / false / empty
+    #[serde(default)]
+    pub negative: String,
+
+    /// causative / passive / denominate / intensive / empty
+    #[serde(default)]
+    pub verb: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct Example {
+    /// "AN 5.11"
+    #[serde(default)]
+    source_ref: String,
+
+    /// "paṭhama dārukkhandhopamasuttaṃ"
+    #[serde(default)]
+    source_title: String,
+
+    /// "evam'eva kho, bhikkhave, sace tumhe'pi na orimaṃ tīraṃ upagacchatha, na pārimaṃ tīraṃ upagacchatha..."
+    #[serde(default)]
+    text_md: String,
+
+    #[serde(default)]
+    translation_md: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DictWordMarkdown {
     pub word_header: DictWordHeader,
     #[serde(default)]
@@ -260,188 +440,10 @@ pub struct DictWordHeader {
     pub grammar_verb: String,
 
     #[serde(default)]
-    pub examples: Vec<DictWordExample>,
+    pub examples: Vec<Example>,
 
     #[serde(default)]
     pub url_id: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DictWordRender {
-    /// The dictionary word lookup entry.
-    pub word: String,
-
-    /// The nominative singular form (if applies).
-    #[serde(default)]
-    pub word_nom_sg: String,
-
-    /// A label to distinguish dictionary sources or authors.
-    #[serde(default)]
-    pub dict_label: String,
-
-    /// Inflected or conjugated forms such as plurals, which should return this word entry.
-    #[serde(default)]
-    pub inflections: Vec<String>,
-
-    /// Phonetic spelling, such as IPA.
-    #[serde(default)]
-    pub phonetic: String,
-
-    /// Transliteration to Latin from other alphabets such as Thai or Chinese.
-    #[serde(default)]
-    pub transliteration: String,
-
-    #[serde(default)]
-    pub meanings_count: usize,
-
-    #[serde(default)]
-    pub meanings: Vec<DictWordMeaning>,
-
-    /// Used to create cross-link id attributes. Auto-generated internally.
-    #[serde(default)]
-    pub url_id: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DictWordMeaning {
-    /// Used for sorting.
-    #[serde(default)]
-    pub meaning_order: usize,
-
-    /// Translation and explanation in English, Markdown format.
-    #[serde(default)]
-    pub definition_md: String,
-
-    /// Short translation in English, plain text.
-    #[serde(default)]
-    pub summary: String,
-
-    /// Different words with similar meaning.
-    #[serde(default)]
-    pub synonyms: Vec<String>,
-    /// Opposite meanings.
-    #[serde(default)]
-    pub antonyms: Vec<String>,
-    /// Similar form or construction but different meaning.
-    #[serde(default)]
-    pub homonyms: Vec<String>,
-    /// Spelling variations of the same word.
-    #[serde(default)]
-    pub also_written_as: Vec<String>,
-    /// Related terms.
-    #[serde(default)]
-    pub see_also: Vec<String>,
-
-    #[serde(default)]
-    pub comment: String,
-
-    // Root meaning specific
-
-    /// Marking root entries to separate them from words.
-    #[serde(default)]
-    pub is_root: bool,
-
-    #[serde(default)]
-    pub root_language: String,
-
-    /// ["upa", "gam"]
-    #[serde(default)]
-    pub root_groups: Vec<String>,
-
-    /// "a"
-    #[serde(default)]
-    pub root_sign: String,
-
-    /// "1.1"
-    #[serde(default)]
-    pub root_numbered_group: String,
-
-    #[serde(default)]
-    pub grammar: DictWordGrammar,
-
-    #[serde(default)]
-    pub example_count: usize,
-
-    #[serde(default)]
-    pub examples: Vec<DictWordExample>,
-}
-
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
-pub struct DictWordGrammar {
-    /// ["upa", "gam"]
-    #[serde(default)]
-    roots: Vec<String>,
-
-    /// "ā bhuj", for ābhujati
-    #[serde(default)]
-    prefix_and_root: String,
-
-    /// "upa + gaccha + ti"
-    #[serde(default)]
-    construction: String,
-
-    /// "gam + a = gaccha", Root and conjugation sign
-    #[serde(default)]
-    base_construction: String,
-
-    /// kammadhāraya / etc.
-    #[serde(default)]
-    compound_type: String,
-    /// abahula + kata
-    #[serde(default)]
-    compound_construction: String,
-
-    /// "pp. of upagata", General grammar comment
-    #[serde(default)]
-    pub comment: String,
-
-    /// "verb", Part of speech.
-    #[serde(default)]
-    pub speech: String,
-
-    /// "acc."
-    #[serde(default)]
-    pub case: String,
-    #[serde(default)]
-    pub num: String,
-    #[serde(default)]
-    pub gender: String,
-    #[serde(default)]
-    pub person: String,
-    #[serde(default)]
-    pub voice: String,
-    #[serde(default)]
-    pub object: String,
-
-    /// trans. / intrans. / ditrans. / empty
-    #[serde(default)]
-    pub transitive: String,
-
-    /// true / false / empty
-    #[serde(default)]
-    pub negative: String,
-
-    /// causative / passive / denominate / intensive / empty
-    #[serde(default)]
-    pub verb: String,
-}
-
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
-pub struct DictWordExample {
-    /// "AN 5.11"
-    #[serde(default)]
-    source_ref: String,
-
-    /// "paṭhama dārukkhandhopamasuttaṃ"
-    #[serde(default)]
-    source_title: String,
-
-    /// "evam'eva kho, bhikkhave, sace tumhe'pi na orimaṃ tīraṃ upagacchatha, na pārimaṃ tīraṃ upagacchatha..."
-    #[serde(default)]
-    text_md: String,
-
-    #[serde(default)]
-    translation_md: String,
 }
 
 impl DictWordMarkdown {
@@ -490,7 +492,7 @@ impl DictWordMarkdown {
     }
 
     pub fn gen_url_id(word: &str, dict_label: &str, meaning_order: usize) -> String {
-        let id_part = DictWordRender::gen_url_id(word, dict_label);
+        let id_part = DictWord::gen_url_id(word, dict_label);
 
         format!("{}-{}", id_part, meaning_order)
     }
@@ -504,10 +506,10 @@ impl DictWordMarkdown {
     }
 
     pub fn from_xlsx(w: &DictWordXlsx) -> DictWordMarkdown {
-        let mut examples: Vec<DictWordExample> = Vec::new();
+        let mut examples: Vec<Example> = Vec::new();
 
         {
-            let ex = DictWordExample {
+            let ex = Example {
                 source_ref: w.ex_1_source_ref.clone(),
                 source_title: w.ex_1_source_title.clone(),
                 text_md: w.ex_1_text_md.clone(),
@@ -520,7 +522,7 @@ impl DictWordMarkdown {
         }
 
         {
-            let ex = DictWordExample {
+            let ex = Example {
                 source_ref: w.ex_2_source_ref.clone(),
                 source_title: w.ex_2_source_title.clone(),
                 text_md: w.ex_2_text_md.clone(),
@@ -750,11 +752,11 @@ impl Default for DictWordHeader {
     }
 }
 
-impl DictWordRender {
-    pub fn from_dict_word_markdown(w: &DictWordMarkdown) -> DictWordRender {
+impl DictWord {
+    pub fn from_dict_word_markdown(w: &DictWordMarkdown) -> DictWord {
         let h = w.word_header.clone();
 
-        let grammar = DictWordGrammar {
+        let grammar = Grammar {
             roots: h.grammar_roots.clone(),
             prefix_and_root: h.grammar_prefix_and_root,
 
@@ -776,7 +778,7 @@ impl DictWordRender {
             verb: h.grammar_verb,
         };
 
-        let meaning = DictWordMeaning {
+        let meaning = Meaning {
             meaning_order: h.meaning_order,
             definition_md: w.definition_md.clone(),
             summary: h.summary.clone(),
@@ -796,9 +798,9 @@ impl DictWordRender {
             examples: h.examples.clone(),
         };
 
-        let meanings: Vec<DictWordMeaning> = vec![meaning];
+        let meanings: Vec<Meaning> = vec![meaning];
 
-        DictWordRender {
+        DictWord {
             word: h.word.clone(),
             word_nom_sg: h.word_nom_sg.clone(),
             dict_label: h.dict_label.clone(),
@@ -807,7 +809,7 @@ impl DictWordRender {
             transliteration: h.transliteration.clone(),
             meanings_count: 1,
             meanings,
-            url_id: DictWordRender::gen_url_id(&h.word, &h.dict_label),
+            url_id: DictWord::gen_url_id(&h.word, &h.dict_label),
         }
     }
 
@@ -828,7 +830,7 @@ impl DictWordRender {
     }
 
     pub fn set_url_id(&mut self) {
-        self.url_id = DictWordRender::gen_url_id(
+        self.url_id = DictWord::gen_url_id(
             &self.word,
             &self.dict_label,
         );

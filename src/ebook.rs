@@ -4,7 +4,7 @@ use std::io::{self, Write};
 use std::process::Command;
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::convert::TryInto;
 
 use handlebars::{self, Handlebars};
@@ -15,7 +15,7 @@ use xlsxwriter::{Workbook, Worksheet, FormatColor, Format};
 use serde_json::{Value, Map};
 
 use crate::app::{self, AppStartParams, ZipWith};
-use crate::dict_word::{DictWordMarkdown, DictWordRender, DictWordXlsx};
+use crate::dict_word::{DictWord, DictWordMarkdown, DictWordXlsx};
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
 use crate::letter_groups::{LetterGroups, LetterGroup};
@@ -33,7 +33,7 @@ pub struct Ebook {
     pub dict_words_input: BTreeMap<String, DictWordMarkdown>,
 
     /// Words as processed for rendering in the templates. The map key is `word_header.url_id`.
-    pub dict_words_render: BTreeMap<String, DictWordRender>,
+    pub dict_words_render: BTreeMap<String, DictWord>,
 
     /// Collects the list of valid word names which can be linked to.
     #[serde(skip)]
@@ -136,8 +136,8 @@ impl Ebook {
     pub fn new(
         output_format: OutputFormat,
         allow_raw_html: bool,
-        source_dir: &PathBuf,
-        output_path: &PathBuf,
+        source_dir: &Path,
+        output_path: &Path,
         entries_template: Option<PathBuf>,
         ) -> Self
     {
@@ -1003,7 +1003,7 @@ impl Ebook {
 
     pub fn run_kindlegen(
         &self,
-        kindlegen_path: &PathBuf,
+        kindlegen_path: &Path,
         mobi_compression: usize,
     ) -> Result<(), Box<dyn Error>> {
         info!("run_kindlegen()");
@@ -1470,7 +1470,7 @@ impl Ebook {
             let entries = &self.dict_words_render
                 .values()
                 .cloned()
-                .collect::<Vec<DictWordRender>>();
+                .collect::<Vec<DictWord>>();
             let content = serde_json::to_string(&entries)?;
 
             let mut file = File::create(&self.output_path)?;
@@ -2077,7 +2077,7 @@ impl Ebook {
 
         // dict_words_input is sorted by key 'word-label-meaning_order'
         for dwi in self.dict_words_input.values() {
-            let dwr: DictWordRender = DictWordRender::from_dict_word_markdown(dwi);
+            let dwr: DictWord = DictWord::from_dict_word_markdown(dwi);
 
             // If the url_id already exist, append to the meanings.
             // Otherwise, insert as new.
