@@ -1,5 +1,5 @@
 name: "Simsapa Dictionary Tool"
-version: "0.2.0"
+version: "0.3.0"
 author: "https://simsapa.github.io/"
 about: "Generating dictionaries in various formats"
 
@@ -715,6 +715,24 @@ subcommands:
 
         - output_path:
             help: "The entries JSON file to write. Metadata JSON will be written to the same folder with '_metadata' postfix."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+  - markdown_to_sqlite:
+      about: "Read a Markdown file, serialize the data and insert it to an Sqlite database."
+
+      args:
+        - source_path:
+            help: "Path to the Markdown file."
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The path to the Sqlite database to connect to."
             long: output_path
             value_name: PATH
             required: true

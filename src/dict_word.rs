@@ -112,26 +112,26 @@ pub struct Meaning {
 pub struct Grammar {
     /// ["upa", "gam"]
     #[serde(default)]
-    roots: Vec<String>,
+    pub roots: Vec<String>,
 
     /// "ā bhuj", for ābhujati
     #[serde(default)]
-    prefix_and_root: String,
+    pub prefix_and_root: String,
 
     /// "upa + gaccha + ti"
     #[serde(default)]
-    construction: String,
+    pub construction: String,
 
     /// "gam + a = gaccha", Root and conjugation sign
     #[serde(default)]
-    base_construction: String,
+    pub base_construction: String,
 
     /// kammadhāraya / etc.
     #[serde(default)]
-    compound_type: String,
+    pub compound_type: String,
     /// abahula + kata
     #[serde(default)]
-    compound_construction: String,
+    pub compound_construction: String,
 
     /// "pp. of upagata", General grammar comment
     #[serde(default)]
@@ -172,18 +172,18 @@ pub struct Grammar {
 pub struct Example {
     /// "AN 5.11"
     #[serde(default)]
-    source_ref: String,
+    pub source_ref: String,
 
     /// "paṭhama dārukkhandhopamasuttaṃ"
     #[serde(default)]
-    source_title: String,
+    pub source_title: String,
 
     /// "evam'eva kho, bhikkhave, sace tumhe'pi na orimaṃ tīraṃ upagacchatha, na pārimaṃ tīraṃ upagacchatha..."
     #[serde(default)]
-    text_md: String,
+    pub text_md: String,
 
     #[serde(default)]
-    translation_md: String,
+    pub translation_md: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -10,3 +10,4 @@ test-temp/
 **/*.rs.bk
 
 sources_to_markdown.log
+appdata.sqlite3

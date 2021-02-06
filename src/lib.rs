@@ -1,7 +1,15 @@
+#![feature(map_first_last)]
+
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
 extern crate walkdir;
+
+#[macro_use]
+extern crate diesel;
+
+pub mod db_models;
+pub mod db_schema;
 
 extern crate serde;
 #[macro_use]

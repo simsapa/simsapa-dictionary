@@ -1,0 +1,10 @@
+# For documentation on how to configure this file,
+# see diesel.rs/guides/configuring-diesel-cli
+
+[print_schema]
+file = "src/db_schema.rs"
+filter = { except_tables = [
+"fts_root_texts",       "fts_root_texts_config",       "fts_root_texts_data",       "fts_root_texts_docsize",       "fts_root_texts_idx",
+"fts_translated_texts", "fts_translated_texts_config", "fts_translated_texts_data", "fts_translated_texts_docsize", "fts_translated_texts_idx",
+"fts_meanings",       "fts_meanings_config",       "fts_meanings_data",       "fts_meanings_docsize",       "fts_meanings_idx",
+] }

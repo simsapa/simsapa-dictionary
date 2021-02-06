@@ -1,7 +1,12 @@
+#![feature(map_first_last)]
+
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
 extern crate walkdir;
+
+#[macro_use]
+extern crate diesel;
 
 extern crate serde;
 #[macro_use]
@@ -35,6 +40,8 @@ pub mod error;
 pub mod helpers;
 pub mod letter_groups;
 pub mod pali;
+pub mod db_models;
+pub mod db_schema;
 
 use std::process::exit;
 use std::path::PathBuf;
@@ -157,7 +164,7 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
-        RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson => {
+        RunCommand::MarkdownToEbook | RunCommand::MarkdownToSqlite | RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson => {
             let (i_p, o_p) = get_input_output(&app_params);
             let mut ebook = Ebook::new(
                 app_params.output_format,
@@ -171,7 +178,7 @@ fn main() {
             let source_paths = p.to_vec();
 
             match app_params.run_command {
-                RunCommand::MarkdownToEbook => {
+                RunCommand::MarkdownToEbook | RunCommand::MarkdownToSqlite => {
                     ok_or_exit(
                         app_params.used_first_arg,
                         app::process_markdown_list(source_paths, &mut ebook),
@@ -201,6 +208,10 @@ fn main() {
 
                 RunCommand::XlsxToRenderJson => {
                     ok_or_exit(app_params.used_first_arg, ebook.create_render_json());
+                }
+
+                RunCommand::MarkdownToSqlite => {
+                    ok_or_exit(app_params.used_first_arg, ebook.insert_to_sqlite(&app_params));
                 }
 
                 _ => {},

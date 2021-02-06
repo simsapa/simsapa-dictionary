@@ -14,12 +14,18 @@ use deunicode::deunicode;
 use xlsxwriter::{Workbook, Worksheet, FormatColor, Format};
 use serde_json::{Value, Map};
 
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
+
 use crate::app::{self, AppStartParams, ZipWith};
 use crate::dict_word::{DictWord, DictWordMarkdown, DictWordXlsx};
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
 use crate::letter_groups::{LetterGroups, LetterGroup};
 use crate::pali;
+use crate::db_schema;
+use crate::db_models::{DbDictionary, NewDictionary, DbDictWord, NewDictWord, DbMeaning, NewMeaning,
+DbGrammar, NewGrammar, DbExample, NewExample};
 
 pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
@@ -1461,6 +1467,227 @@ impl Ebook {
         }
 
         Ok(())
+    }
+
+    pub fn insert_to_sqlite(&mut self, app_params: &AppStartParams) -> Result<(), Box<dyn Error>> {
+        info!("insert_to_sqlite()");
+
+        let conn = if let Some(p) = &app_params.output_path {
+
+            SqliteConnection::establish(p.to_str().unwrap()).expect("Error connecting to database.")
+
+        } else {
+            let msg = "🔥 Database path is missing.".to_string();
+            return Err(Box::new(ToolError::Exit(msg)));
+        };
+
+        if self.dict_words_render.is_empty() {
+            warn!{"🔥 There are not words to insert."};
+            return Ok(());
+        }
+
+        // FIXME This is assuming that we are processing a single (markdown or json) file, which
+        // represents a single dictionary.
+
+        let (_, w) = self.dict_words_render.first_key_value().unwrap();
+        let db_dictionary = Ebook::get_or_insert_dictionary(&conn, &w.dict_label, &self.meta.title);
+
+        for (_, w) in self.dict_words_render.iter() {
+
+            let new_word = NewDictWord {
+                dictionary_id:    &db_dictionary.id,
+                word:             &w.word,
+                word_nom_sg:      &w.word_nom_sg,
+                inflections:      &w.inflections.join(", "),
+                phonetic:         &w.phonetic,
+                transliteration:  &w.transliteration,
+                url_id:           &w.url_id,
+            };
+
+            let db_word = match Ebook::insert_dict_word_if_doesnt_exist(&conn, &new_word) {
+                Ok(x) => x,
+                Err(_) => {
+                    warn!{"Word exists, skipping: {:?}", &w.word};
+                    continue;
+                },
+            };
+
+            for m in w.meanings.iter() {
+                let new_meaning = NewMeaning {
+                    dict_word_id: &db_word.id,
+                    meaning_order: &(m.meaning_order as i32),
+                    definition_md: &m.definition_md,
+                    summary: &m.summary,
+                    synonyms: &m.synonyms.join(", "),
+                    antonyms: &m.antonyms.join(", "),
+                    homonyms: &m.homonyms.join(", "),
+                    also_written_as: &m.also_written_as.join(", "),
+                    see_also: &m.see_also.join(", "),
+                    comment: &m.comment,
+                    is_root: &m.is_root,
+                    root_language: &m.root_language,
+                    root_groups: &m.root_groups.join(", "),
+                    root_sign: &m.root_sign,
+                    root_numbered_group: &m.root_numbered_group,
+                };
+
+                let db_meaning = Ebook::insert_new_meaning(&conn, &new_meaning);
+
+                let new_grammar = NewGrammar {
+                    meaning_id: &db_meaning.id,
+                    roots: &m.grammar.roots.join(", "),
+                    prefix_and_root: &m.grammar.prefix_and_root,
+                    construction: &m.grammar.construction,
+                    base_construction: &m.grammar.base_construction,
+                    compound_type: &m.grammar.compound_type,
+                    compound_construction: &m.grammar.compound_construction,
+                    comment: &m.grammar.comment,
+                    speech: &m.grammar.speech,
+                    case: &m.grammar.case,
+                    num: &m.grammar.num,
+                    gender: &m.grammar.gender,
+                    person: &m.grammar.person,
+                    voice: &m.grammar.voice,
+                    object: &m.grammar.object,
+                    transitive: &m.grammar.transitive,
+                    negative: &m.grammar.negative,
+                    verb: &m.grammar.verb,
+                };
+
+                let _db_grammar = Ebook::insert_new_grammar(&conn, &new_grammar);
+
+                for ex in m.examples.iter() {
+                    let new_example = NewExample {
+                        meaning_id: &db_meaning.id,
+                        source_ref: &ex.source_ref,
+                        source_title: &ex.source_title,
+                        text_md: &ex.text_md,
+                        translation_md: &ex.translation_md,
+                    };
+
+                    let _db_example = Ebook::insert_new_example(&conn, &new_example);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn get_or_insert_dictionary(
+        conn: &SqliteConnection,
+        d_label: &str,
+        d_title: &str)
+        -> DbDictionary
+    {
+        use db_schema::dictionaries::dsl::*;
+        use db_schema::dictionaries;
+
+        let mut items = dictionaries
+            .filter(label.eq(d_label))
+            .load::<DbDictionary>(conn)
+            .expect("Error loading the dictionary.");
+
+        if !items.is_empty() {
+            return items.pop().unwrap();
+        }
+
+        let new_dictionary = NewDictionary {
+            label: d_label,
+            title: d_title,
+        };
+
+        diesel::insert_into(dictionaries::table)
+            .values(new_dictionary)
+            .execute(conn)
+            .expect("Error inserting the dictionary.");
+
+        items = dictionaries
+            .filter(label.eq(d_label))
+            .load::<DbDictionary>(conn)
+            .expect("Error loading the dictionary.");
+
+        items.pop().unwrap()
+    }
+
+    fn insert_dict_word_if_doesnt_exist<'a>(
+        conn: &SqliteConnection,
+        new_word: &'a NewDictWord)
+        -> Result<DbDictWord, DbDictWord>
+    {
+        use db_schema::dict_words::dsl::*;
+        use db_schema::dict_words;
+
+        let a = dict_words
+            .filter(url_id.eq(new_word.url_id))
+            .load::<DbDictWord>(conn)
+            .expect("Error loading the word.");
+
+        if !a.is_empty() {
+            return Err(a[0].clone());
+        }
+
+        diesel::insert_into(dict_words::table)
+            .values(new_word)
+            .execute(conn)
+            .expect("Error inserting the word.");
+
+        let mut items = dict_words
+            .filter(url_id.eq(new_word.url_id))
+            .load::<DbDictWord>(conn)
+            .expect("Error loading the inserted word.");
+
+        Ok(items.pop().unwrap())
+    }
+
+    fn insert_new_meaning<'a>(
+        conn: &SqliteConnection,
+        new_meaning: &'a NewMeaning)
+        -> DbMeaning
+    {
+        use db_schema::meanings::dsl::*;
+        use db_schema::meanings;
+
+        diesel::insert_into(meanings::table)
+            .values(new_meaning)
+            .execute(conn)
+            .expect("Error inserting the meaning.");
+
+        meanings.order(id.desc()).first(conn)
+            .expect("Error loading the inserted meaning.")
+    }
+
+    fn insert_new_grammar<'a>(
+        conn: &SqliteConnection,
+        new_grammar: &'a NewGrammar)
+        -> DbGrammar
+    {
+        use db_schema::grammars::dsl::*;
+        use db_schema::grammars;
+
+        diesel::insert_into(grammars::table)
+            .values(new_grammar)
+            .execute(conn)
+            .expect("Error inserting the grammar.");
+
+        grammars.order(id.desc()).first(conn)
+            .expect("Error loading the inserted grammar.")
+    }
+
+    fn insert_new_example<'a>(
+        conn: &SqliteConnection,
+        new_example: &'a NewExample)
+        -> DbExample
+    {
+        use db_schema::examples::dsl::*;
+        use db_schema::examples;
+
+        diesel::insert_into(examples::table)
+            .values(new_example)
+            .execute(conn)
+            .expect("Error inserting the example.");
+
+        examples.order(id.desc()).first(conn)
+            .expect("Error loading the inserted example.")
     }
 
     pub fn create_render_json(&mut self) -> Result<(), Box<dyn Error>> {

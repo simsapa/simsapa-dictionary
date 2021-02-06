@@ -52,6 +52,7 @@ pub enum RunCommand {
     MarkdownToC5,
     MarkdownToEbook,
     MarkdownToJson,
+    MarkdownToSqlite,
     MarkdownToStardict,
     MarkdownToTei,
     NoOp,
@@ -813,6 +814,39 @@ fn process_markdown_to_json(
     Ok(())
 }
 
+fn process_markdown_to_sqlite(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        let path = PathBuf::from(&x);
+        if path.exists() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Path does not exist: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
 fn process_xlsx_to_json(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches<'_>,
@@ -1251,6 +1285,9 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_json") {
         process_markdown_to_json(&mut params, sub_matches, RunCommand::MarkdownToJson)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_sqlite") {
+        process_markdown_to_sqlite(&mut params, sub_matches, RunCommand::MarkdownToSqlite)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_json") {
         process_xlsx_to_json(&mut params, sub_matches, RunCommand::XlsxToJson)?;
