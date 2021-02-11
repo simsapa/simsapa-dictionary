@@ -10,8 +10,8 @@ use regex::Regex;
 use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
 use crate::dict_word::{DictWordMarkdown, DictWordHeader, DictWordXlsx};
-use crate::ebook::{
-    Ebook, OutputFormat, EbookMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
+use crate::dictionary::{
+    Dictionary, OutputFormat, DictMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
 };
 use crate::error::ToolError;
 use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
@@ -1517,7 +1517,7 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
 pub fn process_suttacentral_json(
     json_path: &Option<PathBuf>,
     dict_label: &Option<String>,
-    ebook: &mut Ebook,
+    dict: &mut Dictionary,
 ) {
     let json_path = &json_path.as_ref().expect("json_path is missing.");
     let dict_label = &dict_label.as_ref().expect("dict_label is missing.");
@@ -1582,20 +1582,20 @@ pub fn process_suttacentral_json(
                 root_sign: "".to_string(),
                 root_numbered_group: "".to_string(),
 
-                // ebook.add_word will increment meaning_order if needed
+                // dict.add_word will increment meaning_order if needed
                 url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
             },
             definition_md: html_to_markdown(&e.text).to_string(),
         };
 
-        ebook.add_word(new_word)
+        dict.add_word(new_word)
     }
 }
 
 pub fn process_nyanatiloka_entries(
     nyanatiloka_root: &Option<PathBuf>,
     dict_label: &Option<String>,
-    ebook: &mut Ebook,
+    dict: &mut Dictionary,
 ) {
     let nyanatiloka_root = &nyanatiloka_root
         .as_ref()
@@ -1692,22 +1692,22 @@ pub fn process_nyanatiloka_entries(
                 root_sign: "".to_string(),
                 root_numbered_group: "".to_string(),
 
-                // ebook.add_word will increment meaning_order if needed
+                // dict.add_word will increment meaning_order if needed
                 url_id: DictWordMarkdown::gen_url_id(&e.word, &dict_label, 1),
             },
             definition_md: html_to_markdown(&e.text),
         };
 
-        ebook.add_word(new_word)
+        dict.add_word(new_word)
     }
 }
 
 pub fn process_markdown_list(
     source_paths: Vec<PathBuf>,
-    ebook: &mut Ebook,
+    dict: &mut Dictionary,
 ) -> Result<(), Box<dyn Error>> {
     for p in source_paths.iter() {
-        process_markdown(p, ebook)?;
+        process_markdown(p, dict)?;
     }
 
     Ok(())
@@ -1738,8 +1738,8 @@ pub fn split_metadata_and_entries(path: &PathBuf) -> Result<(String, String), Bo
     Ok((meta_txt, entries_txt))
 }
 
-pub fn parse_str_to_metadata(s: &str) -> Result<EbookMetadata, Box<dyn Error>> {
-    let mut meta: EbookMetadata = match toml::from_str(s) {
+pub fn parse_str_to_metadata(s: &str) -> Result<DictMetadata, Box<dyn Error>> {
+    let mut meta: DictMetadata = match toml::from_str(s) {
         Ok(x) => x,
         Err(e) => {
             let msg = format!(
@@ -1755,12 +1755,12 @@ pub fn parse_str_to_metadata(s: &str) -> Result<EbookMetadata, Box<dyn Error>> {
     Ok(meta)
 }
 
-pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+pub fn process_markdown(source_path: &PathBuf, dict: &mut Dictionary) -> Result<(), Box<dyn Error>> {
     info! {"=== Begin processing {:?} ===", source_path};
 
     let (meta_txt, entries_txt) = split_metadata_and_entries(&source_path)?;
 
-    ebook.meta = parse_str_to_metadata(&meta_txt)?;
+    dict.meta = parse_str_to_metadata(&meta_txt)?;
 
     let entries: Vec<Result<DictWordMarkdown, Box<dyn Error>>> = entries_txt
         .split("``` toml")
@@ -1776,7 +1776,7 @@ pub fn process_markdown(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), 
 
     for i in entries.iter() {
         match i {
-            Ok(x) => ebook.add_word(x.clone()),
+            Ok(x) => dict.add_word(x.clone()),
             Err(e) => {
                 let msg = format!("{:?}", e);
                 return Err(Box::new(ToolError::Exit(msg)));
@@ -1793,16 +1793,16 @@ fn html_to_markdown(html: &str) -> String {
 
 pub fn process_xlsx_list(
     source_paths: Vec<PathBuf>,
-    ebook: &mut Ebook,
+    dict: &mut Dictionary,
 ) -> Result<(), Box<dyn Error>> {
     for p in source_paths.iter() {
-        process_xlsx(p, ebook)?;
+        process_xlsx(p, dict)?;
     }
 
     Ok(())
 }
 
-pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+pub fn process_xlsx(source_path: &PathBuf, dict: &mut Dictionary) -> Result<(), Box<dyn Error>> {
     info! {"=== Begin processing XLSX {:?} ===", source_path};
 
     let mut workbook: Xlsx<_> = open_workbook(source_path)?;
@@ -1856,11 +1856,11 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
 
         match iter.next() {
             Some(x) => {
-                let mut meta: EbookMetadata = x?;
+                let mut meta: DictMetadata = x?;
                 meta.created_date_human = Utc::now().to_rfc2822(); // Fri, 28 Nov 2014 12:00:09 +0000
                 meta.created_date_opf = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
-                ebook.meta = meta;
+                dict.meta = meta;
             },
             None => {
                 let msg = "Expected at least one row in the Metadata sheet.".to_string();
@@ -1889,7 +1889,7 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
 
         for i in entries.iter() {
             match i {
-                Ok(x) => ebook.add_word(DictWordMarkdown::from_xlsx(x)),
+                Ok(x) => dict.add_word(DictWordMarkdown::from_xlsx(x)),
                 Err(msg) => {
                     println!("{}", msg);
                     // FIXME this segfaults
@@ -1923,7 +1923,7 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
                 Ok(x) => {
                     let mut a: DictWordXlsx = x.clone();
                     a.is_root = true;
-                    ebook.add_word(DictWordMarkdown::from_xlsx(&a))
+                    dict.add_word(DictWordMarkdown::from_xlsx(&a))
                 },
                 Err(msg) => {
                     return Err(Box::new(ToolError::Exit(msg.clone())));
@@ -1938,35 +1938,35 @@ pub fn process_xlsx(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<
 pub fn process_json_list(
     source_paths: Vec<PathBuf>,
     metadata_path: PathBuf,
-    ebook: &mut Ebook,
+    dict: &mut Dictionary,
 ) -> Result<(), Box<dyn Error>> {
     for p in source_paths.iter() {
-        process_json_entries(p, ebook)?;
+        process_json_entries(p, dict)?;
     }
-    process_json_metadata(&metadata_path, ebook)?;
+    process_json_metadata(&metadata_path, dict)?;
 
     Ok(())
 }
 
-pub fn process_json_entries(source_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+pub fn process_json_entries(source_path: &PathBuf, dict: &mut Dictionary) -> Result<(), Box<dyn Error>> {
     info! {"=== Begin processing {:?} ===", source_path};
 
     let s = fs::read_to_string(source_path).unwrap();
     let entries: Vec<DictWordXlsx> = serde_json::from_str(&s).unwrap();
 
     for i in entries.iter() {
-        ebook.add_word(DictWordMarkdown::from_xlsx(i));
+        dict.add_word(DictWordMarkdown::from_xlsx(i));
     }
 
     Ok(())
 }
 
-pub fn process_json_metadata(metadata_path: &PathBuf, ebook: &mut Ebook) -> Result<(), Box<dyn Error>> {
+pub fn process_json_metadata(metadata_path: &PathBuf, dict: &mut Dictionary) -> Result<(), Box<dyn Error>> {
     info! {"=== Processing Metadata {:?} ===", metadata_path};
 
     let s = fs::read_to_string(metadata_path).unwrap();
-    let meta: EbookMetadata = serde_json::from_str(&s).unwrap();
-    ebook.meta = meta;
+    let meta: DictMetadata = serde_json::from_str(&s).unwrap();
+    dict.meta = meta;
 
     Ok(())
 }

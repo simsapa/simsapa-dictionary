@@ -31,8 +31,8 @@ pub const DICTIONARY_METADATA_SEP: &str = "--- DICTIONARY METADATA ---";
 pub const DICTIONARY_WORD_ENTRIES_SEP: &str = "--- DICTIONARY WORD ENTRIES ---";
 
 #[derive(Serialize, Deserialize)]
-pub struct Ebook {
-    pub meta: EbookMetadata,
+pub struct Dictionary {
+    pub meta: DictMetadata,
     pub output_format: OutputFormat,
 
     /// Words as serialized from the input formats, Markdown or XLSX. The map key is `word_header.url_id`.
@@ -77,7 +77,7 @@ pub struct Ebook {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct EbookMetadata {
+pub struct DictMetadata {
 
     pub title: String,
 
@@ -138,10 +138,10 @@ pub struct EntriesManifest {
 #[derive(Serialize, Deserialize)]
 pub struct LetterGroupTemplateData {
     group: LetterGroup,
-    meta: EbookMetadata,
+    meta: DictMetadata,
 }
 
-impl Ebook {
+impl Dictionary {
     pub fn new(
         output_format: OutputFormat,
         allow_raw_html: bool,
@@ -315,10 +315,10 @@ impl Ebook {
             include_bytes!("../assets/META-INF/com.apple.ibooks.display-options.xml").to_vec(),
         );
 
-        let mut meta = EbookMetadata::default();
+        let mut meta = DictMetadata::default();
         meta.allow_raw_html = allow_raw_html;
 
-        Ebook {
+        Dictionary {
             meta,
             output_format,
             dict_words_input: BTreeMap::new(),
@@ -523,7 +523,7 @@ impl Ebook {
             fs::remove_file(&self.output_path)?;
         }
 
-        // Store full paths (canonicalized) in the Ebook attribs. canonicalize() requires that the
+        // Store full paths (canonicalized) in the Dictionary attribs. canonicalize() requires that the
         // path should exist, so take the parent of output_path first before canonicalize().
 
         let parent = match self.output_path.parent() {
@@ -1494,7 +1494,7 @@ impl Ebook {
         // represents a single dictionary.
 
         let (_, w) = self.dict_words_render.first_key_value().unwrap();
-        let db_dictionary = Ebook::get_or_insert_dictionary(&conn, &w.dict_label, &self.meta.title);
+        let db_dictionary = Dictionary::get_or_insert_dictionary(&conn, &w.dict_label, &self.meta.title);
 
         for (_, w) in self.dict_words_render.iter() {
 
@@ -1508,7 +1508,7 @@ impl Ebook {
                 url_id:           &w.url_id,
             };
 
-            let db_word = match Ebook::insert_dict_word_if_doesnt_exist(&conn, &new_word) {
+            let db_word = match Dictionary::insert_dict_word_if_doesnt_exist(&conn, &new_word) {
                 Ok(x) => x,
                 Err(_) => {
                     warn!{"Word exists, skipping: {:?}", &w.word};
@@ -1535,7 +1535,7 @@ impl Ebook {
                     root_numbered_group: &m.root_numbered_group,
                 };
 
-                let db_meaning = Ebook::insert_new_meaning(&conn, &new_meaning);
+                let db_meaning = Dictionary::insert_new_meaning(&conn, &new_meaning);
 
                 let new_grammar = NewGrammar {
                     meaning_id: &db_meaning.id,
@@ -1558,7 +1558,7 @@ impl Ebook {
                     verb: &m.grammar.verb,
                 };
 
-                let _db_grammar = Ebook::insert_new_grammar(&conn, &new_grammar);
+                let _db_grammar = Dictionary::insert_new_grammar(&conn, &new_grammar);
 
                 for ex in m.examples.iter() {
                     let new_example = NewExample {
@@ -1569,7 +1569,7 @@ impl Ebook {
                         translation_md: &ex.translation_md,
                     };
 
-                    let _db_example = Ebook::insert_new_example(&conn, &new_example);
+                    let _db_example = Dictionary::insert_new_example(&conn, &new_example);
                 }
             }
         }
@@ -1860,11 +1860,11 @@ impl Ebook {
                 }
             }
 
-            Ebook::fill_sheet(&mut words_sheet, &word_entries, &words_sheet_columns, &header_format)?;
+            Dictionary::fill_sheet(&mut words_sheet, &word_entries, &words_sheet_columns, &header_format)?;
 
-            Ebook::fill_sheet(&mut roots_sheet, &root_entries, &roots_sheet_columns, &header_format)?;
+            Dictionary::fill_sheet(&mut roots_sheet, &root_entries, &roots_sheet_columns, &header_format)?;
 
-            Ebook::fill_sheet(&mut metadata_sheet, &metadata_entries, &metadata_sheet_columns, &header_format)?;
+            Dictionary::fill_sheet(&mut metadata_sheet, &metadata_entries, &metadata_sheet_columns, &header_format)?;
 
         }
 
@@ -2609,7 +2609,7 @@ impl Ebook {
             let sep = caps.get(2).unwrap().as_str().to_string();
 
             let w = word.trim_start_matches('√').to_string();
-            let link = Ebook::word_to_link(valid_words, &words_to_url, output_format, &w);
+            let link = Dictionary::word_to_link(valid_words, &words_to_url, output_format, &w);
 
             linked_text.push_str(&word.replace(&w, &link));
             linked_text.push_str(&sep);
@@ -2630,52 +2630,52 @@ impl Ebook {
 
         for (_key, dict_word) in self.dict_words_input.iter_mut() {
             for w in dict_word.word_header.synonyms.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = Dictionary::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.antonyms.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = Dictionary::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.homonyms.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = Dictionary::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.see_also.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = Dictionary::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.also_written_as.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = Dictionary::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
 
             for w in dict_word.word_header.grammar_roots.iter_mut() {
-                *w = Ebook::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
+                *w = Dictionary::word_to_link(&self.valid_words, &words_to_url, self.output_format, w);
                 *w = w.replace('&', "&amp;");
             }
 
             // Replace construction words with links.
 
-            dict_word.word_header.grammar_construction = Ebook::all_words_to_links(
+            dict_word.word_header.grammar_construction = Dictionary::all_words_to_links(
                 &self.valid_words,
                 &words_to_url,
                 self.output_format,
                 &dict_word.word_header.grammar_construction
             );
 
-            dict_word.word_header.grammar_base_construction = Ebook::all_words_to_links(
+            dict_word.word_header.grammar_base_construction = Dictionary::all_words_to_links(
                 &self.valid_words,
                 &words_to_url,
                 self.output_format,
                 &dict_word.word_header.grammar_base_construction
             );
 
-            dict_word.word_header.grammar_compound_construction = Ebook::all_words_to_links(
+            dict_word.word_header.grammar_compound_construction = Dictionary::all_words_to_links(
                 &self.valid_words,
                 &words_to_url,
                 self.output_format,
@@ -2690,9 +2690,9 @@ fn reg_tmpl(h: &mut Handlebars, k: &str, afs: &BTreeMap<String, String>) {
     h.register_template_string(k, afs.get(k).unwrap()).unwrap();
 }
 
-impl Default for Ebook {
+impl Default for Dictionary {
     fn default() -> Self {
-        Ebook::new(
+        Dictionary::new(
             OutputFormat::Epub,
             false,
             &PathBuf::from("."),
@@ -2702,9 +2702,9 @@ impl Default for Ebook {
     }
 }
 
-impl Default for EbookMetadata {
+impl Default for DictMetadata {
     fn default() -> Self {
-        EbookMetadata {
+        DictMetadata {
             title: "Dictionary".to_string(),
             dict_label: "dictionary".to_string(),
             description: "".to_string(),

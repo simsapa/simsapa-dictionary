@@ -32,8 +32,8 @@ extern crate handlebars;
 extern crate deunicode;
 
 pub mod app;
+pub mod dictionary;
 pub mod dict_word;
-pub mod ebook;
 pub mod error;
 pub mod helpers;
 pub mod letter_groups;

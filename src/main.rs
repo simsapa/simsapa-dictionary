@@ -34,8 +34,8 @@ extern crate deunicode;
 use clap::App;
 
 pub mod app;
+pub mod dictionary;
 pub mod dict_word;
-pub mod ebook;
 pub mod error;
 pub mod helpers;
 pub mod letter_groups;
@@ -49,7 +49,7 @@ use std::path::PathBuf;
 use regex::Regex;
 
 use app::{AppStartParams, RunCommand};
-use ebook::Ebook;
+use dictionary::Dictionary;
 use helpers::ok_or_exit;
 
 #[allow(clippy::cognitive_complexity)]
@@ -97,7 +97,7 @@ fn main() {
 
         RunCommand::SuttaCentralJsonToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -105,32 +105,32 @@ fn main() {
                 app_params.entries_template.clone());
 
             if app_params.reuse_metadata {
-                ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
+                ok_or_exit(app_params.used_first_arg, dict.reuse_metadata());
             }
 
-            ebook.meta.created_date_human = "".to_string();
-            ebook.meta.created_date_opf = "".to_string();
+            dict.meta.created_date_human = "".to_string();
+            dict.meta.created_date_opf = "".to_string();
 
             app::process_suttacentral_json(
                 &app_params.json_path,
                 &app_params.dict_label,
-                &mut ebook,
+                &mut dict,
             );
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
             if !app_params.dont_process {
-                ebook.process_tidy();
-                ebook.process_also_written_as();
-                ebook.process_strip_repeat_word_title();
-                ebook.process_grammar_note();
-                ebook.process_see_also_from_definition(app_params.dont_remove_see_also);
-                ok_or_exit(app_params.used_first_arg, ebook.process_summary());
+                dict.process_tidy();
+                dict.process_also_written_as();
+                dict.process_strip_repeat_word_title();
+                dict.process_grammar_note();
+                dict.process_see_also_from_definition(app_params.dont_remove_see_also);
+                ok_or_exit(app_params.used_first_arg, dict.process_summary());
             }
 
-            ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
+            ok_or_exit(app_params.used_first_arg, dict.write_markdown());
         }
 
         RunCommand::SuttaCentralPoTextsToSqlite => {
@@ -163,7 +163,7 @@ fn main() {
 
         RunCommand::NyanatilokaToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -171,31 +171,31 @@ fn main() {
                 app_params.entries_template.clone());
 
             if app_params.reuse_metadata {
-                ok_or_exit(app_params.used_first_arg, ebook.reuse_metadata());
+                ok_or_exit(app_params.used_first_arg, dict.reuse_metadata());
             }
 
-            ebook.meta.created_date_human = "".to_string();
-            ebook.meta.created_date_opf = "".to_string();
+            dict.meta.created_date_human = "".to_string();
+            dict.meta.created_date_opf = "".to_string();
 
             app::process_nyanatiloka_entries(
                 &app_params.nyanatiloka_root,
                 &app_params.dict_label,
-                &mut ebook,
+                &mut dict,
             );
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_tidy();
-            ok_or_exit(app_params.used_first_arg, ebook.process_summary());
+            dict.process_tidy();
+            ok_or_exit(app_params.used_first_arg, dict.process_summary());
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
+            ok_or_exit(app_params.used_first_arg, dict.write_markdown());
         }
 
         RunCommand::MarkdownToEbook | RunCommand::MarkdownToSqlite | RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson | RunCommand::XlsxToSqlite => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -210,50 +210,50 @@ fn main() {
                 RunCommand::MarkdownToEbook | RunCommand::MarkdownToSqlite => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_markdown_list(source_paths, &mut ebook),
+                        app::process_markdown_list(source_paths, &mut dict),
                     );
                 }
 
                 RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson | RunCommand::XlsxToSqlite => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_xlsx_list(source_paths, &mut ebook),
+                        app::process_xlsx_list(source_paths, &mut dict),
                     );
                 }
 
                 _ => {},
             }
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_text();
+            dict.process_text();
 
             match app_params.run_command {
                 RunCommand::MarkdownToEbook | RunCommand::XlsxToEbook => {
-                    ok_or_exit(app_params.used_first_arg, ebook.create_ebook(&app_params));
+                    ok_or_exit(app_params.used_first_arg, dict.create_ebook(&app_params));
                 }
 
                 RunCommand::XlsxToRenderJson => {
-                    ok_or_exit(app_params.used_first_arg, ebook.create_render_json());
+                    ok_or_exit(app_params.used_first_arg, dict.create_render_json());
                 }
 
                 RunCommand::MarkdownToSqlite | RunCommand::XlsxToSqlite => {
-                    ok_or_exit(app_params.used_first_arg, ebook.insert_to_sqlite(&app_params));
+                    ok_or_exit(app_params.used_first_arg, dict.insert_to_sqlite(&app_params));
                 }
 
                 _ => {},
             }
 
             if !app_params.dont_remove_generated_files {
-                ok_or_exit(app_params.used_first_arg, ebook.remove_generated_files());
+                ok_or_exit(app_params.used_first_arg, dict.remove_generated_files());
             }
         }
 
         RunCommand::MarkdownToBabylon | RunCommand::XlsxToBabylon => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -268,38 +268,38 @@ fn main() {
                 RunCommand::MarkdownToBabylon => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_markdown_list(source_paths, &mut ebook),
+                        app::process_markdown_list(source_paths, &mut dict),
                     );
                 }
 
                 RunCommand::XlsxToBabylon => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_xlsx_list(source_paths, &mut ebook),
+                        app::process_xlsx_list(source_paths, &mut dict),
                     );
                 }
 
                 _ => {}
             }
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_text();
+            dict.process_text();
 
             // Convert /define/word links with bword://word, as recognized by Stardict.
-            for (_, w) in ebook.dict_words_input.iter_mut() {
+            for (_, w) in dict.dict_words_input.iter_mut() {
                 let re_define = Regex::new(r"\[([^\]]+)\]\(/define/([^\(\)]+)\)").unwrap();
                 w.definition_md = re_define.replace_all(&w.definition_md, "[$1](bword://$2)").to_string();
             }
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_babylon());
+            ok_or_exit(app_params.used_first_arg, dict.create_babylon());
         }
 
         RunCommand::MarkdownToStardict | RunCommand::XlsxToStardict => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -314,32 +314,32 @@ fn main() {
                 RunCommand::MarkdownToStardict => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_markdown_list(source_paths, &mut ebook),
+                        app::process_markdown_list(source_paths, &mut dict),
                     );
                 }
 
                 RunCommand::XlsxToStardict => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_xlsx_list(source_paths, &mut ebook),
+                        app::process_xlsx_list(source_paths, &mut dict),
                     );
                 }
 
                 _ => {}
             }
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_text();
+            dict.process_text();
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_stardict());
+            ok_or_exit(app_params.used_first_arg, dict.create_stardict());
         }
 
         RunCommand::MarkdownToC5 | RunCommand::XlsxToC5 => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -354,32 +354,32 @@ fn main() {
                 RunCommand::MarkdownToC5 => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_markdown_list(source_paths, &mut ebook),
+                        app::process_markdown_list(source_paths, &mut dict),
                     );
                 }
 
                 RunCommand::XlsxToC5 => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_xlsx_list(source_paths, &mut ebook),
+                        app::process_xlsx_list(source_paths, &mut dict),
                     );
                 }
 
                 _ => {}
             }
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_text();
+            dict.process_text();
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_c5());
+            ok_or_exit(app_params.used_first_arg, dict.create_c5());
         }
 
         RunCommand::MarkdownToTei | RunCommand::XlsxToTei => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -394,32 +394,32 @@ fn main() {
                 RunCommand::MarkdownToTei => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_markdown_list(source_paths, &mut ebook),
+                        app::process_markdown_list(source_paths, &mut dict),
                     );
                 }
 
                 RunCommand::XlsxToTei => {
                     ok_or_exit(
                         app_params.used_first_arg,
-                        app::process_xlsx_list(source_paths, &mut ebook),
+                        app::process_xlsx_list(source_paths, &mut dict),
                     );
                 }
 
                 _ => {}
             }
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_text();
+            dict.process_text();
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_tei());
+            ok_or_exit(app_params.used_first_arg, dict.create_tei());
         }
 
         RunCommand::XlsxToLaTeX => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -432,21 +432,21 @@ fn main() {
 
             ok_or_exit(
                 app_params.used_first_arg,
-                app::process_xlsx_list(source_paths, &mut ebook),
+                app::process_xlsx_list(source_paths, &mut dict),
             );
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ebook.process_text();
+            dict.process_text();
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_latex());
+            ok_or_exit(app_params.used_first_arg, dict.create_latex());
         }
 
         RunCommand::MarkdownToJson => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -459,19 +459,19 @@ fn main() {
 
             ok_or_exit(
                 app_params.used_first_arg,
-                app::process_markdown_list(source_paths, &mut ebook),
+                app::process_markdown_list(source_paths, &mut dict),
             );
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_json());
+            ok_or_exit(app_params.used_first_arg, dict.create_json());
         }
 
         RunCommand::XlsxToJson => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -484,19 +484,19 @@ fn main() {
 
             ok_or_exit(
                 app_params.used_first_arg,
-                app::process_xlsx_list(source_paths, &mut ebook),
+                app::process_xlsx_list(source_paths, &mut dict),
             );
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_json());
+            ok_or_exit(app_params.used_first_arg, dict.create_json());
         }
 
         RunCommand::JsonToXlsx => {
             let (i_p, o_p) = get_input_output(&app_params);
-            let mut ebook = Ebook::new(
+            let mut dict = Dictionary::new(
                 app_params.output_format,
                 app_params.allow_raw_html,
                 &i_p,
@@ -512,14 +512,14 @@ fn main() {
 
             ok_or_exit(
                 app_params.used_first_arg,
-                app::process_json_list(source_paths, metadata_path, &mut ebook),
+                app::process_json_list(source_paths, metadata_path, &mut dict),
             );
 
-            info!("Added words: {}", ebook.len());
+            info!("Added words: {}", dict.len());
 
-            ebook.use_cli_overrides(&app_params);
+            dict.use_cli_overrides(&app_params);
 
-            ok_or_exit(app_params.used_first_arg, ebook.create_xlsx());
+            ok_or_exit(app_params.used_first_arg, dict.create_xlsx());
         }
     }
 
