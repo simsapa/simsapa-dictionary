@@ -19,6 +19,13 @@ CREATE VIRTUAL TABLE fts_meanings USING fts5 (
   summary
 );
 
+CREATE VIRTUAL TABLE fts_examples USING fts5 (
+  content=examples,
+  content_rowid=id,
+  text_md,
+  translation_md
+);
+
 -- === Triggers to keep content synced ===
 
 -- root_texts
@@ -102,3 +109,29 @@ CREATE TRIGGER meanings_au AFTER UPDATE ON meanings BEGIN
     (new.id, new.definition_md, new.summary);
 END;
 
+-- examples
+
+CREATE TRIGGER examples_ai AFTER INSERT ON examples BEGIN
+  INSERT INTO fts_examples
+    (rowid, text_md, translation_md)
+    VALUES
+    (new.id, new.text_md, new.translation_md);
+END;
+
+CREATE TRIGGER examples_ad AFTER DELETE ON examples BEGIN
+  INSERT INTO fts_examples
+    (fts_examples, rowid, text_md, translation_md)
+    VALUES
+    ('delete', old.id, old.text_md, old.translation_md);
+END;
+
+CREATE TRIGGER examples_au AFTER UPDATE ON examples BEGIN
+  INSERT INTO fts_examples
+    (fts_examples, rowid, text_md, translation_md)
+    VALUES
+    ('delete', old.id, old.text_md, old.translation_md);
+  INSERT INTO fts_examples
+    (rowid, text_md, translation_md)
+    VALUES
+    (new.id, new.text_md, new.translation_md);
+END;

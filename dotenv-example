@@ -1,2 +1,5 @@
 RUST_LOG=info
-DATABASE_URL=appdata.sqlite3
+DB_PATH=appdata.sqlite3
+SIMSAPA_DATA=../simsapa-data
+SC_DATA=/home/user/src/suttacentral-2020-12-14/sc-data
+PO_JSON=/home/user/src/suttacentral-2020-12-14/po_text_json

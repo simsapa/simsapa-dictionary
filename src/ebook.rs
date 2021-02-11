@@ -82,6 +82,9 @@ pub struct EbookMetadata {
     pub title: String,
 
     #[serde(default)]
+    pub dict_label: String,
+
+    #[serde(default)]
     pub description: String,
     #[serde(default)]
     pub creator: String,
@@ -393,6 +396,7 @@ impl Ebook {
         self.meta.dont_generate_synonyms = app_params.dont_generate_synonyms;
 
         if let Some(ref dict_label) = app_params.dict_label {
+            self.meta.dict_label = dict_label.clone();
             for (_key, word) in self.dict_words_input.iter_mut() {
                 word.word_header.dict_label = dict_label.clone();
             }
@@ -1486,7 +1490,7 @@ impl Ebook {
             return Ok(());
         }
 
-        // FIXME This is assuming that we are processing a single (markdown or json) file, which
+        // NOTE This is assuming that we are processing a single (markdown or json) file, which
         // represents a single dictionary.
 
         let (_, w) = self.dict_words_render.first_key_value().unwrap();
@@ -2702,6 +2706,7 @@ impl Default for EbookMetadata {
     fn default() -> Self {
         EbookMetadata {
             title: "Dictionary".to_string(),
+            dict_label: "dictionary".to_string(),
             description: "".to_string(),
             creator: "".to_string(),
             email: "".to_string(),

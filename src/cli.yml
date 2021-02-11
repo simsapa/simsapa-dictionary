@@ -721,14 +721,35 @@ subcommands:
             takes_value: true
 
   - markdown_to_sqlite:
-      about: "Read a Markdown file, serialize the data and insert it to an Sqlite database."
+      about: "Read a Markdown file, serialize the data and insert it into an Sqlite database."
 
       args:
+        - source_paths_list:
+            help: "A file with a list of Markdown file paths, one per line. Either this or 'source_path' must be used."
+            long: source_paths_list
+            value_name: PATH
+            required: false
+            takes_value: true
+
         - source_path:
             help: "Path to the Markdown file."
             long: source_path
             value_name: PATH
-            required: true
+            required: false
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "The short id label (such as NCPED or PED) to use for this dictionary source."
+            long: dict_label
+            value_name: LABEL
+            required: false
             takes_value: true
 
         - output_path:
@@ -769,6 +790,38 @@ subcommands:
 
         - output_path:
             help: "The entries JSON file to write. Metadata JSON will be written to the same folder with '_metadata' postfix."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+  - xlsx_to_sqlite:
+      about: "Read an XLSX file and insert the dictionary words to an Sqlite database."
+
+      args:
+        - source_path:
+            help: "Path to the XLSX file."
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - title:
+            help: "Use this title for the dictionary."
+            long: title
+            value_name: TITLE
+            required: false
+            takes_value: true
+
+        - dict_label:
+            help: "The short id label (such as NCPED or PED) to use for this dictionary source."
+            long: dict_label
+            value_name: LABEL
+            required: false
+            takes_value: true
+
+        - output_path:
+            help: "The path to the Sqlite database to connect to."
             long: output_path
             value_name: PATH
             required: true
@@ -848,6 +901,49 @@ subcommands:
             long: dont_remove_see_also
             required: false
             takes_value: false
+
+  - suttacentral_po_texts_to_sqlite:
+      about: "Process the PO texts from the suttacentral/sc-data repository and insert them into and Sqlite database."
+
+      args:
+        - source_path:
+            help: "Path to suttacentral/sc-data"
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - po_text_json_path:
+            help: "Path to po_text_json folder produced with 'make po2json'."
+            long: po_text_json_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The path to the Sqlite database to connect to."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+  - suttacentral_html_texts_to_sqlite:
+      about: "Process the HTML texts from the suttacentral/sc-data repository and insert them into and Sqlite database."
+
+      args:
+        - source_path:
+            help: "Path to suttacentral/sc-data"
+            long: source_path
+            value_name: PATH
+            required: true
+            takes_value: true
+
+        - output_path:
+            help: "The path to the Sqlite database to connect to."
+            long: output_path
+            value_name: PATH
+            required: true
+            takes_value: true
 
   - nyanatiloka_to_markdown:
       about: "Process Ven. Nyanatiloka's Buddhist Dictionary and write a Markdown file with TOML headers."

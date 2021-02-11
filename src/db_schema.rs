@@ -136,6 +136,15 @@ table! {
     }
 }
 
+table! {
+    fts_examples (rowid) {
+        rowid -> Integer,
+        text_md -> Text,
+        translation_md -> Text,
+    }
+}
+
+
 allow_tables_to_appear_in_same_query!(
     authors,
     root_texts,
@@ -145,6 +154,7 @@ allow_tables_to_appear_in_same_query!(
     dictionaries,
     dict_words,
     fts_meanings,
+    fts_examples,
     meanings,
     grammars,
     examples,

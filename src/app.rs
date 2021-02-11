@@ -24,6 +24,7 @@ pub struct AppStartParams {
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
     pub output_path: Option<PathBuf>,
+    pub po_text_json_path: Option<PathBuf>,
     pub entries_template: Option<PathBuf>,
     pub mobi_compression: usize,
     pub kindlegen_path: Option<PathBuf>,
@@ -58,12 +59,15 @@ pub enum RunCommand {
     NoOp,
     NyanatilokaToMarkdown,
     SuttaCentralJsonToMarkdown,
+    SuttaCentralPoTextsToSqlite,
+    SuttaCentralHtmlTextsToSqlite,
     XlsxToBabylon,
     XlsxToC5,
     XlsxToEbook,
     XlsxToJson,
-    XlsxToLaTeX,
     XlsxToRenderJson,
+    XlsxToSqlite,
+    XlsxToLaTeX,
     XlsxToStardict,
     XlsxToTei,
 }
@@ -96,6 +100,7 @@ impl Default for AppStartParams {
             nyanatiloka_root: None,
             source_paths: None,
             output_path: None,
+            po_text_json_path: None,
             entries_template: None,
             kindlegen_path: None,
             reuse_metadata: false,
@@ -814,7 +819,93 @@ fn process_markdown_to_json(
     Ok(())
 }
 
-fn process_markdown_to_sqlite(
+fn process_to_sqlite(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if !sub_matches.is_present("source_path")
+        && !sub_matches.is_present("source_paths_list")
+    {
+        let msg = "🔥 Either 'source_path' or 'source_paths_list' must be used.".to_string();
+        return Err(Box::new(ToolError::Exit(msg)));
+    }
+
+    if sub_matches.is_present("source_path") {
+        if let Ok(x) = sub_matches
+            .value_of("source_path")
+                .unwrap()
+                .parse::<String>()
+        {
+            let path = PathBuf::from(&x);
+            if path.exists() {
+                params.source_paths = Some(vec![path]);
+            } else {
+                let msg = format!("🔥 Path does not exist: {:?}", &path);
+                return Err(Box::new(ToolError::Exit(msg)));
+            }
+        }
+    }
+
+    if sub_matches.is_present("source_paths_list") {
+        if let Ok(x) = sub_matches
+            .value_of("source_paths_list")
+                .unwrap()
+                .parse::<String>()
+        {
+            let list_path = PathBuf::from(&x);
+            let s = match fs::read_to_string(&list_path) {
+                Ok(s) => s,
+                Err(e) => {
+                    let msg = format!("🔥 Can't read path. {:?}", e);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            };
+            let s = s.trim();
+
+            let paths: Vec<PathBuf> = s.split('\n').map(PathBuf::from).collect();
+            for path in paths.iter() {
+                if !path.exists() {
+                    let msg = format!("🔥 Path does not exist: {:?}", &path);
+                    return Err(Box::new(ToolError::Exit(msg)));
+                }
+            }
+
+            params.source_paths = Some(paths);
+        }
+    }
+
+    if sub_matches.is_present("title") {
+        if let Ok(x) = sub_matches.value_of("title").unwrap().parse::<String>() {
+            params.title = Some(x);
+        }
+    }
+
+    if sub_matches.is_present("dict_label") {
+        if let Ok(x) = sub_matches
+            .value_of("dict_label")
+                .unwrap()
+                .parse::<String>()
+        {
+            params.dict_label = Some(x);
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+fn process_xlsx_to_json(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
@@ -847,7 +938,7 @@ fn process_markdown_to_sqlite(
     Ok(())
 }
 
-fn process_xlsx_to_json(
+fn process_xlsx_to_render_json(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches<'_>,
     run_command: RunCommand)
@@ -1218,6 +1309,74 @@ fn process_suttacentral_json_to_markdown(
     Ok(())
 }
 
+fn process_suttacentral_po_texts_to_sqlite(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches.value_of("source_path").unwrap().parse::<String>() {
+        let path = PathBuf::from(&x);
+        if path.is_dir() && path.join("html_text").is_dir() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Wrong path: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches.value_of("po_text_json_path").unwrap().parse::<String>() {
+        let path = PathBuf::from(&x);
+        if path.is_dir() && path.join("pli-en").is_dir() {
+            params.po_text_json_path = Some(path);
+        } else {
+            let msg = format!("🔥 Wrong path: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
+fn process_suttacentral_html_texts_to_sqlite(
+    params: &mut AppStartParams,
+    sub_matches: &clap::ArgMatches<'_>,
+    run_command: RunCommand)
+    -> Result<(), Box<dyn Error>>
+{
+    if let Ok(x) = sub_matches.value_of("source_path").unwrap().parse::<String>() {
+        let path = PathBuf::from(&x);
+        if path.is_dir() && path.join("html_text").is_dir() {
+            params.source_paths = Some(vec![path]);
+        } else {
+            let msg = format!("🔥 Wrong path: {:?}", &path);
+            return Err(Box::new(ToolError::Exit(msg)));
+        }
+    }
+
+    if let Ok(x) = sub_matches
+        .value_of("output_path")
+            .unwrap()
+            .parse::<String>()
+    {
+        params.output_path = Some(PathBuf::from(&x));
+    }
+
+    params.run_command = run_command;
+
+    Ok(())
+}
+
 fn process_nyanatiloka_to_markdown(
     params: &mut AppStartParams,
     sub_matches: &clap::ArgMatches<'_>,
@@ -1280,6 +1439,12 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
     if let Some(sub_matches) = matches.subcommand_matches("suttacentral_json_to_markdown") {
         process_suttacentral_json_to_markdown(&mut params, sub_matches, RunCommand::SuttaCentralJsonToMarkdown)?;
 
+    } else if let Some(sub_matches) = matches.subcommand_matches("suttacentral_po_texts_to_sqlite") {
+        process_suttacentral_po_texts_to_sqlite(&mut params, sub_matches, RunCommand::SuttaCentralPoTextsToSqlite)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("suttacentral_html_texts_to_sqlite") {
+        process_suttacentral_html_texts_to_sqlite(&mut params, sub_matches, RunCommand::SuttaCentralHtmlTextsToSqlite)?;
+
     } else if let Some(sub_matches) = matches.subcommand_matches("nyanatiloka_to_markdown") {
         process_nyanatiloka_to_markdown(&mut params, sub_matches, RunCommand::NyanatilokaToMarkdown)?;
 
@@ -1287,13 +1452,16 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
         process_markdown_to_json(&mut params, sub_matches, RunCommand::MarkdownToJson)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("markdown_to_sqlite") {
-        process_markdown_to_sqlite(&mut params, sub_matches, RunCommand::MarkdownToSqlite)?;
+        process_to_sqlite(&mut params, sub_matches, RunCommand::MarkdownToSqlite)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_json") {
         process_xlsx_to_json(&mut params, sub_matches, RunCommand::XlsxToJson)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_render_json") {
-        process_to_ebook(&mut params, sub_matches, RunCommand::XlsxToRenderJson)?;
+        process_xlsx_to_render_json(&mut params, sub_matches, RunCommand::XlsxToRenderJson)?;
+
+    } else if let Some(sub_matches) = matches.subcommand_matches("xlsx_to_sqlite") {
+        process_to_sqlite(&mut params, sub_matches, RunCommand::XlsxToSqlite)?;
 
     } else if let Some(sub_matches) = matches.subcommand_matches("json_to_xlsx") {
         process_json_to_xlsx(&mut params, sub_matches, RunCommand::JsonToXlsx)?;

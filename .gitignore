@@ -2,12 +2,16 @@
 .#*
 TAGS
 .DS_Store
+*.log
 **/auto/
 test-temp/
+paths.txt
 
 .env
 /target
 **/*.rs.bk
 
-sources_to_markdown.log
+CHECKSUMS.md5
 appdata.sqlite3
+appdata.sqlite3-journal
+

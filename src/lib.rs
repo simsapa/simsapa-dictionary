@@ -38,4 +38,5 @@ pub mod error;
 pub mod helpers;
 pub mod letter_groups;
 pub mod pali;
+pub mod sc_data;
 

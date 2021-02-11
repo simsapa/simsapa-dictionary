@@ -245,3 +245,11 @@ pub struct NewExample<'a> {
     pub text_md: &'a str,
     pub translation_md: &'a str,
 }
+
+#[derive(Serialize, Queryable, QueryableByName)]
+#[table_name="fts_examples"]
+pub struct FtsExample {
+    pub rowid: i32,
+    pub text_md: String,
+    pub translation_md: String,
+}

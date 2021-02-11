@@ -40,6 +40,7 @@ pub mod error;
 pub mod helpers;
 pub mod letter_groups;
 pub mod pali;
+pub mod sc_data;
 pub mod db_models;
 pub mod db_schema;
 
@@ -132,6 +133,34 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
+        RunCommand::SuttaCentralPoTextsToSqlite => {
+            let i = app_params.clone().source_paths.expect("source_paths is missing");
+            let i_p = PathBuf::from(i.get(0).unwrap());
+            let o_p = app_params.clone().output_path.expect("output_path is missing.");
+            let json_path = app_params.clone().po_text_json_path.expect("po_text_json_path is missing.");
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                sc_data::process_suttacentral_root_po_texts_to_sqlite(
+                    &i_p,
+                    &json_path,
+                    &o_p,
+                ));
+        }
+
+        RunCommand::SuttaCentralHtmlTextsToSqlite => {
+            let i = app_params.clone().source_paths.expect("source_paths is missing");
+            let i_p = PathBuf::from(i.get(0).unwrap());
+            let o_p = app_params.clone().output_path.expect("output_path is missing.");
+
+            ok_or_exit(
+                app_params.used_first_arg,
+                sc_data::process_suttacentral_html_texts_to_sqlite(
+                    &i_p,
+                    &o_p,
+                ));
+        }
+
         RunCommand::NyanatilokaToMarkdown => {
             let (i_p, o_p) = get_input_output(&app_params);
             let mut ebook = Ebook::new(
@@ -164,7 +193,7 @@ fn main() {
             ok_or_exit(app_params.used_first_arg, ebook.write_markdown());
         }
 
-        RunCommand::MarkdownToEbook | RunCommand::MarkdownToSqlite | RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson => {
+        RunCommand::MarkdownToEbook | RunCommand::MarkdownToSqlite | RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson | RunCommand::XlsxToSqlite => {
             let (i_p, o_p) = get_input_output(&app_params);
             let mut ebook = Ebook::new(
                 app_params.output_format,
@@ -185,7 +214,7 @@ fn main() {
                     );
                 }
 
-                RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson => {
+                RunCommand::XlsxToEbook | RunCommand::XlsxToRenderJson | RunCommand::XlsxToSqlite => {
                     ok_or_exit(
                         app_params.used_first_arg,
                         app::process_xlsx_list(source_paths, &mut ebook),
@@ -210,7 +239,7 @@ fn main() {
                     ok_or_exit(app_params.used_first_arg, ebook.create_render_json());
                 }
 
-                RunCommand::MarkdownToSqlite => {
+                RunCommand::MarkdownToSqlite | RunCommand::XlsxToSqlite => {
                     ok_or_exit(app_params.used_first_arg, ebook.insert_to_sqlite(&app_params));
                 }
 
