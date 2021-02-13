@@ -6,7 +6,11 @@ pub enum ToolError {
 
 impl fmt::Display for ToolError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "{}", self.to_string())
+        match self {
+            ToolError::Exit(s) => {
+                write!(fmt, "{}", s)
+            }
+        }
     }
 }
 
