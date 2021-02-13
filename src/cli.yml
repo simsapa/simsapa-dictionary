@@ -856,9 +856,9 @@ subcommands:
       about: "Process a dictionary JSON file from SuttaCentral and write a Markdown file with TOML headers."
 
       args:
-        - json_path:
+        - source_path:
             help: "The JSON file to read."
-            long: json_path
+            long: source_path
             value_name: PATH
             required: true
             takes_value: true

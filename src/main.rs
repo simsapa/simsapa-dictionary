@@ -111,8 +111,11 @@ fn main() {
             dict.meta.created_date_human = "".to_string();
             dict.meta.created_date_opf = "".to_string();
 
+            let s = app_params.clone().source_paths.expect("source_paths is missing");
+            let s_p = PathBuf::from(s.get(0).unwrap());
+
             app::process_suttacentral_json(
-                &app_params.json_path,
+                &s_p,
                 &app_params.dict_label,
                 &mut dict,
             );

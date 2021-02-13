@@ -19,7 +19,6 @@ use crate::helpers::{ensure_parent, ensure_parent_all, is_hidden};
 #[derive(Clone)]
 pub struct AppStartParams {
     pub output_format: OutputFormat,
-    pub json_path: Option<PathBuf>,
     pub metadata_path: Option<PathBuf>,
     pub nyanatiloka_root: Option<PathBuf>,
     pub source_paths: Option<Vec<PathBuf>>,
@@ -95,7 +94,6 @@ impl Default for AppStartParams {
 
         AppStartParams {
             output_format: OutputFormat::Epub,
-            json_path: None,
             metadata_path: None,
             nyanatiloka_root: None,
             source_paths: None,
@@ -1256,10 +1254,14 @@ fn process_suttacentral_json_to_markdown(
     run_command: RunCommand)
     -> Result<(), Box<dyn Error>>
 {
-    if let Ok(x) = sub_matches.value_of("json_path").unwrap().parse::<String>() {
+    if let Ok(x) = sub_matches
+        .value_of("source_path")
+            .unwrap()
+            .parse::<String>()
+    {
         let path = PathBuf::from(&x);
         if path.exists() {
-            params.json_path = Some(path);
+            params.source_paths = Some(vec![path]);
         } else {
             let msg = format!("🔥 Path does not exist: {:?}", &path);
             return Err(Box::new(ToolError::Exit(msg)));
@@ -1515,11 +1517,10 @@ pub fn process_cli_args(matches: clap::ArgMatches<'_>) -> Result<AppStartParams,
 }
 
 pub fn process_suttacentral_json(
-    json_path: &Option<PathBuf>,
+    json_path: &PathBuf,
     dict_label: &Option<String>,
     dict: &mut Dictionary,
 ) {
-    let json_path = &json_path.as_ref().expect("json_path is missing.");
     let dict_label = &dict_label.as_ref().expect("dict_label is missing.");
 
     info! {"=== Begin processing {:?} ===", json_path};
