@@ -17,8 +17,18 @@ FORMAT_TEI=1
 FORMAT_HTML=1
 FORMAT_PLAINTEXT=1
 
-SRC_DIR=../simsapa-dictionary-data
-OUT_DIR=../simsapa-dictionary_releases/new-release
+if [[ "$1" == "" ]]; then
+    echo "First argument must be the path to simsapa-data."
+    exit 2
+fi
+
+if [[ "$2" == "" ]]; then
+    echo "Second argument must be the path to the output folder."
+    exit 2
+fi
+
+SRC_DIR="$1"
+OUT_DIR="$2"
 
 if [ -z "$OUT_DIR" ]; then
     rm -r "$OUT_DIR"
@@ -35,6 +45,8 @@ EPUBCHECK_PATH="$HOME/bin/epubcheck"
 STARDICT_TEXT2BIN="/usr/lib/stardict-tools/stardict-text2bin"
 
 FREEDICT_RNG="$PROJ_ROOT/assets/freedict-P5.rng"
+
+JSON_TO_XLSX_PY="$PROJ_ROOT/../json2xlsx_simsapa/json2xlsx/utilities/json2xlsx.py"
 
 # === Individual ===
 
@@ -137,16 +149,16 @@ if [[ "$BUILD_INDIVIDUAL" -eq 1 ]]; then
                 --source_path "$SRC_DIR/$i.md" \
                 --output_path "$OUT_DIR/$i.json"
 
-            cat ./scripts/ncped-tables.txt | \
-            sed 's/^load "ncped.json";/load "'"$i"'.json";/' | \
-            sed 's/^load "ncped-metadata.json";/load "'"$i"'-metadata.json";/' | \
-            sed 's/^write "ncped.xlsx";/write "'$i'.xlsx";/' | \
-            cat -s > "$OUT_DIR/$i-tables.txt"
+            cat ./scripts/dict_to_xlsx_sheets.txt | \
+            sed 's/^load "dict.json";/load "'"$i"'.json";/' | \
+            sed 's/^load "dict-metadata.json";/load "'"$i"'-metadata.json";/' | \
+            sed 's/^write "dict.xlsx";/write "'$i'.xlsx";/' | \
+            cat -s > "$OUT_DIR/$i-sheets.txt"
 
             cd "$OUT_DIR"
-            python2 ../../json2xlsx_simsapa/json2xlsx/utilities/json2xlsx.py "$i-tables.txt"
+            python2 "$JSON_TO_XLSX_PY" "$i-sheets.txt"
 
-            rm "$i-tables.txt" "$i.json" "$i-metadata.json"
+            rm "$i-sheets.txt" "$i.json" "$i-metadata.json"
 
         fi
 

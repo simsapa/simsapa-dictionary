@@ -11,8 +11,8 @@ all:
 bootstrap_database: db_reset db_po_texts db_html_texts db_dict_words db_reindex_fts
 
 # Build simsapa-data dictionaries in all possible formats for Github release uploads.
-simsapa_dicts_dist:
-	./scripts/simsapa_dicts_dist.sh
+simsapa_dicts_release:
+	./scripts/simsapa_dicts_release.sh $(SIMSAPA_DATA) ../simsapa-dictionary_releases/new-release
 
 # Convert sc-data dictionaries to Markdown for simsapa-data.
 sc_dicts_to_md:

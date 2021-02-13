@@ -1,0 +1,8 @@
+namesheet "Word entries";
+table { "word"; "meaning_order"; "word_nom_sg"; "dict_label"; "inflections"; "phonetic"; "transliteration"; "example_count"; "definition_md"; "summary"; "synonyms"; "antonyms"; "homonyms"; "also_written_as"; "see_also"; "comment"; "is_root"; "root_language"; "root_groups"; "root_sign"; "root_numbered_group"; "gr_roots"; "gr_prefix_and_root"; "gr_construction"; "gr_base_construction"; "gr_compound_type"; "gr_compound_construction"; "gr_comment"; "gr_speech"; "gr_case"; "gr_num"; "gr_gender"; "gr_person"; "gr_voice"; "gr_object"; "gr_transitive"; "gr_negative"; "gr_verb"; "ex_1_source_ref"; "ex_1_source_title"; "ex_1_text_md"; "ex_1_translation_md"; "ex_2_source_ref"; "ex_2_source_title"; "ex_2_text_md"; "ex_2_translation_md"; }
+load "dict.json";
+newsheet;
+namesheet "Metadata";
+table { "title"; "dict_label"; "description"; "creator"; "email"; "source"; "cover_path"; "book_id"; "version"; "created_date_human"; "created_date_opf"; "word_prefix"; "word_prefix_velthuis"; "add_velthuis"; "allow_raw_html"; "dont_generate_synonyms"; }
+load "dict-metadata.json";
+write "dict.xlsx";

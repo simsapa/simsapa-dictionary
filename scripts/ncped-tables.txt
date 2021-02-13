@@ -1,8 +1,0 @@
-namesheet "Word entries";
-table { "word"; "definition_md"; "dict_label"; "meaning_order"; "summary"; "grammar_case"; "grammar_num"; "grammar_gender"; "grammar_person"; "grammar_voice"; "grammar_object"; "grammar_comment"; "examples"; "phonetic"; "transliteration"; "inflections"; "synonyms"; "antonyms"; "see_also"; "also_written_as"; }
-load "ncped.json";
-newsheet;
-namesheet "Metadata";
-table { "title"; "description"; "creator"; "email"; "source"; "cover_path"; "book_id"; "version"; "created_date_human"; "created_date_opf"; "word_prefix"; "add_velthuis"; }
-load "ncped-metadata.json";
-write "ncped.xlsx";
