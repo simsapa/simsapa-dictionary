@@ -29,4 +29,6 @@ html2md = "0.2"
 handlebars = "2.0"
 html2text = "0.2"
 scraper = "0.12"
+#pali_dict_core = { version = "0.3.0",  git = "https://github.com/digitalpalitools/pali-dict-core" }
+pali_dict_core = { version = "0.3.0",  path = "../pali-dict-core" }
 

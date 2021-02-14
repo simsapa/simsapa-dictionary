@@ -9,7 +9,7 @@ use walkdir::DirEntry;
 
 use comrak::{markdown_to_html, ComrakOptions};
 
-use crate::pali;
+use pali_dict_core::pali;
 
 pub fn markdown_helper(
     h: &Helper<'_, '_>,

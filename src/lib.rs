@@ -8,9 +8,6 @@ extern crate walkdir;
 #[macro_use]
 extern crate diesel;
 
-pub mod db_models;
-pub mod db_schema;
-
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -31,12 +28,13 @@ extern crate comrak;
 extern crate handlebars;
 extern crate deunicode;
 
+extern crate pali_dict_core;
+
 pub mod app;
 pub mod dictionary;
-pub mod dict_word;
 pub mod error;
 pub mod helpers;
-pub mod letter_groups;
-pub mod pali;
 pub mod sc_data;
+pub mod db_models;
+pub mod db_schema;
 

@@ -18,11 +18,11 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
 use crate::app::{self, AppStartParams, ZipWith};
-use crate::dict_word::{DictWord, DictWordMarkdown, DictWordXlsx};
+use pali_dict_core::dict_word::{DictWord, DictWordMarkdown, DictWordXlsx};
 use crate::error::ToolError;
 use crate::helpers::{self, is_hidden, md2html, uppercase_first_letter};
-use crate::letter_groups::{LetterGroups, LetterGroup};
-use crate::pali;
+use pali_dict_core::letter_groups::{LetterGroups, LetterGroup};
+use pali_dict_core::pali;
 use crate::db_schema;
 use crate::db_models::{DbDictionary, NewDictionary, DbDictWord, NewDictWord, DbMeaning, NewMeaning,
 DbGrammar, NewGrammar, DbExample, NewExample};

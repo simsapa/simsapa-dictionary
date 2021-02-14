@@ -797,6 +797,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
 
 [[package]]
+name = "pali_dict_core"
+version = "0.3.0"
+dependencies = [
+ "deunicode",
+ "lazy_static",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1219,6 +1232,7 @@ dependencies = [
  "kankyo",
  "lazy_static",
  "log",
+ "pali_dict_core",
  "r2d2",
  "regex",
  "scraper",

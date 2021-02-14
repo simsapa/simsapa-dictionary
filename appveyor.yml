@@ -14,7 +14,7 @@ branches:
 environment:
   TARGET: x86_64-pc-windows-gnu
   CRATE_NAME: simsapa_dictionary
-  RUST_VERSION: stable
+  RUST_VERSION: nightly
 
 install:
   - ps: >-

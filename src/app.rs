@@ -9,7 +9,7 @@ use walkdir::WalkDir;
 use regex::Regex;
 use calamine::{open_workbook, Xlsx, Reader, RangeDeserializerBuilder};
 
-use crate::dict_word::{DictWordMarkdown, DictWordHeader, DictWordXlsx};
+use pali_dict_core::dict_word::{DictWordMarkdown, DictWordHeader, DictWordXlsx};
 use crate::dictionary::{
     Dictionary, OutputFormat, DictMetadata, DICTIONARY_METADATA_SEP, DICTIONARY_WORD_ENTRIES_SEP,
 };
