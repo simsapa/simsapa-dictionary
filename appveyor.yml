@@ -1,4 +1,4 @@
-version: "0.2.0.{branch}.{build}"
+version: "0.3.0.{branch}.{build}"
 
 image: Visual Studio 2019
 
@@ -12,18 +12,12 @@ branches:
     - master
 
 environment:
-  TARGET: x86_64-pc-windows-gnu
+  TARGET: x86_64-pc-windows-msvc
   CRATE_NAME: simsapa_dictionary
   RUST_VERSION: nightly
 
 install:
-  - ps: >-
-      If ($env:TARGET -eq 'x86_64-pc-windows-gnu') {
-        $env:PATH += ';C:\msys64\mingw64\bin'
-      } ElseIf ($env:TARGET -eq 'i686-pc-windows-gnu') {
-        $env:PATH += ';C:\msys64\mingw32\bin'
-      }
-  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
+  - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
   - rustc -Vv
