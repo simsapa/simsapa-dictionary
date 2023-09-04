@@ -1,5 +1,11 @@
 # Simsapa Dictionary Tool
 
+⚠️ **DEPRECATED** ⚠️
+
+This is now an old project and superseded by the more recent [Simsapa Dhamma Reader](https://simsapa.github.io/)
+
+------------------
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
